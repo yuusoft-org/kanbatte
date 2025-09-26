@@ -3,25 +3,25 @@
 ## Tech Stack
 
 ### Runtime
-- **Bun** - JavaScript runtime (instead of Node.js)
+- **[Bun](https://bun.com/)** - JavaScript runtime (instead of Node.js)
   - Fast startup and execution
   - Built-in TypeScript support
   - Native SQLite support
 
 ### CLI Framework
-- **Commander.js** - Command-line interface framework
+- **[Commander.js](https://github.com/tj/commander.js)** - Command-line interface framework
   - Declarative command definitions
   - Automatic help generation
   - Option parsing
 
 ### Database
-- **SQLite/LibSQL** via `@libsql/client` (v0.14.0)
+- **SQLite/LibSQL** via [`@libsql/client`](https://www.npmjs.com/package/@libsql/client) (v0.14.0)
   - Local-first database
   - Zero configuration
   - ACID compliant
 
 ### Data Serialization
-- **MessagePack** - Binary serialization format
+- **[MessagePack](https://msgpack.org)** - Binary serialization format
   - Compact binary representation
   - Faster than JSON
   - Preserves type information
