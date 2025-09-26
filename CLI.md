@@ -19,14 +19,14 @@ kanbatte new task -f 'path/to/file.md'
 
 **Create a new comment:**
 ```bash
-kanbatte new comment -tid 'taskId' -c 'comment content'
+kanbatte new comment -i 'taskId' -c 'comment content'
 ```
 
 ### Creating Followups
 
 **Create a new followup:**
 ```bash
-kanbatte new followup -tid 'taskId' -c 'followup content'
+kanbatte new followup -i 'taskId' -c 'followup content'
 ```
 
 #### Task File Format
@@ -73,11 +73,11 @@ This command will print the complete task information including:
 
 **Update task properties:**
 ```bash
-kanbatte update task -tid ${taskId} -s ${status}
-kanbatte update task -tid ${taskId} -t 'new title'
-kanbatte update task -tid ${taskId} --title 'new title'
-kanbatte update task -tid ${taskId} --description 'new description'
-kanbatte update task -tid ${taskId} -s ${status} -t 'new title' --description 'new description'
+kanbatte update task -i ${taskId} -s ${status}
+kanbatte update task -i ${taskId} -t 'new title'
+kanbatte update task -i ${taskId} --title 'new title'
+kanbatte update task -i ${taskId} --description 'new description'
+kanbatte update task -i ${taskId} -s ${status} -t 'new title' --description 'new description'
 ```
 
 **Update followup status:**
@@ -95,10 +95,10 @@ kanbatte new task -p 'AI' -t 'Research ML models' --description 'Investigate lat
 kanbatte new task -f './tasks/new-feature.md'
 
 # Create a new comment
-kanbatte new comment -tid 'AI-001' -c 'This feature needs more testing before deployment'
+kanbatte new comment -i 'AI-001' -c 'This feature needs more testing before deployment'
 
 # Create a new followup
-kanbatte new followup -tid 'AI-001' -c 'Scheduled code review for next sprint'
+kanbatte new followup -i 'AI-001' -c 'Scheduled code review for next sprint'
 
 # List all tasks in AI project
 kanbatte list -p 'AI'
@@ -110,13 +110,13 @@ kanbatte list -p 'AI' -s ready,in-progress
 kanbatte read AI-001
 
 # Update task status to in-progress
-kanbatte update task -tid 'AI-001' -s in-progress
+kanbatte update task -i 'AI-001' -s in-progress
 
 # Update task title
-kanbatte update task -tid 'AI-001' -t 'Research latest transformer architectures'
+kanbatte update task -i 'AI-001' -t 'Research latest transformer architectures'
 
 # Update multiple properties at once
-kanbatte update task -tid 'AI-001' -s done -t 'Completed ML research' --description 'Research completed successfully'
+kanbatte update task -i 'AI-001' -s done -t 'Completed ML research' --description 'Research completed successfully'
 
 # Update followup status to resolved
 kanbatte update followup FU-123 -s resolved
