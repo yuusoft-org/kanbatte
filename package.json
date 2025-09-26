@@ -1,0 +1,13 @@
+{
+  "name": "kanbatte",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.15.15",
+    "commander": "^14.0.1"
+  }
+}
