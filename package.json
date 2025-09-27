@@ -3,11 +3,19 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "test": "bun run tests/run-all.js",
+    "test:tasks": "bun run tests/task.test.js",
+    "test:migrations": "bun run tests/migration.test.js",
+    "migrate": "bun run src/migrate.js"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
   "dependencies": {
     "@libsql/client": "^0.15.15",
-    "commander": "^14.0.1"
+    "@msgpack/msgpack": "^3.1.2",
+    "commander": "^14.0.1",
+    "uuid": "^13.0.0"
   }
 }

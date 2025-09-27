@@ -1,0 +1,20 @@
+{
+  "name": "umzug-libsql",
+  "version": "0.0.1",
+  "description": "Umzug implementation with LibSQL Client",
+  "main": "./src/umzug-libsql.js",
+  "type": "module",
+  "scripts": {
+    "test": "node ./src/umzug-libsql.test.js"
+  },
+  "bin": {
+    "umzug-libsql": "./src/cli.js"
+  },
+  "author": "han4wluc@yuusoft.com",
+  "license": "MIT",
+  "dependencies": {
+    "@libsql/client": "~0.10.0",
+    "umzug": "~3.8.1"
+  },
+  "devDependencies": {}
+}

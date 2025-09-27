@@ -25,6 +25,24 @@ const commandsDeps = {
   libsqlDao: {
     addEventLog: (payload) => {
       return libsqlDao.addEventLog(libsqlDaoDeps, payload)
+    },
+    createTask: (taskData) => {
+      return libsqlDao.createTask(libsqlDaoDeps, taskData)
+    },
+    getTaskById: (taskId) => {
+      return libsqlDao.getTaskById(libsqlDaoDeps, taskId)
+    },
+    listTasks: (projectId, statusFilter) => {
+      return libsqlDao.listTasks(libsqlDaoDeps, projectId, statusFilter)
+    },
+    updateTask: (taskId, updates) => {
+      return libsqlDao.updateTask(libsqlDaoDeps, taskId, updates)
+    },
+    createComment: (commentData) => {
+      return libsqlDao.createComment(libsqlDaoDeps, commentData)
+    },
+    getCommentsByTaskId: (taskId) => {
+      return libsqlDao.getCommentsByTaskId(libsqlDaoDeps, taskId)
     }
   }
 }
@@ -59,8 +77,7 @@ newCmd.command('comment')
   .requiredOption('-i, --task-id <taskId>', 'Task ID')
   .requiredOption('-c, --content <content>', 'Comment content')
   .action((options) => {
-    // TODO: Implement comment creation logic
-    console.log('Creating new comment:', options);
+    commands.addComment(commandsDeps, options);
   });
 
 // New followup command
@@ -79,8 +96,7 @@ program.command('list')
   .requiredOption('-p, --project <projectId>', 'Project ID')
   .option('-s, --status <statuses>', 'Filter by status (comma-separated)')
   .action((options) => {
-    // TODO: Implement task listing logic
-    console.log('Listing tasks:', options);
+    commands.listTasks(commandsDeps, options);
   });
 
 // Read command
@@ -88,8 +104,7 @@ program.command('read')
   .description('Read and display a specific task')
   .argument('<taskId>', 'Task ID')
   .action((taskId) => {
-    // TODO: Implement task reading logic
-    console.log('Reading task:', taskId);
+    commands.readTask(commandsDeps, taskId);
   });
 
 // Update command group
@@ -103,8 +118,7 @@ updateCmd.command('task')
   .option('-t, --title <title>', 'New title')
   .option('--description <description>', 'New description')
   .action((options) => {
-    // TODO: Implement task update logic
-    console.log('Updating task:', options);
+    commands.updateTask(commandsDeps, options);
   });
 
 // Update followup command
