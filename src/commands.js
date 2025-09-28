@@ -6,7 +6,7 @@ export const addTask = async (deps, options) => {
 
   if (!options.title) {
     console.error(
-      "Error: Task title is required (use -t or --title, or provide -f for file)"
+      "Error: Task title is required (use -t or --title, or provide -f for file)",
     );
     return;
   }
@@ -27,7 +27,7 @@ export const addTask = async (deps, options) => {
       title: taskData.title,
       description: taskData.description,
       projectId: taskData.projectId,
-      status: "ready",
+      status: "todo",
     });
 
     console.log("Task created successfully!" + task);

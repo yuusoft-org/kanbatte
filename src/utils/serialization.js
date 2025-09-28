@@ -1,5 +1,4 @@
 import { encode, decode } from "@msgpack/msgpack";
-import crypto from "crypto";
 
 export function serialize(data) {
   return encode(data);
@@ -16,8 +15,4 @@ export function createEvent(type, taskId, data) {
     data,
     timestamp: Date.now(),
   };
-}
-
-export function generateId() {
-  return crypto.randomBytes(8).toString("base64url");
 }

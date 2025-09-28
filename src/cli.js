@@ -4,13 +4,15 @@ import { Command } from "commander";
 import { readFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
+import { serialize, deserialize } from "./utils/serialization.js";
+import { generateId } from "./utils/helper.js";
 
 import * as libsqlDao from "./dao/libsqlDao.js";
 import * as commands from "./commands.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageJson = JSON.parse(
-  readFileSync(join(__dirname, "../package.json"), "utf8")
+  readFileSync(join(__dirname, "../package.json"), "utf8"),
 );
 
 import { createClient } from "@libsql/client";
@@ -21,6 +23,9 @@ const db = createClient(config);
 
 const libsqlDaoDeps = {
   db,
+  serialize,
+  deserialize,
+  generateId,
 };
 
 const commandsDeps = {
