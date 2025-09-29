@@ -25,5 +25,14 @@ kanbatte new comment -i 'AI-001' -c 'This feature needs more testing before depl
 # Create a new followup
 kanbatte new followup -i 'AI-001' -c 'Scheduled code review for next sprint'
 ```
+- [ ] implement read (this will need to implmeent the view table)
+```bash
+kanbatte read AI-001
+```
+- [ ] implement list
+```bash
+kanbatte list -p 'AI'
+kanbatte list -p 'AI' -s ready,in-progress
+```
 
 
