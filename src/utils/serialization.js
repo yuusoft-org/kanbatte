@@ -7,12 +7,3 @@ export function serialize(data) {
 export function deserialize(buffer) {
   return decode(buffer);
 }
-
-export function createEvent(type, taskId, data) {
-  return {
-    type,
-    taskId,
-    data,
-    timestamp: Date.now(),
-  };
-}
