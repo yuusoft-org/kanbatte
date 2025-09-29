@@ -10,7 +10,8 @@
     "@libsql/client": "^0.15.15",
     "@msgpack/msgpack": "^3.1.2",
     "commander": "^14.0.1",
-    "crypto": "^1.0.1"
+    "crypto": "^1.0.1",
+    "umzug-libsql": "^0.0.1"
   },
   "scripts": {
     "lint": "bunx prettier src -c",

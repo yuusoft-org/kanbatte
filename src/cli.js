@@ -9,13 +9,21 @@ import { generateId } from "./utils/helper.js";
 
 import * as libsqlDao from "./dao/libsqlDao.js";
 import * as commands from "./commands.js";
+import { createLibSqlUmzug } from "umzug-libsql";
+import { createClient } from "@libsql/client";
+
+const { umzug } = createLibSqlUmzug({
+  url: "file:local.db",
+  glob: "db/migrations/*.sql",
+});
+
+await umzug.up();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageJson = JSON.parse(
   readFileSync(join(__dirname, "../package.json"), "utf8"),
 );
 
-import { createClient } from "@libsql/client";
 const config = {
   url: "file:local.db",
 };
