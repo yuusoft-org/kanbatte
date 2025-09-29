@@ -2,6 +2,15 @@
 # Roadmap
 
 - [x] Project docs setup
+- [ ] Complete CLI features
+- [ ] Connect to LLM & git worktrees
+- [ ] Connect to Discord
+- [ ] Web UI
+
+## Dev
+
+- [ ] @han4wluc setup json schema validation
+- [ ] @han4wluc setup unit test https://github.com/yuusoft-org/puty
 
 ## CLI implementation
 
