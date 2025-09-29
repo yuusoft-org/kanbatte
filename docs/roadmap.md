@@ -12,7 +12,7 @@
 - [ ] @han4wluc setup json schema validation
 - [ ] @han4wluc setup unit test https://github.com/yuusoft-org/puty
 
-## CLI implementation
+## @aditya CLI implementation
 
 - [x] implement `kanbatte new task`
 - [ ] implmeent db migrations using https://github.com/yuusoft-org/umzug-libsql
