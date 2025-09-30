@@ -10,9 +10,12 @@
     "@libsql/client": "^0.15.15",
     "@msgpack/msgpack": "^3.1.2",
     "commander": "^14.0.1",
-    "crypto": "^1.0.1"
+    "crypto": "^1.0.1",
+    "umzug-libsql": "^0.0.1"
   },
   "scripts": {
+    "kanbatte": "bun run src/cli.js",
+    "setup": "bun run src/cli.js",
     "lint": "bunx prettier src -c",
     "lint:fix": "bunx prettier src -w"
   }

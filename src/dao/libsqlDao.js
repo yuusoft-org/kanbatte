@@ -1,26 +1,7 @@
-const ensuredTables = new Set();
-
-//DB Functions
 ///TODO: Implement task_view functions
-
-async function ensureEventTable(db) {
-  const tableName = "event_log";
-  if (ensuredTables.has(tableName)) return;
-
-  await db.execute(`
-      CREATE TABLE IF NOT EXISTS "${tableName}" (
-        id TEXT PRIMARY KEY,
-        key TEXT NOT NULL,
-        data BLOB NOT NULL,
-        created_at INTEGER NOT NULL
-      )
-    `);
-  ensuredTables.add(tableName);
-}
 
 //DB operations
 async function appendEvent(db, type, entityId, payload, deps) {
-  ensureEventTable(db);
   const { serialize, generateId } = deps;
   const eventId = generateId();
   const eventData = serialize({
