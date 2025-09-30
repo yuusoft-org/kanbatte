@@ -1,24 +1,24 @@
-export const addTask = async (deps, options) => {
+export const addTask = async (deps, payload) => {
   const { db, generateId, serialize, libsqlDao } = deps;
-  console.log("running commands.addTask", options);
+  console.log("running commands.addTask", payload);
 
-  if (!options.title) {
+  if (!payload.title) {
     console.error(
       "Error: Task title is required (use -t or --title, or provide -f for file)",
     );
     return;
   }
 
-  if (!options.project) {
+  if (!payload.project) {
     console.error("Error: Project ID is required (use -p or --project)");
     return;
   }
 
   const taskId = generateId();
   const taskData = {
-    title: options.title,
-    description: options.description || "",
-    projectId: options.project,
+    title: payload.title,
+    description: payload.description || "",
+    projectId: payload.project,
     status: "todo",
   };
 
@@ -44,54 +44,45 @@ export const addTask = async (deps, options) => {
   }
 };
 
-export const updateTask = async (deps, options) => {
+export const updateTask = async (deps, payload) => {
   const { db, serialize, libsqlDao } = deps;
 
-  if (!options.taskId) {
+  if (!payload.taskId) {
     console.error("Error: Task ID is required (use -i or --task-id)");
-    return;
-  }
-
-  const updates = {};
-  if (options.status) updates.status = options.status;
-  if (options.title) updates.title = options.title;
-  if (options.description) updates.description = options.description;
-
-  if (Object.keys(updates).length === 0) {
-    console.error(
-      "Error: At least one update field is required (-s, -t, or --description)",
-    );
     return;
   }
 
   const allowedUpdates = ["status", "title", "description"];
   const validUpdates = {};
 
-  for (const [key, value] of Object.entries(updates)) {
+  for (const [key, value] of Object.entries(payload)) {
     if (allowedUpdates.includes(key) && value !== undefined) {
       validUpdates[key] = value;
     }
   }
 
   if (Object.keys(validUpdates).length === 0) {
-    throw new Error("No valid updates provided");
+    console.error(
+      "Error: At least one update field is required (-s, -t, or --description)",
+    );
+    return;
   }
 
   const eventData = serialize({
     type: "task_updated",
-    taskId: options.taskId,
+    taskId: payload.taskId,
     data: validUpdates,
     timestamp: Date.now(),
   });
 
   try {
-    await libsqlDao.appendEvent(db, options.taskId, eventData);
+    await libsqlDao.appendEvent(db, payload.taskId, eventData);
 
     console.log("Task updated successfully!", {
-      taskId: options.taskId,
+      taskId: payload.taskId,
       ...validUpdates,
     });
-    return { taskId: options.taskId, ...validUpdates };
+    return { taskId: payload.taskId, ...validUpdates };
   } catch (error) {
     console.error("Failed to update task:", error.message);
     throw error;
