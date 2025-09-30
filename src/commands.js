@@ -33,9 +33,11 @@ export const addTask = async (deps, options) => {
     console.log("Task created successfully!" + task);
     return task;
   } catch (error) {
-    console.error("Failed to create task:", error.message);
     if (error.message.includes("no such table")) {
-      console.info("Run kanbatte setup db command to setup your database");
+      console.error("Failed to create task:", error.message);
+      console.info("Run 'kanbatte setup db command' to setup your database");
+      return;
     }
+    throw error;
   }
 };
