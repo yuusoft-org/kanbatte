@@ -1,8 +1,6 @@
 export const addTask = async (deps, options) => {
-  const { libsqlDao } = deps;
+  const { db, generateId, serialize, libsqlDao } = deps;
   console.log("running commands.addTask", options);
-
-  let taskData = {};
 
   if (!options.title) {
     console.error(
@@ -16,22 +14,26 @@ export const addTask = async (deps, options) => {
     return;
   }
 
-  taskData = {
+  const taskId = generateId();
+  const taskData = {
     title: options.title,
     description: options.description || "",
     projectId: options.project,
+    status: "todo",
   };
 
-  try {
-    const task = await libsqlDao.createTask({
-      title: taskData.title,
-      description: taskData.description,
-      projectId: taskData.projectId,
-      status: "todo",
-    });
+  const eventData = serialize({
+    type: "task_created",
+    taskId: taskId,
+    data: taskData,
+    timestamp: Date.now(),
+  });
 
-    console.log("Task created successfully!" + ` Task ID: ${task.taskId}`);
-    return task;
+  try {
+    await libsqlDao.appendEvent(db, taskId, eventData);
+
+    console.log("Task created successfully!" + ` Task ID: ${taskId}`);
+    return { taskId, ...taskData };
   } catch (error) {
     if (error.message.includes("no such table")) {
       console.error("Failed to create task:", error.message);
@@ -43,7 +45,7 @@ export const addTask = async (deps, options) => {
 };
 
 export const updateTask = async (deps, options) => {
-  const { libsqlDao } = deps;
+  const { db, serialize, libsqlDao } = deps;
 
   if (!options.taskId) {
     console.error("Error: Task ID is required (use -i or --task-id)");
@@ -62,10 +64,34 @@ export const updateTask = async (deps, options) => {
     return;
   }
 
+  const allowedUpdates = ["status", "title", "description"];
+  const validUpdates = {};
+
+  for (const [key, value] of Object.entries(updates)) {
+    if (allowedUpdates.includes(key) && value !== undefined) {
+      validUpdates[key] = value;
+    }
+  }
+
+  if (Object.keys(validUpdates).length === 0) {
+    throw new Error("No valid updates provided");
+  }
+
+  const eventData = serialize({
+    type: "task_updated",
+    taskId: options.taskId,
+    data: validUpdates,
+    timestamp: Date.now(),
+  });
+
   try {
-    const result = await libsqlDao.updateTask(options.taskId, updates);
-    console.log("Task updated successfully!", result);
-    return result;
+    await libsqlDao.appendEvent(db, options.taskId, eventData);
+
+    console.log("Task updated successfully!", {
+      taskId: options.taskId,
+      ...validUpdates,
+    });
+    return { taskId: options.taskId, ...validUpdates };
   } catch (error) {
     console.error("Failed to update task:", error.message);
     throw error;

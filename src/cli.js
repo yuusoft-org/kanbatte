@@ -31,25 +31,12 @@ const config = {
 };
 const db = createClient(config);
 
-const libsqlDaoDeps = {
+const commandsDeps = {
   db,
   serialize,
   deserialize,
   generateId,
-};
-
-const commandsDeps = {
-  libsqlDao: {
-    addEventLog: (payload) => {
-      return libsqlDao.addEventLog(libsqlDaoDeps, payload);
-    },
-    createTask: (taskData) => {
-      return libsqlDao.createTask(libsqlDaoDeps, taskData);
-    },
-    updateTask: (taskId, updates) => {
-      return libsqlDao.updateTask(libsqlDaoDeps, taskId, updates);
-    },
-  },
+  libsqlDao,
 };
 
 const program = new Command();
