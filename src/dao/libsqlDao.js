@@ -10,17 +10,13 @@ async function appendEvent(db, type, entityId, payload, deps) {
     data: payload,
     timestamp: Date.now(),
   });
-  try {
-    await db.execute({
-      sql: "INSERT INTO event_log (id, key, data, created_at) VALUES (?, ?, ?, ?)",
-      args: [eventId, entityId, eventData, Date.now()],
-    });
 
-    return eventId;
-  } catch (e) {
-    console.error("Failed to create task:", e.message);
-    console.info("Run kanbatte setup db command to setup your database");
-  }
+  await db.execute({
+    sql: "INSERT INTO event_log (id, key, data, created_at) VALUES (?, ?, ?, ?)",
+    args: [eventId, entityId, eventData, Date.now()],
+  });
+
+  return eventId;
 }
 
 //CLI Functions
