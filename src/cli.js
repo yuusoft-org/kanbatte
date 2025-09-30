@@ -46,6 +46,9 @@ const commandsDeps = {
     createTask: (taskData) => {
       return libsqlDao.createTask(libsqlDaoDeps, taskData);
     },
+    updateTask: (taskId, updates) => {
+      return libsqlDao.updateTask(libsqlDaoDeps, taskId, updates);
+    },
   },
 };
 
@@ -137,8 +140,8 @@ updateCmd
   .option("-t, --title <title>", "New title")
   .option("--description <description>", "New description")
   .action((options) => {
-    // TODO: Implement task update logic
     console.log("Updating task:", options);
+    commands.updateTask(commandsDeps, options);
   });
 
 // Update followup command
