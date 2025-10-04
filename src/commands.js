@@ -132,3 +132,42 @@ export const updateTask = async (deps, payload) => {
     throw error;
   }
 };
+
+export const addFollowup = async (deps, payload) => {
+  const { generateId, serialize, libsqlDao } = deps;
+
+  if (!payload.taskId) {
+    console.error("Error: Task ID is required (use -i or --task-id)");
+    return;
+  }
+
+  if (!payload.content) {
+    console.error("Error: Followup content is required (use -c or --content)");
+    return;
+  }
+
+  const followupId = generateId();
+  const followupData = {
+    followupId,
+    taskId: payload.taskId,
+    content: payload.content,
+  };
+
+  const eventData = serialize({
+    type: "followup_added",
+    taskId: payload.taskId,
+    data: followupData,
+    timestamp: Date.now(),
+  });
+
+  try {
+    const appendPayload = { entityId: payload.taskId, eventData };
+    await libsqlDao.appendEvent(appendPayload);
+
+    console.log("Followup created successfully!", { followupId });
+    return followupData;
+  } catch (error) {
+    console.error("Failed to create followup:", error.message);
+    throw error;
+  }
+};
