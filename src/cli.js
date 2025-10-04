@@ -33,18 +33,16 @@ const db = createClient(config);
 
 const libsqlDaoDeps = {
   db,
-  serialize,
-  deserialize,
   generateId,
 };
 
 const commandsDeps = {
+  serialize,
+  deserialize,
+  generateId,
   libsqlDao: {
-    addEventLog: (payload) => {
-      return libsqlDao.addEventLog(libsqlDaoDeps, payload);
-    },
-    createTask: (taskData) => {
-      return libsqlDao.createTask(libsqlDaoDeps, taskData);
+    appendEvent: (payload) => {
+      return libsqlDao.appendEvent(libsqlDaoDeps, payload);
     },
   },
 };
@@ -137,8 +135,8 @@ updateCmd
   .option("-t, --title <title>", "New title")
   .option("--description <description>", "New description")
   .action((options) => {
-    // TODO: Implement task update logic
     console.log("Updating task:", options);
+    commands.updateTask(commandsDeps, options);
   });
 
 // Update followup command
