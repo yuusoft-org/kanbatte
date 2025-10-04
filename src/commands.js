@@ -45,6 +45,45 @@ export const addTask = async (deps, payload) => {
   }
 };
 
+export const addComment = async (deps, payload) => {
+  const { generateId, serialize, libsqlDao } = deps;
+
+  if (!payload.taskId) {
+    console.error("Error: Task ID is required (use -i or --task-id)");
+    return;
+  }
+
+  if (!payload.content) {
+    console.error("Error: Comment content is required (use -c or --content)");
+    return;
+  }
+
+  const commentId = generateId();
+  const commentData = {
+    commentId,
+    taskId: payload.taskId,
+    content: payload.content,
+  };
+
+  const eventData = serialize({
+    type: "comment_added",
+    taskId: payload.taskId,
+    data: commentData,
+    timestamp: Date.now(),
+  });
+
+  try {
+    const appendPayload = { entityId: payload.taskId, eventData };
+    await libsqlDao.appendEvent(appendPayload);
+
+    console.log("Comment created successfully!", { commentId });
+    return commentData;
+  } catch (error) {
+    console.error("Failed to create comment:", error.message);
+    throw error;
+  }
+};
+
 export const updateTask = async (deps, payload) => {
   const { serialize, libsqlDao } = deps;
 

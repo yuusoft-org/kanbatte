@@ -87,8 +87,8 @@ newCmd
   .requiredOption("-i, --task-id <taskId>", "Task ID")
   .requiredOption("-c, --content <content>", "Comment content")
   .action((options) => {
-    // TODO: Implement comment creation logic
     console.log("Creating new comment:", options);
+    commands.addComment(commandsDeps, options);
   });
 
 // New followup command
