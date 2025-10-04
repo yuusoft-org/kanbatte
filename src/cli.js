@@ -31,12 +31,20 @@ const config = {
 };
 const db = createClient(config);
 
-const commandsDeps = {
+const libsqlDaoDeps = {
   db,
+  generateId,
+};
+
+const commandsDeps = {
   serialize,
   deserialize,
   generateId,
-  libsqlDao,
+  libsqlDao: {
+    appendEvent: (payload) => {
+      return libsqlDao.appendEvent(libsqlDaoDeps, payload);
+    },
+  },
 };
 
 const program = new Command();

@@ -30,7 +30,8 @@ export const addTask = async (deps, payload) => {
   });
 
   try {
-    await libsqlDao.appendEvent(db, taskId, eventData);
+    const payload = { entityId: taskId, eventData };
+    await libsqlDao.appendEvent(payload);
 
     console.log("Task created successfully!" + ` Task ID: ${taskId}`);
     return { taskId, ...taskData };
@@ -45,7 +46,7 @@ export const addTask = async (deps, payload) => {
 };
 
 export const updateTask = async (deps, payload) => {
-  const { db, serialize, libsqlDao } = deps;
+  const { serialize, libsqlDao } = deps;
 
   if (!payload.taskId) {
     console.error("Error: Task ID is required (use -i or --task-id)");
@@ -76,7 +77,11 @@ export const updateTask = async (deps, payload) => {
   });
 
   try {
-    await libsqlDao.appendEvent(db, payload.taskId, eventData);
+    const appendPayload = {
+      entityId: payload.taskId,
+      eventData,
+    };
+    await libsqlDao.appendEvent(appendPayload);
 
     console.log("Task updated successfully!", {
       taskId: payload.taskId,
