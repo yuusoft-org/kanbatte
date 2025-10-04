@@ -32,6 +32,7 @@ export const addTask = async (deps, payload) => {
   try {
     const payload = { entityId: taskId, eventData };
     await libsqlDao.appendEvent(payload);
+    await libsqlDao.computeAndSaveView({ taskId });
 
     console.log("Task created successfully!" + ` Task ID: ${taskId}`);
     return { taskId, ...taskData };
@@ -75,6 +76,7 @@ export const addComment = async (deps, payload) => {
   try {
     const appendPayload = { entityId: payload.taskId, eventData };
     await libsqlDao.appendEvent(appendPayload);
+    await libsqlDao.computeAndSaveView({ taskId: payload.taskId });
 
     console.log("Comment created successfully!", { commentId });
     return commentData;
@@ -121,6 +123,7 @@ export const updateTask = async (deps, payload) => {
       eventData,
     };
     await libsqlDao.appendEvent(appendPayload);
+    await libsqlDao.computeAndSaveView({ taskId: payload.taskId });
 
     console.log("Task updated successfully!", {
       taskId: payload.taskId,
@@ -163,11 +166,36 @@ export const addFollowup = async (deps, payload) => {
   try {
     const appendPayload = { entityId: payload.taskId, eventData };
     await libsqlDao.appendEvent(appendPayload);
+    await libsqlDao.computeAndSaveView({ taskId: payload.taskId });
 
     console.log("Followup created successfully!", { followupId });
     return followupData;
   } catch (error) {
     console.error("Failed to create followup:", error.message);
+    throw error;
+  }
+};
+
+export const readTask = async (deps, taskId) => {
+  const { libsqlDao } = deps;
+
+  if (!taskId) {
+    console.error("Error: Task ID is required");
+    return;
+  }
+
+  try {
+    const taskData = await libsqlDao.getViewByTaskId(taskId);
+
+    if (!taskData) {
+      console.error(`Error: Task ${taskId} not found`);
+      return;
+    }
+
+    console.log(JSON.stringify(taskData, null, 2));
+    return taskData;
+  } catch (error) {
+    console.error("Failed to read task:", error.message);
     throw error;
   }
 };

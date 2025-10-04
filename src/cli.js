@@ -34,6 +34,8 @@ const db = createClient(config);
 const libsqlDaoDeps = {
   db,
   generateId,
+  serialize,
+  deserialize,
 };
 
 const commandsDeps = {
@@ -43,6 +45,12 @@ const commandsDeps = {
   libsqlDao: {
     appendEvent: (payload) => {
       return libsqlDao.appendEvent(libsqlDaoDeps, payload);
+    },
+    computeAndSaveView: (payload) => {
+      return libsqlDao.computeAndSaveView(libsqlDaoDeps, payload);
+    },
+    getViewByTaskId: (taskId) => {
+      return libsqlDao.getViewByTaskId(libsqlDaoDeps, taskId);
     },
   },
 };
@@ -119,8 +127,7 @@ program
   .description("Read and display a specific task")
   .argument("<taskId>", "Task ID")
   .action((taskId) => {
-    // TODO: Implement task reading logic
-    console.log("Reading task:", taskId);
+    commands.readTask(commandsDeps, taskId);
   });
 
 // Update command group
