@@ -98,8 +98,8 @@ newCmd
   .requiredOption("-i, --task-id <taskId>", "Task ID")
   .requiredOption("-c, --content <content>", "Followup content")
   .action((options) => {
-    // TODO: Implement followup creation logic
     console.log("Creating new followup:", options);
+    commands.addFollowup(commandsDeps, options);
   });
 
 // List command
