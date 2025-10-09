@@ -52,6 +52,12 @@ const commandsDeps = {
     getViewByTaskId: (taskId) => {
       return libsqlDao.getViewByTaskId(libsqlDaoDeps, taskId);
     },
+    getViewsByProjectId: (payload) => {
+      return libsqlDao.getViewsByProjectId(libsqlDaoDeps, payload);
+    },
+    getNextTaskNumber: (projectId) => {
+      return libsqlDao.getNextTaskNumber(libsqlDaoDeps, projectId);
+    },
   },
 };
 
@@ -117,8 +123,8 @@ program
   .requiredOption("-p, --project <projectId>", "Project ID")
   .option("-s, --status <statuses>", "Filter by status (comma-separated)")
   .action((options) => {
-    // TODO: Implement task listing logic
     console.log("Listing tasks:", options);
+    commands.listTasks(commandsDeps, options);
   });
 
 // Read command

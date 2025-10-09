@@ -117,3 +117,61 @@ export async function getViewByTaskId(deps, taskId) {
 
   return deserialize(result.rows[0].data);
 }
+
+export async function getViewsByProjectId(deps, payload) {
+  const { db, deserialize } = deps;
+  const { projectId, statuses } = payload;
+
+  const result = await db.execute({
+    sql: "SELECT data FROM view WHERE key LIKE ?",
+    args: [`task:%`],
+  });
+
+  if (result.rows.length === 0) {
+    return [];
+  }
+
+  let tasks = result.rows.map((row) => deserialize(row.data));
+
+  tasks = tasks.filter((task) => task.projectId === projectId);
+
+  if (statuses && statuses.length > 0) {
+    tasks = tasks.filter((task) => statuses.includes(task.status));
+  }
+
+  return tasks;
+}
+
+export async function getNextTaskNumber(deps, projectId) {
+  const { db, deserialize } = deps;
+
+  const result = await db.execute({
+    sql: "SELECT data FROM view WHERE key LIKE ?",
+    args: [`task:%`],
+  });
+
+  if (result.rows.length === 0) {
+    return 1;
+  }
+
+  const tasks = result.rows
+    .map((row) => deserialize(row.data))
+    .filter((task) => task.projectId === projectId && task.taskId);
+
+  if (tasks.length === 0) {
+    return 1;
+  }
+
+  const numbers = tasks
+    .map((task) => {
+      const match = task.taskId.match(/^[A-Z]+-(\d+)$/);
+      return match ? parseInt(match[1], 10) : 0;
+    })
+    .filter((n) => n > 0);
+
+  if (numbers.length === 0) {
+    return 1;
+  }
+
+  return Math.max(...numbers) + 1;
+}
