@@ -220,12 +220,6 @@ export const listTasks = async (deps, payload) => {
       statuses,
     });
 
-    if (tasks.length === 0) {
-      console.log(JSON.stringify([], null, 2));
-      return [];
-    }
-
-    console.log(JSON.stringify(tasks, null, 2));
     return tasks;
   } catch (error) {
     console.error("Failed to list tasks:", error.message);

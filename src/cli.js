@@ -122,9 +122,12 @@ program
   .description("List tasks in a project")
   .requiredOption("-p, --project <projectId>", "Project ID")
   .option("-s, --status <statuses>", "Filter by status (comma-separated)")
-  .action((options) => {
+  .action(async (options) => {
     console.log("Listing tasks:", options);
-    commands.listTasks(commandsDeps, options);
+    const tasks = await commands.listTasks(commandsDeps, options);
+    if (tasks) {
+      console.log(JSON.stringify(tasks, null, 2));
+    }
   });
 
 // Read command
