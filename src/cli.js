@@ -11,6 +11,7 @@ import * as libsqlDao from "./dao/libsqlDao.js";
 import * as commands from "./commands.js";
 import { createLibSqlUmzug } from "umzug-libsql";
 import { createClient } from "@libsql/client";
+import { agent } from "./agent/agent.js";
 
 async function setupDB() {
   const { umzug } = createLibSqlUmzug({

@@ -1,6 +1,6 @@
 import { query } from "@anthropic-ai/claude-agent-sdk";
 
-async function runTestAgent() {
+export async function agent() {
   console.log("Starting test agent...\n");
 
   const result = query({
@@ -18,7 +18,7 @@ async function runTestAgent() {
   console.log("\nTest completed!");
 }
 
-runTestAgent().catch((error) => {
+agent().catch((error) => {
   console.error("Error:", error.message);
   process.exit(1);
 });
