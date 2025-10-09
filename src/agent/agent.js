@@ -1,7 +1,7 @@
 import { query } from "@anthropic-ai/claude-agent-sdk";
 
 export async function agent() {
-  console.log("Starting test agent...\n");
+  console.log("Starting claude agent...\n");
 
   const result = query({
     prompt: "Say hello and tell me what you can help me with in one sentence.",
@@ -17,8 +17,3 @@ export async function agent() {
 
   console.log("\nTest completed!");
 }
-
-agent().catch((error) => {
-  console.error("Error:", error.message);
-  process.exit(1);
-});

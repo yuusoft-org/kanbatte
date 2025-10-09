@@ -79,6 +79,15 @@ program
     setupDB();
   });
 
+// agent command
+program
+  .command("agent")
+  .description("Run Claude AI Agent")
+  .action(() => {
+    console.log("Running claude");
+    agent();
+  });
+
 // New command group
 const newCmd = program.command("new");
 
