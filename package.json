@@ -7,6 +7,7 @@
     "@types/bun": "latest"
   },
   "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.1.11",
     "@libsql/client": "^0.15.15",
     "@msgpack/msgpack": "^3.1.2",
     "commander": "^14.0.1",
@@ -16,6 +17,7 @@
   "scripts": {
     "kanbatte": "bun run src/cli.js",
     "setup": "bun run src/cli.js",
+    "test:agent": "bun run src/agent/agent.js",
     "lint": "bunx prettier src -c",
     "lint:fix": "bunx prettier src -w"
   }
