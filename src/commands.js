@@ -14,7 +14,9 @@ export const addTask = async (deps, payload) => {
     return;
   }
 
-  const taskId = generateId();
+  const taskNumber = await libsqlDao.getNextTaskNumber(payload.project);
+  const taskId = `${payload.project}-${taskNumber}`;
+
   const taskData = {
     title: payload.title,
     description: payload.description || "",
@@ -30,8 +32,8 @@ export const addTask = async (deps, payload) => {
   });
 
   try {
-    const payload = { entityId: taskId, eventData };
-    await libsqlDao.appendEvent(payload);
+    const appendPayload = { entityId: taskId, eventData };
+    await libsqlDao.appendEvent(appendPayload);
     await libsqlDao.computeAndSaveView({ taskId });
 
     console.log("Task created successfully!" + ` Task ID: ${taskId}`);
@@ -196,6 +198,31 @@ export const readTask = async (deps, taskId) => {
     return taskData;
   } catch (error) {
     console.error("Failed to read task:", error.message);
+    throw error;
+  }
+};
+
+export const listTasks = async (deps, payload) => {
+  const { libsqlDao } = deps;
+
+  if (!payload.project) {
+    console.error("Error: Project ID is required (use -p or --project)");
+    return;
+  }
+
+  try {
+    const statuses = payload.status
+      ? payload.status.split(",").map((s) => s.trim())
+      : null;
+
+    const tasks = await libsqlDao.getViewsByProjectId({
+      projectId: payload.project,
+      statuses,
+    });
+
+    return tasks;
+  } catch (error) {
+    console.error("Failed to list tasks:", error.message);
     throw error;
   }
 };

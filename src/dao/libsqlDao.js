@@ -117,3 +117,48 @@ export async function getViewByTaskId(deps, taskId) {
 
   return deserialize(result.rows[0].data);
 }
+
+export async function getViewsByProjectId(deps, payload) {
+  const { db, deserialize } = deps;
+  const { projectId, statuses } = payload;
+
+  const result = await db.execute({
+    sql: "SELECT data FROM view WHERE key LIKE ?",
+    args: [`task:${projectId}-%`],
+  });
+
+  if (result.rows.length === 0) {
+    return [];
+  }
+
+  const tasks = result.rows
+    .map((row) => deserialize(row.data))
+    .filter((task) => {
+      if (!statuses || statuses.length === 0) return true;
+      return statuses.includes(task.status);
+    });
+
+  return tasks;
+}
+
+export async function getNextTaskNumber(deps, projectId) {
+  const { db } = deps;
+
+  const result = await db.execute({
+    sql: "SELECT key FROM view WHERE key LIKE ? ORDER BY created_at DESC LIMIT 1",
+    args: [`task:${projectId}-%`],
+  });
+
+  if (result.rows.length === 0) {
+    return 1;
+  }
+
+  const latestKey = result.rows[0].key;
+  const match = latestKey.match(/^task:[A-Z]+-(\d+)$/);
+
+  if (!match) {
+    return 1;
+  }
+
+  return parseInt(match[1], 10) + 1;
+}
