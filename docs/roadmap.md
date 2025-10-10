@@ -59,9 +59,9 @@ Fixes for future -
 
 ## LLM
 
-- [ ] setup a hello world agent sdk: https://docs.claude.com/en/api/agent-sdk/typescript (dont integrate with tasks for now)
+- [X] setup a hello world agent sdk: https://docs.claude.com/en/api/agent-sdk/typescript (dont integrate with tasks for now)
   - you should be able to run test cli. that will just call claude code, and then console lot the response.
-- [ ] create a cli to:
+- [X] create a cli to:
   - take 1 task in status `ready`
   - call claude code with the title and description of the task.
   - get all response from claude code and create a comment for the task

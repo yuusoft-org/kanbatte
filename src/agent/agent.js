@@ -1,12 +1,29 @@
 import { query } from "@anthropic-ai/claude-agent-sdk";
+import * as commands from "../commands.js";
 
-export async function agent() {
-  console.log("Starting claude agent...\n");
+export async function agent(deps) {
+  const { libsqlDao } = deps;
 
-  const result = query({
-    prompt: "Say hello and tell me what you can help me with in one sentence.",
-  });
-  console.log(result);
+  const readyTasks = await libsqlDao.getTasksByStatus("ready");
+
+  if (readyTasks.length === 0) {
+    console.log("No tasks with status 'ready' found");
+    return;
+  }
+
+  const task = readyTasks[0];
+  console.log(`Running agent for task: ${task.taskId}`);
+  console.log(`Title: ${task.title}\n`);
+
+  const prompt = `Analyze this task and provide a brief plan or approach. Do not implement anything, do not read files, just provide your analysis based on the task description.
+
+Task: ${task.title}
+Description: ${task.description}
+
+Provide a brief response (2-3 sentences) with your analysis.`;
+
+  const result = query({ prompt });
+  let agentResponse = "";
 
   for await (const message of result) {
     if (message.type === "assistant") {
@@ -14,12 +31,20 @@ export async function agent() {
         .filter((c) => c.type === "text")
         .map((c) => c.text)
         .join("");
-      console.log("Agent:", text);
-    } else if (message.type === "result") {
-      console.log("\nCost: $" + message.total_cost_usd);
-      console.log("Duration:", message.duration_ms + "ms");
+      agentResponse += text + "\n";
+      console.log(text);
     }
   }
 
-  console.log("\nTest completed!");
+  await commands.addComment(deps, {
+    taskId: task.taskId,
+    content: agentResponse.trim(),
+  });
+
+  await commands.updateTask(deps, {
+    taskId: task.taskId,
+    status: "review",
+  });
+
+  console.log(`\nTask ${task.taskId} moved to review`);
 }
