@@ -162,3 +162,22 @@ export async function getNextTaskNumber(deps, projectId) {
 
   return parseInt(match[1], 10) + 1;
 }
+
+export async function getTasksByStatus(deps, status) {
+  const { db, deserialize } = deps;
+
+  const result = await db.execute({
+    sql: "SELECT data FROM view WHERE key LIKE ?",
+    args: ["task:%"],
+  });
+
+  if (result.rows.length === 0) {
+    return [];
+  }
+
+  const tasks = result.rows
+    .map((row) => deserialize(row.data))
+    .filter((task) => task.status === status);
+
+  return tasks;
+}

@@ -59,6 +59,9 @@ const commandsDeps = {
     getNextTaskNumber: (projectId) => {
       return libsqlDao.getNextTaskNumber(libsqlDaoDeps, projectId);
     },
+    getTasksByStatus: (status) => {
+      return libsqlDao.getTasksByStatus(libsqlDaoDeps, status);
+    },
   },
 };
 
@@ -82,10 +85,9 @@ program
 // agent command
 program
   .command("agent")
-  .description("Run Claude AI Agent")
+  .description("Run agent on a ready task")
   .action(async () => {
-    console.log("Running claude");
-    await agent();
+    await agent(commandsDeps);
   });
 
 // New command group
