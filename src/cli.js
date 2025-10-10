@@ -11,6 +11,7 @@ import * as libsqlDao from "./dao/libsqlDao.js";
 import * as commands from "./commands.js";
 import { createLibSqlUmzug } from "umzug-libsql";
 import { createClient } from "@libsql/client";
+import { agent } from "./agent/agent.js";
 
 async function setupDB() {
   const { umzug } = createLibSqlUmzug({
@@ -76,6 +77,15 @@ program
   .action((options) => {
     console.log("Setting up database for kanbatte");
     setupDB();
+  });
+
+// agent command
+program
+  .command("agent")
+  .description("Run Claude AI Agent")
+  .action(async () => {
+    console.log("Running claude");
+    await agent();
   });
 
 // New command group
