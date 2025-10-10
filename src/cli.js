@@ -83,9 +83,9 @@ program
 program
   .command("agent")
   .description("Run Claude AI Agent")
-  .action(() => {
+  .action(async () => {
     console.log("Running claude");
-    agent();
+    await agent();
   });
 
 // New command group
