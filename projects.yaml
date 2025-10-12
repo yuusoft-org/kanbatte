@@ -1,0 +1,5 @@
+- projectId: KB
+  name: Kanbatte
+  repository: https://github.com/yuusoft-org/kanbatte.git
+  description: |
+    CLI tool for managing AI agent tasks using Kanban workflow
