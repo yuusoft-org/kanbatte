@@ -1,8 +1,25 @@
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import * as commands from "../commands.js";
+import { setupWorktree } from "../utils/git.js";
 
 export async function agent(deps) {
   const { libsqlDao } = deps;
+
+  const options = {
+    canUseTool: (toolName, inputData) => {
+      // if (toolName === "Edit" || toolName === "Write") {
+      return {
+        behavior: "allow",
+        updatedInput: inputData,
+      };
+      // }
+
+      // return {
+      //   behavior: "ask",
+      //   updatedInput: inputData,
+      // };
+    },
+  };
 
   const readyTasks = await libsqlDao.getTasksByStatus("ready");
 
@@ -15,14 +32,22 @@ export async function agent(deps) {
   console.log(`Running agent for task: ${task.taskId}`);
   console.log(`Title: ${task.title}\n`);
 
-  const prompt = `Analyze this task and provide a brief plan or approach. Do not implement anything, do not read files, just provide your analysis based on the task description.
+  // Setup git worktree
+  const worktreePath = await setupWorktree(task.taskId);
+  console.log(`\nWorktree ready at: ${worktreePath}\n`);
 
-Task: ${task.title}
-Description: ${task.description}
+  const systemPrompt = `You are working on task ${task.taskId}: ${task.title}
+Current working directory: ${worktreePath}
+Task status: ${task.status}
 
-Provide a brief response (2-3 sentences) with your analysis.`;
+Work on implementing this task. You can read files, write code, and make changes.`;
 
-  const result = query({ prompt });
+  const result = query({
+    prompt: `${systemPrompt}\n\nTask Description: ${task.description}`,
+    options,
+    cwd: worktreePath,
+  });
+
   let agentResponse = "";
 
   for await (const message of result) {

@@ -12,6 +12,7 @@
     "@msgpack/msgpack": "^3.1.2",
     "commander": "^14.0.1",
     "crypto": "^1.0.1",
+    "js-yaml": "^4.1.0",
     "umzug-libsql": "^0.0.1"
   },
   "scripts": {
