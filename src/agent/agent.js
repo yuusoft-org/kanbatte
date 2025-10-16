@@ -1,23 +1,17 @@
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import * as commands from "../commands.js";
 import { setupWorktree } from "../utils/git.js";
+import { commitAndPush, createPR } from "../utils/gitPr.js";
 
 export async function agent(deps) {
   const { libsqlDao } = deps;
 
   const options = {
     canUseTool: (toolName, inputData) => {
-      // if (toolName === "Edit" || toolName === "Write") {
       return {
         behavior: "allow",
         updatedInput: inputData,
       };
-      // }
-
-      // return {
-      //   behavior: "ask",
-      //   updatedInput: inputData,
-      // };
     },
   };
 
@@ -59,6 +53,29 @@ Work on implementing this task. You can read files, write code, and make changes
       agentResponse += text + "\n";
       console.log(text);
     }
+  }
+
+  // Commit and push changes
+  console.log("\n--- Git Operations ---\n");
+  try {
+    const branch = await commitAndPush(
+      worktreePath,
+      task.taskId,
+      task.title,
+    );
+
+    if (branch) {
+      const prUrl = await createPR(
+        worktreePath,
+        task.taskId,
+        task.title,
+        task.description,
+      );
+      agentResponse += `\n\nPR created: ${prUrl}`;
+    }
+  } catch (error) {
+    console.error(`Git operations failed: ${error.message}`);
+    agentResponse += `\n\nGit operations failed: ${error.message}`;
   }
 
   await commands.addComment(deps, {
