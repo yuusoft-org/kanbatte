@@ -78,27 +78,47 @@ Fixes for future -
   - [ ] when creating a task. check first if project id exists
 
 ```yaml
-- projectId: SP
-  name: Spinoza
-  repository: git@github.com:han4wluc/spinoza.git (optional)
-  description: |
-    Data collection library
-
 - projectId: RC
   name: RouteVN Creator Client
   repository: git@github.com:yuusoft-org/routevn-creator-client.git
   description: |
     Client code for RouteVN Creator
-
 - projectId: YA
   name: yahtml
   repository: git@github.com:yuusoft-org/yahtml.git
   description: |
     yahtml project
-
 - projectId: RG
   name: Route Graphics
   repository: git@github.com:yuusoft-org/route-graphics.git
   description: |
     Route graphics lib
 ```
+
+
+
+## 2025-10-17 update
+
+- [ ] remove logs.
+- [ ] cli result should support json or markdown/ascii format output
+- [ ] in new folder. running migrations. not finding migration files.
+```js
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+// Recreate __filename and __dirname in ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Example: Import or read another file relative to this file
+const relativePath = join(__dirname, '../data/config.json');
+
+console.log('Current file:', __filename);
+console.log('Current dir:', __dirname);
+console.log('Relative path:', relativePath);
+```
+- [ ] projects move to db instead of using yaml file
+
+
+
+
