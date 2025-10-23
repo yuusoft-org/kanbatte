@@ -21,8 +21,8 @@ function getRepoName(gitUrl) {
 async function ensureRepo(gitUrl, repoPath) {
   try {
     await access(join(repoPath, ".git"));
-    console.log(`Repo exists, pulling latest...`);
-    await execAsync("git pull", { cwd: repoPath });
+    console.log(`Repo exists, fetching latest...`);
+    await execAsync("git fetch origin", { cwd: repoPath });
   } catch {
     console.log(`Cloning ${gitUrl}...`);
     const parent = dirname(repoPath);
@@ -65,11 +65,10 @@ async function createWorktree(repoPath, worktreePath, taskId) {
       });
       console.log(`Using existing branch ${branch}`);
     } catch {
-      await execAsync(`git fetch origin main:main`, { cwd: repoPath });
-      await execAsync(`git worktree add -b ${branch} ${worktreePath} main`, {
+      await execAsync(`git worktree add -b ${branch} ${worktreePath} origin/main`, {
         cwd: repoPath,
       });
-      console.log(`Created worktree from main`);
+      console.log(`Created worktree from origin/main`);
     }
   }
 }
