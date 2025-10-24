@@ -95,13 +95,12 @@ Fixes for future -
     Route graphics lib
 ```
 
-
-
 ## 2025-10-17 update
 
-- [ ] remove logs.
-- [ ] cli result should support json or markdown/ascii format output
-- [ ] in new folder. running migrations. not finding migration files.
+- [X] remove logs.
+- [X] cli result should support json or markdown/ascii format output
+- [X] in new folder. running migrations. not finding migration files.
+
 ```js
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -117,8 +116,5 @@ console.log('Current file:', __filename);
 console.log('Current dir:', __dirname);
 console.log('Relative path:', relativePath);
 ```
+
 - [ ] projects move to db instead of using yaml file
-
-
-
-

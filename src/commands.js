@@ -1,6 +1,5 @@
 export const addTask = async (deps, payload) => {
-  const { db, generateId, serialize, libsqlDao } = deps;
-  console.log("running commands.addTask", payload);
+  const { db, generateId, serialize, libsqlDao, formatOutput } = deps;
 
   if (!payload.title) {
     console.error(
@@ -49,7 +48,7 @@ export const addTask = async (deps, payload) => {
 };
 
 export const addComment = async (deps, payload) => {
-  const { generateId, serialize, libsqlDao } = deps;
+  const { generateId, serialize, libsqlDao, formatOutput } = deps;
 
   if (!payload.taskId) {
     console.error("Error: Task ID is required (use -i or --task-id)");
@@ -89,7 +88,7 @@ export const addComment = async (deps, payload) => {
 };
 
 export const updateTask = async (deps, payload) => {
-  const { serialize, libsqlDao } = deps;
+  const { serialize, libsqlDao, formatOutput } = deps;
 
   if (!payload.taskId) {
     console.error("Error: Task ID is required (use -i or --task-id)");
@@ -139,7 +138,7 @@ export const updateTask = async (deps, payload) => {
 };
 
 export const addFollowup = async (deps, payload) => {
-  const { generateId, serialize, libsqlDao } = deps;
+  const { generateId, serialize, libsqlDao, formatOutput } = deps;
 
   if (!payload.taskId) {
     console.error("Error: Task ID is required (use -i or --task-id)");
@@ -178,8 +177,8 @@ export const addFollowup = async (deps, payload) => {
   }
 };
 
-export const readTask = async (deps, taskId) => {
-  const { libsqlDao } = deps;
+export const readTask = async (deps, taskId, format = "table") => {
+  const { libsqlDao, formatOutput } = deps;
 
   if (!taskId) {
     console.error("Error: Task ID is required");
@@ -194,7 +193,7 @@ export const readTask = async (deps, taskId) => {
       return;
     }
 
-    console.log(JSON.stringify(taskData, null, 2));
+    formatOutput(taskData, format, "read");
     return taskData;
   } catch (error) {
     console.error("Failed to read task:", error.message);
@@ -203,7 +202,7 @@ export const readTask = async (deps, taskId) => {
 };
 
 export const listTasks = async (deps, payload) => {
-  const { libsqlDao } = deps;
+  const { libsqlDao, formatOutput } = deps;
 
   if (!payload.project) {
     console.error("Error: Project ID is required (use -p or --project)");

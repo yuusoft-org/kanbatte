@@ -12,6 +12,7 @@ import * as commands from "./commands.js";
 import { createLibSqlUmzug } from "umzug-libsql";
 import { createClient } from "@libsql/client";
 import { agent } from "./agent/agent.js";
+import { formatOutput } from "./utils/output.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = join(__dirname, "..");
@@ -47,6 +48,7 @@ const commandsDeps = {
   serialize,
   deserialize,
   generateId,
+  formatOutput,
   libsqlDao: {
     appendEvent: (payload) => {
       return libsqlDao.appendEvent(libsqlDaoDeps, payload);
@@ -106,7 +108,6 @@ newCmd
   .option("--description <description>", "Task description")
   .option("-f, --file <path>", "Create task from markdown file")
   .action((options) => {
-    console.log("Creating new task:", options);
     commands.addTask(commandsDeps, options);
   });
 
@@ -117,7 +118,6 @@ newCmd
   .requiredOption("-i, --task-id <taskId>", "Task ID")
   .requiredOption("-c, --content <content>", "Comment content")
   .action((options) => {
-    console.log("Creating new comment:", options);
     commands.addComment(commandsDeps, options);
   });
 
@@ -128,7 +128,6 @@ newCmd
   .requiredOption("-i, --task-id <taskId>", "Task ID")
   .requiredOption("-c, --content <content>", "Followup content")
   .action((options) => {
-    console.log("Creating new followup:", options);
     commands.addFollowup(commandsDeps, options);
   });
 
@@ -138,11 +137,15 @@ program
   .description("List tasks in a project")
   .requiredOption("-p, --project <projectId>", "Project ID")
   .option("-s, --status <statuses>", "Filter by status (comma-separated)")
+  .option(
+    "-f, --format <format>",
+    "Output format: table, json, markdown",
+    "table",
+  )
   .action(async (options) => {
-    console.log("Listing tasks:", options);
     const tasks = await commands.listTasks(commandsDeps, options);
     if (tasks) {
-      console.log(JSON.stringify(tasks, null, 2));
+      commandsDeps.formatOutput(tasks, options.format, "list");
     }
   });
 
@@ -151,8 +154,13 @@ program
   .command("read")
   .description("Read and display a specific task")
   .argument("<taskId>", "Task ID")
-  .action((taskId) => {
-    commands.readTask(commandsDeps, taskId);
+  .option(
+    "-f, --format <format>",
+    "Output format: table, json, markdown",
+    "table",
+  )
+  .action((taskId, options) => {
+    commands.readTask(commandsDeps, taskId, options.format);
   });
 
 // Update command group
@@ -167,7 +175,6 @@ updateCmd
   .option("-t, --title <title>", "New title")
   .option("--description <description>", "New description")
   .action((options) => {
-    console.log("Updating task:", options);
     commands.updateTask(commandsDeps, options);
   });
 
