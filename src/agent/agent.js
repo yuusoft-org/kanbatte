@@ -26,7 +26,7 @@ export async function agent(deps) {
   console.log(`Title: ${task.title}\n`);
 
   // Setup git worktree
-  const worktreePath = await setupWorktree(task.taskId);
+  const worktreePath = await setupWorktree(task.taskId, libsqlDao);
   console.log(`\nWorktree ready at: ${worktreePath}\n`);
 
   const systemPrompt = `You are working on task ${task.taskId}: ${task.title}

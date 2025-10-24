@@ -1,5 +1,5 @@
 export const addTask = async (deps, payload) => {
-  const { db, generateId, serialize, libsqlDao, formatOutput } = deps;
+  const { serialize, libsqlDao } = deps;
 
   if (!payload.title) {
     console.error(
@@ -33,7 +33,7 @@ export const addTask = async (deps, payload) => {
   try {
     const appendPayload = { entityId: taskId, eventData };
     await libsqlDao.appendEvent(appendPayload);
-    await libsqlDao.computeAndSaveView({ taskId });
+    await libsqlDao.computeAndSaveView({ id: taskId });
 
     console.log("Task created successfully!" + ` Task ID: ${taskId}`);
     return { taskId, ...taskData };
@@ -77,7 +77,7 @@ export const addComment = async (deps, payload) => {
   try {
     const appendPayload = { entityId: payload.taskId, eventData };
     await libsqlDao.appendEvent(appendPayload);
-    await libsqlDao.computeAndSaveView({ taskId: payload.taskId });
+    await libsqlDao.computeAndSaveView({ id: payload.taskId });
 
     console.log("Comment created successfully!", { commentId });
     return commentData;
@@ -124,7 +124,7 @@ export const updateTask = async (deps, payload) => {
       eventData,
     };
     await libsqlDao.appendEvent(appendPayload);
-    await libsqlDao.computeAndSaveView({ taskId: payload.taskId });
+    await libsqlDao.computeAndSaveView({ id: payload.taskId });
 
     console.log("Task updated successfully!", {
       taskId: payload.taskId,
@@ -167,7 +167,7 @@ export const addFollowup = async (deps, payload) => {
   try {
     const appendPayload = { entityId: payload.taskId, eventData };
     await libsqlDao.appendEvent(appendPayload);
-    await libsqlDao.computeAndSaveView({ taskId: payload.taskId });
+    await libsqlDao.computeAndSaveView({ id: payload.taskId });
 
     console.log("Followup created successfully!", { followupId });
     return followupData;
@@ -222,6 +222,56 @@ export const listTasks = async (deps, payload) => {
     return tasks;
   } catch (error) {
     console.error("Failed to list tasks:", error.message);
+    throw error;
+  }
+};
+
+export const addProject = async (deps, payload) => {
+  const { serialize, libsqlDao } = deps;
+
+  if (!payload.projectId) {
+    console.error("Error: Project ID is required (use -p or --project-id)");
+    return;
+  }
+
+  if (!payload.name) {
+    console.error("Error: Project name is required (use -n or --name)");
+    return;
+  }
+
+  const existing = await libsqlDao.getProjectById(payload.projectId);
+  if (existing) {
+    console.error(
+      `Error: Project with ID '${payload.projectId}' already exists`,
+    );
+    return;
+  }
+
+  const projectData = {
+    projectId: payload.projectId,
+    name: payload.name,
+    repository: payload.repository || "",
+    description: payload.description || "",
+  };
+
+  const eventData = serialize({
+    type: "project_created",
+    projectId: payload.projectId,
+    data: projectData,
+    timestamp: Date.now(),
+  });
+
+  try {
+    const appendPayload = { entityId: payload.projectId, eventData };
+    await libsqlDao.appendEvent(appendPayload);
+    await libsqlDao.computeAndSaveView({ id: payload.projectId });
+
+    console.log("Project created successfully!", {
+      projectId: payload.projectId,
+    });
+    return projectData;
+  } catch (error) {
+    console.error("Failed to create project:", error.message);
     throw error;
   }
 };
