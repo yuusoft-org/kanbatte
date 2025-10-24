@@ -21,9 +21,9 @@ export async function fetchEventsByTaskId(deps, taskId) {
 
 export async function computeAndSaveView(deps, payload) {
   const { db, generateId, deserialize, serialize } = deps;
-  const { taskId } = payload;
+  const { id } = payload;
 
-  const events = await fetchEventsByTaskId(deps, taskId);
+  const events = await fetchEventsByTaskId(deps, id);
 
   if (events.length === 0) {
     return null;
@@ -35,15 +35,15 @@ export async function computeAndSaveView(deps, payload) {
 
   if (firstEvent.type === "project_created") {
     state = {
-      projectId: taskId,
+      projectId: id,
       name: "",
       repository: "",
       description: "",
     };
-    viewKey = `project:${taskId}`;
+    viewKey = `project:${id}`;
   } else {
     state = {
-      taskId: taskId,
+      taskId: id,
       title: "",
       description: "",
       status: "todo",
@@ -51,7 +51,7 @@ export async function computeAndSaveView(deps, payload) {
       comments: [],
       followups: [],
     };
-    viewKey = `task:${taskId}`;
+    viewKey = `task:${id}`;
   }
 
   let lastEventId = null;

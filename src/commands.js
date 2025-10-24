@@ -33,7 +33,7 @@ export const addTask = async (deps, payload) => {
   try {
     const appendPayload = { entityId: taskId, eventData };
     await libsqlDao.appendEvent(appendPayload);
-    await libsqlDao.computeAndSaveView({ taskId });
+    await libsqlDao.computeAndSaveView({ id: taskId });
 
     console.log("Task created successfully!" + ` Task ID: ${taskId}`);
     return { taskId, ...taskData };
@@ -77,7 +77,7 @@ export const addComment = async (deps, payload) => {
   try {
     const appendPayload = { entityId: payload.taskId, eventData };
     await libsqlDao.appendEvent(appendPayload);
-    await libsqlDao.computeAndSaveView({ taskId: payload.taskId });
+    await libsqlDao.computeAndSaveView({ id: payload.taskId });
 
     console.log("Comment created successfully!", { commentId });
     return commentData;
@@ -124,7 +124,7 @@ export const updateTask = async (deps, payload) => {
       eventData,
     };
     await libsqlDao.appendEvent(appendPayload);
-    await libsqlDao.computeAndSaveView({ taskId: payload.taskId });
+    await libsqlDao.computeAndSaveView({ id: payload.taskId });
 
     console.log("Task updated successfully!", {
       taskId: payload.taskId,
@@ -167,7 +167,7 @@ export const addFollowup = async (deps, payload) => {
   try {
     const appendPayload = { entityId: payload.taskId, eventData };
     await libsqlDao.appendEvent(appendPayload);
-    await libsqlDao.computeAndSaveView({ taskId: payload.taskId });
+    await libsqlDao.computeAndSaveView({ id: payload.taskId });
 
     console.log("Followup created successfully!", { followupId });
     return followupData;
@@ -264,7 +264,7 @@ export const addProject = async (deps, payload) => {
   try {
     const appendPayload = { entityId: payload.projectId, eventData };
     await libsqlDao.appendEvent(appendPayload);
-    await libsqlDao.computeAndSaveView({ taskId: payload.projectId });
+    await libsqlDao.computeAndSaveView({ id: payload.projectId });
 
     console.log("Project created successfully!", {
       projectId: payload.projectId,
