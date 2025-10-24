@@ -216,3 +216,13 @@ export async function getProjectById(deps, projectId) {
 
   return deserialize(result.rows[0].data);
 }
+
+export async function taskExists(deps, taskId) {
+  const task = await getViewByTaskId(deps, taskId);
+  return task !== null;
+}
+
+export async function projectExists(deps, projectId) {
+  const project = await getProjectById(deps, projectId);
+  return project !== null;
+}

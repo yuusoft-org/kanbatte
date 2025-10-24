@@ -71,6 +71,12 @@ const commandsDeps = {
     getProjectById: (projectId) => {
       return libsqlDao.getProjectById(libsqlDaoDeps, projectId);
     },
+    taskExists: (taskId) => {
+      return libsqlDao.taskExists(libsqlDaoDeps, taskId);
+    },
+    projectExists: (projectId) => {
+      return libsqlDao.projectExists(libsqlDaoDeps, projectId);
+    },
   },
 };
 
