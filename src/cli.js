@@ -13,22 +13,26 @@ import { createLibSqlUmzug } from "umzug-libsql";
 import { createClient } from "@libsql/client";
 import { agent } from "./agent/agent.js";
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const projectRoot = join(__dirname, "..");
+const dbPath = join(projectRoot, "local.db");
+const migrationsPath = join(projectRoot, "db/migrations/*.sql");
+
 async function setupDB() {
   const { umzug } = createLibSqlUmzug({
-    url: "file:local.db",
-    glob: "db/migrations/*.sql",
+    url: `file:${dbPath}`,
+    glob: migrationsPath,
   });
 
   await umzug.up();
 }
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageJson = JSON.parse(
   readFileSync(join(__dirname, "../package.json"), "utf8"),
 );
 
 const config = {
-  url: "file:local.db",
+  url: `file:${dbPath}`,
 };
 const db = createClient(config);
 

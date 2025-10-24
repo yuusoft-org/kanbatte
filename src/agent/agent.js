@@ -7,17 +7,10 @@ export async function agent(deps) {
 
   const options = {
     canUseTool: (toolName, inputData) => {
-      // if (toolName === "Edit" || toolName === "Write") {
       return {
         behavior: "allow",
         updatedInput: inputData,
       };
-      // }
-
-      // return {
-      //   behavior: "ask",
-      //   updatedInput: inputData,
-      // };
     },
   };
 
