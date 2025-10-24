@@ -68,6 +68,9 @@ const commandsDeps = {
     getTasksByStatus: (status) => {
       return libsqlDao.getTasksByStatus(libsqlDaoDeps, status);
     },
+    getProjectById: (projectId) => {
+      return libsqlDao.getProjectById(libsqlDaoDeps, projectId);
+    },
   },
 };
 
@@ -129,6 +132,18 @@ newCmd
   .requiredOption("-c, --content <content>", "Followup content")
   .action((options) => {
     commands.addFollowup(commandsDeps, options);
+  });
+
+// New project command
+newCmd
+  .command("project")
+  .description("Create a new project")
+  .requiredOption("-p, --project-id <projectId>", "Project ID")
+  .requiredOption("-n, --name <name>", "Project name")
+  .option("-r, --repository <repository>", "Repository URL")
+  .option("--description <description>", "Project description")
+  .action((options) => {
+    commands.addProject(commandsDeps, options);
   });
 
 // List command

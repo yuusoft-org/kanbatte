@@ -29,24 +29,45 @@ export async function computeAndSaveView(deps, payload) {
     return null;
   }
 
-  const state = {
-    taskId: taskId,
-    title: "",
-    description: "",
-    status: "todo",
-    projectId: "",
-    comments: [],
-    followups: [],
-  };
+  let state;
+  let viewKey;
+  let firstEvent = deserialize(events[0].data);
+
+  if (firstEvent.type === "project_created") {
+    state = {
+      projectId: taskId,
+      name: "",
+      repository: "",
+      description: "",
+    };
+    viewKey = `project:${taskId}`;
+  } else {
+    state = {
+      taskId: taskId,
+      title: "",
+      description: "",
+      status: "todo",
+      projectId: "",
+      comments: [],
+      followups: [],
+    };
+    viewKey = `task:${taskId}`;
+  }
 
   let lastEventId = null;
 
-  // Replay events to compute current state
   for (const row of events) {
     lastEventId = row.id;
     const event = deserialize(row.data);
 
     switch (event.type) {
+      case "project_created":
+        state.projectId = event.data.projectId;
+        state.name = event.data.name;
+        state.repository = event.data.repository;
+        state.description = event.data.description;
+        break;
+
       case "task_created":
         state.title = event.data.title;
         state.description = event.data.description;
@@ -79,7 +100,6 @@ export async function computeAndSaveView(deps, payload) {
     }
   }
 
-  const viewKey = `task:${taskId}`;
   const viewData = serialize(state);
   const now = Date.now();
 
@@ -180,4 +200,19 @@ export async function getTasksByStatus(deps, status) {
     .filter((task) => task.status === status);
 
   return tasks;
+}
+
+export async function getProjectById(deps, projectId) {
+  const { db, deserialize } = deps;
+
+  const result = await db.execute({
+    sql: "SELECT data FROM view WHERE key = ?",
+    args: [`project:${projectId}`],
+  });
+
+  if (result.rows.length === 0) {
+    return null;
+  }
+
+  return deserialize(result.rows[0].data);
 }

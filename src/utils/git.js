@@ -2,7 +2,6 @@ import { exec } from "child_process";
 import { promisify } from "util";
 import { access, mkdir } from "fs/promises";
 import { join, dirname, basename } from "path";
-import { getProject } from "./projects.js";
 
 const execAsync = promisify(exec);
 
@@ -73,9 +72,9 @@ async function createWorktree(repoPath, worktreePath, taskId) {
   }
 }
 
-export async function setupWorktree(taskId) {
+export async function setupWorktree(taskId, libsqlDao) {
   const prefix = getProjectPrefix(taskId);
-  const project = getProject(prefix);
+  const project = await libsqlDao.getProjectById(prefix);
 
   if (!project) throw new Error(`Project ${prefix} not found`);
   if (!project.repository)
