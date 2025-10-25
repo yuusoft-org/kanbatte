@@ -13,8 +13,8 @@ export const addTask = async (deps, payload) => {
     return;
   }
 
-  const projectExists = await libsqlDao.projectExists(payload.project);
-  if (!projectExists) {
+  const project = await libsqlDao.getProjectById(payload.project);
+  if (!project) {
     console.error(`Error: Project '${payload.project}' does not exist`);
     return;
   }
@@ -66,8 +66,8 @@ export const addComment = async (deps, payload) => {
     return;
   }
 
-  const exists = await libsqlDao.taskExists(payload.taskId);
-  if (!exists) {
+  const task = await libsqlDao.getViewByTaskId(payload.taskId);
+  if (!task) {
     console.error(`Error: Task '${payload.taskId}' does not exist`);
     return;
   }
@@ -107,8 +107,8 @@ export const updateTask = async (deps, payload) => {
     return;
   }
 
-  const exists = await libsqlDao.taskExists(payload.taskId);
-  if (!exists) {
+  const task = await libsqlDao.getViewByTaskId(payload.taskId);
+  if (!task) {
     console.error(`Error: Task '${payload.taskId}' does not exist`);
     return;
   }
@@ -168,8 +168,8 @@ export const addFollowup = async (deps, payload) => {
     return;
   }
 
-  const exists = await libsqlDao.taskExists(payload.taskId);
-  if (!exists) {
+  const task = await libsqlDao.getViewByTaskId(payload.taskId);
+  if (!task) {
     console.error(`Error: Task '${payload.taskId}' does not exist`);
     return;
   }
