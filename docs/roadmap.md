@@ -129,4 +129,48 @@ Bugs:
 - [ ] `bun run src/cli.js read JE-1`, gets stuck with table format. at comments.
 - [ ] Agent when starting is starting in the repo path instead of in the worktree project path. Claude Code has an sdk to set the inital path. need to use that
 - [ ] for git commit, git push. inject in the prompt. so when we pass the task description to the agent to work on , at the end we inject the prompt to tell it that at end of finishng the task do the git stuff
+- [ ] `bun run src/cli.js db` itself is running the migrations. instead it should only run on `db setup`
+
+Improvements:
+
+- [ ] update cli to follow new format in `CLI.md` that is `kanbatte task ...` and `kanbatte project ...` 
+- [ ] implement update, read, list for projects
+
+Discord Plugin:
+
+We have to implement in a way that the discord plugin is completely separate from kanbatte
+Create a folder `plugins/discord`, and we put all discord related code there. In future if anyone wants can implement more plugins for apps.
+
+I want to implmene the following in Discord:
+
+```bash
+# runs db setup. we create an event log and view table for discord. it has to specify its own migratons version table. table are completely separate from normal ones.
+kanbatte discord db setup
+
+# add channel. this will be stored in db.
+kanbatte discord channel add -p AA --c channel-id some_channel_id 
+kanbatte discord channel update -p AA --c channel-id some_channel_id 
+
+# start
+kanbatte discord start
+```
+
+Discord start will do the following:
+
+- fetch all events above last offset
+- filter only events related to task
+- just console log the event data for now. in future we will send real discord message
+- update the offset. needs to be stored in discord db event log.
+- wait 10 seconds
+- start agin from 1st step
+
+----
+
+- [ ] implment `discord db setup`
+- [ ] implment `discord channel add`
+- [ ] implment `discord channel update`
+- [ ] implment `discord start`
+- [ ] in `discord start`, for new task event. create a new discord thread. store in db relationship between thread and task id
+- [ ] for every task event, send discord message to the thread
+
 
