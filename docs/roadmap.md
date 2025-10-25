@@ -117,4 +117,16 @@ console.log('Current dir:', __dirname);
 console.log('Relative path:', relativePath);
 ```
 
-- [ ] projects move to db instead of using yaml file
+- [X] projects move to db instead of using yaml file
+
+
+
+## 2025-10-25 update
+
+Bugs:
+
+- [ ] Comment content has extra new lines. needs to be removed.
+- [ ] `bun run src/cli.js read JE-1`, gets stuck with table format. at comments.
+- [ ] Agent when starting is starting in the repo path instead of in the worktree project path. Claude Code has an sdk to set the inital path. need to use that
+- [ ] for git commit, git push. inject in the prompt. so when we pass the task description to the agent to work on , at the end we inject the prompt to tell it that at end of finishng the task do the git stuff
+
