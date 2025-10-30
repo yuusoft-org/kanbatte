@@ -1,29 +1,29 @@
 
 # Kanbatte CLI API
 
-Kanbatte is a task management for AI agents.
-There are 2 core concepts:
-`tasks` and `sessions`.
+Kanbatte is a task management system for AI agents.
 
-Tasks are stored in git itself under tasks folder. They are numbered tasks. Each task is just a markdown file.
+There are 2 core concepts: **tasks** and **sessions**.
 
+**Tasks** are stored in git under the tasks folder. They are numbered tasks, and each task is a markdown file.
 
-Sessions are the sessions with AI agents. Each session can usually create a task. or implmeent a task for example, or anything else, does not have to use a task.
-This data, we will store against a db/server for collaboration. could also be hosted locally if on need for collaboration.
+**Sessions** represent interactions with AI agents. Each session can create a task, implement a task, or perform any other action (tasks are not required). Session data is stored against a database/server for collaboration, or can be hosted locally if collaboration is not needed.
 
 
 ## Tasks
 
-Tasks are organized in the below structure.
-We envision that every repo will have a tasks folder. 
+Tasks are organized in the structure below. Every repository will have a tasks folder.
 
+### Design Considerations
 
-Design considerations:
-- we group into 000, 100, 200 ... 1000, 1100, folders so each holder can hold 100 tasks. it makes a bit more navigable for larger projects.
-- tasks start ast TASK-001.md instead of TASK-1.md. This is just for sake of sorting. folder sorting will break at the folder 1000, but that is ok. is a very low frequency thing. and still tollerable because folders are very few.
+- Tasks are grouped into folders (000, 100, 200, ..., 1000, 1100, etc.) so each folder can hold 100 tasks. This makes navigation easier for larger projects.
+- Tasks start as TASK-001.md instead of TASK-1.md for consistent sorting. Folder sorting will break at folder 1000, but this is acceptable as it's a rare occurrence and folders are few in number.
 
-Tasks have task types. user can specify any that you want. TASK/FEAT/BUG etc...
+### Task Types
 
+Tasks have configurable types. Users can specify any type they want: TASK, FEAT, BUG, etc.
+
+### Folder Structure
 
 ```
 tasks/config.yaml
@@ -42,22 +42,23 @@ tasks/TASK/
       TASK-200.md
 tasks/FEAT/
     000/
-      001.md
-      002.md
+      FEAT-001.md
+      FEAT-002.md
 tasks/BUG/
     000/
-      001.md
-      002.md
+      BUG-001.md
+      BUG-002.md
 ```
 
+### Task File Format
 
-example task file content
+Example task file content:
 
 ```md
 ---
 title: Task Title
 status: todo
-prioriti: low
+priority: low
 ---
 
 # Description
@@ -70,63 +71,62 @@ Description ...
 
 ```
 
-everything below description is free form, can add more sections as needed
+Everything below the description is freeform. You can add more sections as needed.
 
-status can be only `todo` or `done`. we don't store in-progress because it will be done by the session itself.
+**Status:** Can only be `todo` or `done`. We don't store `in-progress` because that is managed by the session itself.
 
-we may add more somethings later such as assignee
+**Priority:** Can be `low`, `medium`, or `high`.
 
-priority can be: `low`, `medium`, `high`
+Additional fields (such as assignee) may be added in the future.
 
 
 ### Tasks CLI
 
-## Commands
+#### Creating Tasks
 
-### Creating Tasks
-
-**Create a new task with inline parameters:**
+Create a new task with inline parameters:
 ```bash
-kanbatte task create -p 'TASK' -t 'title of the task' -d 'task description' -r 'high'
-# will create file with correct folder with correct content
+kanbatte task create TASK -t 'title of the task' -d 'task description' -p 'high'
+# Creates file in the correct folder with correct content
 
-kanbatte task create --type 'TASK' --title 'title of the task' --description 'task description' -priority 'high'
+kanbatte task create TASK --title 'title of the task' --description 'task description' --priority 'high'
 ```
 
-task type and title are required.
+**Required:** Task type (positional argument) and title (`-t` / `--title`) are required.
 
-description and priority are optional
+**Optional:** Description (`-d` / `--description`) and priority (`-p` / `--priority`) are optional.
 
-for create. basically need to look at folder and files to get the latest id, and create new one with correct id.
+For task creation, the system needs to look at existing folders and files to get the latest ID, then create a new task file with the correct ID.
 
 
-### Listing tasks
+#### Listing Tasks
 
-only need to print out as table, can support only 1 format for now.
+List tasks as a table (only one format supported for now):
 
 ```bash
-kanbatte task list -p 'TASK'
-# print out a table of taskId, status,  title
 
-kanbatte task list -p 'TASK' -s 'todo'
-# filter by status
 
-kanbatte task list -p 'TASK' -s 'todo' -r 'high,medium'
-# filter by status, and priority
+kanbatte task list
+# list all tasks
 
+kanbatte task list TASK
+# Prints a table with columns: taskId, status, title
+
+kanbatte task list TASK -s 'todo'
+# Filter by status
+
+kanbatte task list TASK -s 'todo' -p 'high,medium'
+# Filter by status and priority
 ```
 
-### Update tasks
+#### Updating Tasks
 
-Will just update the file content manually. This makes is much simpler
+Tasks are updated by editing the file content manually. This approach is much simpler.
 
 ```bash
-
 kanbatte task locate TASK-001
-
-## just a convenince method  will return the relative path of the task ./tasks/TASK/000/001.md
-## for example can do `kanbatte task locate TASK-001 | grep vim`
-
+# Convenience method that returns the relative path of the task: ./tasks/TASK/000/TASK-001.md
+# For example: kanbatte task locate TASK-001 | xargs vim
 ```
 
 
@@ -134,55 +134,58 @@ kanbatte task locate TASK-001
 
 ## Sessions
 
-Important: Projects are completely unrelated to task types.
-Each session needs to be attached to a project. Because in the project we have the git reposiotry information.
+**Important:** Projects are completely unrelated to task types. Each session needs to be attached to a project because the project contains the git repository information.
+
+### Managing Projects
 
 ```bash
+# Create a project
 kanbatte session project create -p project-name -r git@github.com:example/example.git -d description
-kanbatte session project create --project project-name --repository git@github.com:example/example.git --name project-name --description description
+kanbatte session project create --project project-name --repository git@github.com:example/example.git --description description
 
+# Update a project
 kanbatte session project update -p project-name -r git@github.com:example/example.git -d description
 
-kanbatte session project list # shows a table with those columns. project-name, repository, description
+# List projects (shows table with columns: project-name, repository, description)
+kanbatte session project list
 ```
 
 
-Sessions is used to structure agentic coding data, and make it useful, especially for collaboration, and build UI on top of it.
+### Session Queue
+
+Sessions are used to structure agentic coding data and make it useful, especially for collaboration and building UIs on top of it.
 
 ```bash
-
 kanbatte session queue -p project-name 'hey coding agent. Create a task to do ...'
-kanbatte session queue -p project-name  'hey coding agent. Start working on task TASK-001'
+kanbatte session queue -p project-name 'hey coding agent. Start working on task TASK-001'
 kanbatte session queue -p project-name 'hey coding agent. Create a task to do ...'
-# return id of the session
-
+# Returns the session ID
 ```
 
-A session id will be autogenerated from the server
+A session ID will be auto-generated by the server.
 
-Note this is not interactive. this will just make a call to the backend/db, and close immediately. it will create a session that is wating to be picked up.
-A separete process, in local or in serve where it has access to the coding agents, will see that there is a new session pending, and will pick it up for the agent to work on it.
-While the agent is working on it, it will update the progress by updating the content, and also the progress.
+**Note:** This is not interactive. It makes a call to the backend/database and closes immediately. It creates a session that is waiting to be picked up. A separate process (local or on server) with access to coding agents will see the pending session and pick it up for the agent to work on. While the agent is working, it will update the progress by updating the content and status.
 
 
-Commands for agent to use:
+### Commands for Agents
 
 ```bash
-kanbatte session append  -i 'session id' -m '[{...}]' # the json will be the copmletion API messages format
+kanbatte session append 'session id' -m '[{...}]'
+# The JSON will be in the completion API messages format
 ```
 
-This will be used for both user and agents. devs will use this API to ask more things
-
+This command is used by both users and agents. Developers will use this API to send additional messages.
 
 ```bash
-kanbatte session append -i 'session id' -t -m '[{...}]' 
-kanbatte session append --id 'session id' --stop --messages '[{...}]' 
+kanbatte session append 'session id' -t -m '[{...}]'
+kanbatte session append 'session id' --stop --messages '[{...}]'
 ```
 
-a `stop` option will tell the agent to stop working. and resume immediately so it will immediately pick up the last message sent by the user.
+The `--stop` option tells the agent to stop working and resume immediately, so it will pick up the last message sent by the user.
 
+#### Completion API Format
 
-Below if an example of the completion API format:
+Below is an example of the completion API format:
 
 ```json
 {
@@ -207,70 +210,75 @@ Below if an example of the completion API format:
 }
 ```
 
-Update session status
+### Session Status
 
 ```bash
-kanbatte session status -i 'session id' 'in-progress' # updates the status of the session
-kanbatte session status -i 'session id'  # just return the current status
+kanbatte session status 'session id' 'in-progress'
+# Updates the status of the session
+
+kanbatte session status 'session id'
+# Returns the current status
 ```
 
-session data structure:
+#### Session Data Structure
 
 ```js
-
 session.id
-
+session.project
 session.messages
-
 session.status
-
-
+session.createdAt
+session.updatedAt
 ```
 
-session status can be:
-- `ready`: initial status
-- `in-progress`: when agent starts working on it
-- `review`: when agent finish working and needs a person to review
-- `done`: person verifies all is good and moves to done
+#### Session Status Values
+
+- `ready`: Initial status
+- `in-progress`: Agent has started working on the session
+- `review`: Agent has finished working and needs a person to review
+- `done`: Person verifies all is good and marks as done
 
 
 
-View sessions. 
+### Viewing Sessions
 
 ```bash
-kanbatte session list -p project-name  # output a table in the terminal. with 3 columsn: session id, status, first sentence and last sentence, start date, last update date
+# List sessions (outputs a table with columns: session id, status, first sentence, last sentence, start date, last update date)
+kanbatte session list -p project-name
 
-kanbatte session list -p project-name  -s 'ready,in-progress'
+# Filter sessions by status
+kanbatte session list -p project-name -s 'ready,in-progress'
 
-kanbatte session view -i 'session id' # print out in markdown format
+# View a specific session (prints in markdown format)
+kanbatte session view 'session id'
 
-kanbatte session view -i 'session id' | less
+# View with pager
+kanbatte session view 'session id' | less
 ```
 
-Sessions should be implmented using [eventLog](./eventLog.md)
-Remove all previous unnecessary stuff like comments, followups etc...
+**Implementation Note:** Sessions should be implemented using [eventLog](./eventLog.md). Remove all previous unnecessary features like comments, followups, etc.
 
 
 
 ## Server
 
-
-Finanlly, this is to be run on the server side which will spawn an agent to work on the session
+Finally, this command runs on the server side and spawns an agent to work on sessions:
 
 ```bash
 kanbatte agent start
 ```
 
-This will do this:
+### Agent Process Flow
 
-- loop:
-  - check for all ready sessions
-  - pick first sessions:
-    - make sure repository is downloaded in ./repositories folder
-    - create a git worktree with the session id as branch name
-    - start coding agent under this worktree
-      - set session status as `in-progress`
-      - listen to all updates from agent, and send them to db. (same behavior as `kanbatte session append`)
-      - once done, set session status as `review`
+The agent runs in a continuous loop:
+
+1. Check for all sessions with `ready` status
+2. Pick the first session:
+   - Ensure the repository is downloaded in the `./repositories` folder
+   - Create a git worktree with the session ID as the branch name
+   - Start the coding agent within this worktree:
+     - Set session status to `in-progress`
+     - Listen to all updates from the agent and send them to the database (same behavior as `kanbatte session append`)
+     - Once done, set session status to `review`
 
 
