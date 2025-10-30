@@ -26,7 +26,6 @@ Tasks have configurable types. Users can specify any type they want: TASK, FEAT,
 ### Folder Structure
 
 ```
-tasks/config.yaml
 tasks/TASK/
     000/
       TASK-001.md
