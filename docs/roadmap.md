@@ -1,176 +1,294 @@
-# Roadmap
 
-- [X] Project docs setup
-- [ ] [In Progress] Complete CLI features
-- [ ] Connect to LLM & git worktrees
-- [ ] [Low Priority] Connect to Discord
-- [ ] Web UI
+# Kanbatte CLI API
 
-## Dev
+Kanbatte is a task management system for AI agents.
 
-- [ ] @han4wluc setup json schema validation
-- [ ] @han4wluc setup unit test https://github.com/yuusoft-org/puty
+There are 2 core concepts: **tasks** and **sessions**.
 
-## @aditya CLI implementation
+**Tasks** are stored in git under the tasks folder. They are numbered tasks, and each task is a markdown file.
 
-- [X] implement `kanbatte new task`
-- [X] implmeent db migrations using https://github.com/yuusoft-org/umzug-libsql
-- [X] implement update:
+**Sessions** represent interactions with AI agents. Each session can create a task, implement a task, or perform any other action (tasks are not required). Session data is stored against a database/server for collaboration, or can be hosted locally if collaboration is not needed.
+
+Follow (DEVELOPMENT.md)[../DEVELOPMENT.md] for technical requirements
+
+## Tasks
+
+Tasks are organized in the structure below. Every repository will have a tasks folder.
+
+### Design Considerations
+
+- Tasks are grouped into folders (000, 100, 200, ..., 1000, 1100, etc.) so each folder can hold 100 tasks. This makes navigation easier for larger projects.
+- Tasks start as TASK-001.md instead of TASK-1.md for consistent sorting. Folder sorting will break at folder 1000, but this is acceptable as it's a rare occurrence and folders are few in number.
+
+### Task Types
+
+Tasks have configurable types. Users can specify any type they want: TASK, FEAT, BUG, etc.
+
+### Folder Structure
+
+```
+tasks/TASK/
+    000/
+      TASK-001.md
+      TASK-002.md
+      ...
+      TASK-099.md
+    100/
+      TASK-100.md
+      TASK-101.md
+      ...
+      TASK-199.md
+    200/
+      TASK-200.md
+tasks/FEAT/
+    000/
+      FEAT-001.md
+      FEAT-002.md
+tasks/BUG/
+    000/
+      BUG-001.md
+      BUG-002.md
+```
+
+### Task File Format
+
+Example task file content:
+
+```md
+---
+title: Task Title
+status: todo
+priority: low
+---
+
+# Description
+
+Description ...
+
+# More sections
+
+...
+
+```
+
+Everything below the description is freeform. You can add more sections as needed.
+
+**Status:** Can only be `todo` or `done`. We don't store `in-progress` because that is managed by the session itself.
+
+**Priority:** Can be `low`, `medium`, or `high`.
+
+Additional fields (such as assignee) may be added in the future.
+
+
+### Tasks CLI
+
+#### Creating Tasks
+
+Create a new task with inline parameters:
+```bash
+kanbatte task create TASK -t 'title of the task' -d 'task description' -p 'high'
+# Creates file in the correct folder with correct content
+
+kanbatte task create TASK --title 'title of the task' --description 'task description' --priority 'high'
+```
+
+**Required:** Task type (positional argument) and title (`-t` / `--title`) are required.
+
+**Optional:** Description (`-d` / `--description`) and priority (`-p` / `--priority`) are optional.
+
+For task creation, the system needs to look at existing folders and files to get the latest ID, then create a new task file with the correct ID.
+
+
+#### Listing Tasks
+
+List tasks as a table (only one format supported for now):
 
 ```bash
-kanbatte update task -i ${taskId} -s ${status}
-kanbatte update task -i ${taskId} -t 'new title'
-kanbatte update task -i ${taskId} --title 'new title'
-kanbatte update task -i ${taskId} --description 'new description'
-kanbatte update task -i ${taskId} -s ${status} -t 'new title' --description 'new description'
+
+
+kanbatte task list
+# list all tasks
+
+kanbatte task list TASK
+# Prints a table with columns: taskId, status, title
+
+kanbatte task list TASK -s 'todo'
+# Filter by status
+
+kanbatte task list TASK -s 'todo' -p 'high,medium'
+# Filter by status and priority
 ```
 
-- [X] implement new comment
+#### Updating Tasks
+
+Tasks are updated by editing the file content manually. This approach is much simpler.
 
 ```bash
-# Create a new comment
-kanbatte new comment -i 'AI-001' -c 'This feature needs more testing before deployment'
+kanbatte task locate TASK-001
+# Convenience method that returns the relative path of the task: ./tasks/TASK/000/TASK-001.md
+# For example: kanbatte task locate TASK-001 | xargs vim
 ```
 
-- [X] implement new followup
+
+
+
+## Sessions
+
+**Important:** Projects are completely unrelated to task types. Each session needs to be attached to a project because the project contains the git repository information.
+
+### Managing Projects
 
 ```bash
-# Create a new followup
-kanbatte new followup -i 'AI-001' -c 'Scheduled code review for next sprint'
+# Create a project
+kanbatte session project create -p project-name -r git@github.com:example/example.git -d description
+kanbatte session project create --project project-name --repository git@github.com:example/example.git --description description
+
+# Update a project
+kanbatte session project update -p project-name -r git@github.com:example/example.git -d description
+
+# List projects (shows table with columns: project-name, repository, description)
+kanbatte session project list
 ```
 
-- [X] implement read (this will need to implmeent the view table)
+
+### Session Queue
+
+Sessions are used to structure agentic coding data and make it useful, especially for collaboration and building UIs on top of it.
 
 ```bash
-kanbatte read AI-001
+kanbatte session queue -p project-name 'hey coding agent. Create a task to do ...'
+kanbatte session queue -p project-name 'hey coding agent. Start working on task TASK-001'
+kanbatte session queue -p project-name 'hey coding agent. Create a task to do ...'
+# Returns the session ID
 ```
 
-- [X] implement list
+A session ID will be auto-generated by the server.
+
+**Note:** This is not interactive. It makes a call to the backend/database and closes immediately. It creates a session that is waiting to be picked up. A separate process (local or on server) with access to coding agents will see the pending session and pick it up for the agent to work on. While the agent is working, it will update the progress by updating the content and status.
+
+
+### Commands for Agents
 
 ```bash
-kanbatte list -p 'AI'
-kanbatte list -p 'AI' -s ready,in-progress
+kanbatte session append 'session id' -m '[{...}]'
+# The JSON will be in the completion API messages format
 ```
 
-Fixes for future -
+This command is used by both users and agents. Developers will use this API to send additional messages.
 
-- [ ] In update command, check whether a task exists with teh passed in taskId or not.
-- [X] task id should be like `AI-1` `AI-2` ... `AI-10`
-
-## LLM
-
-- [X] setup a hello world agent sdk: https://docs.claude.com/en/api/agent-sdk/typescript (dont integrate with tasks for now)
-  - you should be able to run test cli. that will just call claude code, and then console lot the response.
-- [X] create a cli to:
-  - take 1 task in status `ready`
-  - call claude code with the title and description of the task.
-  - get all response from claude code and create a comment for the task
-  - update task status to `review`
-- [ ] setup git work trees
-  - take 1 task in status `ready`
-  - git clone repo (get it from project's repository) if not already cloned
-  - create a worktree with folder name of the tasks id
-  - call claude code with the title and description of the task. with `cwd` inside the worktree
-  - get all response from claude code and create a comment for the task
-  - use llm to stage all git changes and push to git and create a PR (not 100% is to put this inside the prompt or keep it separate)
-  - update task status to `review`
-- [ ] setup projects. for now can just create a yaml file locally like this. and maybe we will store in db.
-  - [ ] when creating a task. check first if project id exists
-
-```yaml
-- projectId: RC
-  name: RouteVN Creator Client
-  repository: git@github.com:yuusoft-org/routevn-creator-client.git
-  description: |
-    Client code for RouteVN Creator
-- projectId: YA
-  name: yahtml
-  repository: git@github.com:yuusoft-org/yahtml.git
-  description: |
-    yahtml project
-- projectId: RG
-  name: Route Graphics
-  repository: git@github.com:yuusoft-org/route-graphics.git
-  description: |
-    Route graphics lib
+```bash
+kanbatte session append 'session id' -t -m '[{...}]'
+kanbatte session append 'session id' --stop --messages '[{...}]'
 ```
 
-## 2025-10-17 update
+The `--stop` option tells the agent to stop working and resume immediately, so it will pick up the last message sent by the user.
 
-- [X] remove logs.
-- [X] cli result should support json or markdown/ascii format output
-- [X] in new folder. running migrations. not finding migration files.
+#### Completion API Format
+
+Below is an example of the completion API format:
+
+```json
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a friendly assistant who explains things clearly."
+    },
+    {
+      "role": "user",
+      "content": "Explain quantum entanglement in simple terms."
+    },
+    {
+      "role": "assistant",
+      "content": "Quantum entanglement is when two particles become linked, so that the state of one instantly affects the other, no matter the distance between them."
+    },
+    {
+      "role": "user",
+      "content": "Can you give a real-world analogy?"
+    }
+  ],
+}
+```
+
+### Session Status
+
+```bash
+kanbatte session status 'session id' 'in-progress'
+# Updates the status of the session
+
+kanbatte session status 'session id'
+# Returns the current status
+```
+
+#### Session Data Structure
 
 ```js
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-// Recreate __filename and __dirname in ESM
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Example: Import or read another file relative to this file
-const relativePath = join(__dirname, '../data/config.json');
-
-console.log('Current file:', __filename);
-console.log('Current dir:', __dirname);
-console.log('Relative path:', relativePath);
+session.id
+session.project
+session.messages
+session.status
+session.createdAt
+session.updatedAt
 ```
 
-- [X] projects move to db instead of using yaml file
+#### Session Status Values
+
+- `ready`: Initial status
+- `in-progress`: Agent has started working on the session
+- `review`: Agent has finished working and needs a person to review
+- `done`: Person verifies all is good and marks as done
 
 
 
-## 2025-10-25 update
-
-Bugs:
-
-- [ ] Comment content has extra new lines. needs to be removed.
-- [ ] `bun run src/cli.js read JE-1`, gets stuck with table format. at comments.
-- [ ] Agent when starting is starting in the repo path instead of in the worktree project path. Claude Code has an sdk to set the inital path. need to use that
-- [ ] for git commit, git push. inject in the prompt. so when we pass the task description to the agent to work on , at the end we inject the prompt to tell it that at end of finishng the task do the git stuff
-- [ ] `bun run src/cli.js db` itself is running the migrations. instead it should only run on `db setup`
-
-Improvements:
-
-- [ ] update cli to follow new format in `CLI.md` that is `kanbatte task ...` and `kanbatte project ...` 
-- [ ] implement update, read, list for projects
-
-Discord Plugin:
-
-We have to implement in a way that the discord plugin is completely separate from kanbatte
-Create a folder `plugins/discord`, and we put all discord related code there. In future if anyone wants can implement more plugins for apps.
-
-I want to implmene the following in Discord:
+### Viewing Sessions
 
 ```bash
-# runs db setup. we create an event log and view table for discord. it has to specify its own migratons version table. table are completely separate from normal ones.
-kanbatte discord db setup
+# List sessions (outputs a table with columns: session id, status, first sentence, last sentence, start date, last update date)
+kanbatte session list -p project-name
 
-# add channel. this will be stored in db.
-kanbatte discord channel add -p AA --c channel-id some_channel_id 
-kanbatte discord channel update -p AA --c channel-id some_channel_id 
+# Filter sessions by status
+kanbatte session list -p project-name -s 'ready,in-progress'
 
-# start
-kanbatte discord start
+# View a specific session (prints in markdown format)
+kanbatte session view 'session id'
+
+# View with pager
+kanbatte session view 'session id' | less
 ```
 
-Discord start will do the following:
+**Implementation Note:** Sessions should be implemented using [eventLog](./eventLog.md). Remove all previous unnecessary features like comments, followups, etc.
 
-- fetch all events above last offset
-- filter only events related to task
-- just console log the event data for now. in future we will send real discord message
-- update the offset. needs to be stored in discord db event log.
-- wait 10 seconds
-- start agin from 1st step
 
-----
 
-- [ ] implment `discord db setup`
-- [ ] implment `discord channel add`
-- [ ] implment `discord channel update`
-- [ ] implment `discord start`
-- [ ] in `discord start`, for new task event. create a new discord thread. store in db relationship between thread and task id
-- [ ] for every task event, send discord message to the thread
+## Server
+
+Finally, this command runs on the server side and spawns an agent to work on sessions:
+
+```bash
+kanbatte agent start
+```
+
+### Agent Process Flow
+
+The agent runs in a continuous loop:
+
+1. Check for all sessions with `ready` status
+2. Pick the first session:
+   - Ensure the repository is downloaded in the `./repositories` folder
+   - Create a git worktree with the session ID as the branch name
+   - Start the coding agent within this worktree:
+     - Set session status to `in-progress`
+     - Listen to all updates from the agent and send them to the database (same behavior as `kanbatte session append`)
+     - Once done, set session status to `review`
+
+### Db setup
+
+Create db tables. is kind of already impletented.
+
+```bash
+kanbatte db setup
+```
+
+
 
 

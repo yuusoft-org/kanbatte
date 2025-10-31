@@ -63,9 +63,7 @@ CREATE INDEX idx_view_updated_at ON view(updated_at);
 ```
 
 Key patterns:
-- Tasks: `task:{taskId}` (e.g., `task:AI-001`)
-- Comments: `comment:{commentId}` (e.g., `comment:CM-123`)
-- Followups: `followup:{followupId}` (e.g., `followup:FU-456`)
+- Sessions: `session:{sessionId}` (e.g., `session:jfk32jlasd1`)
 
 ## Event Types
 
@@ -73,7 +71,7 @@ Events are stored as MessagePack-encoded JSON with the following structure:
 
 ```javascript
 {
-    type: 'task_created' | 'task_updated' | 'comment_added' | 'followup_added' | 'followup_updated',
+    type: 'session_created' | 'session_append' | 'session_update',
     taskId: 'string',
     data: {} // Event-specific payload
 }
@@ -82,12 +80,10 @@ Events are stored as MessagePack-encoded JSON with the following structure:
 Example event:
 ```json
 {
-    "type": "task_created",
-    "taskId": "AI-001",
+    "type": "session_created",
+    "id": "f3kj2383",
     "data": {
-        "title": "Research ML models",
-        "description": "Investigate latest transformer architectures",
-        "status": "ready"
+      ...
     }
 }
 ```
@@ -119,5 +115,21 @@ bun install
 
 2. Quick test: ``
 ```
-bun run src/cli.js new task -t hi
+bun run src/cli.js task list
 ```
+
+
+### Testing
+
+- Testing of logic and functions should use https://github.com/yuusoft-org/puty
+- Testing of logic that involve file system should use `puty` and `memfs`, refer to https://github.com/yuusoft-org/rettangoli/tree/main/packages/rettangoli-sites/spec
+- The above should test the functions directly, not the cli commands
+- For cli commands, we don't test this layer for now, maybe we will add later.
+
+
+
+
+
+
+
+
