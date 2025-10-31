@@ -9,6 +9,7 @@ There are 2 core concepts: **tasks** and **sessions**.
 
 **Sessions** represent interactions with AI agents. Each session can create a task, implement a task, or perform any other action (tasks are not required). Session data is stored against a database/server for collaboration, or can be hosted locally if collaboration is not needed.
 
+Follow (DEVELOPMENT.md)[../DEVELOPMENT.md] for technical requirements
 
 ## Tasks
 
