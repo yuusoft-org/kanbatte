@@ -280,4 +280,14 @@ The agent runs in a continuous loop:
      - Listen to all updates from the agent and send them to the database (same behavior as `kanbatte session append`)
      - Once done, set session status to `review`
 
+### Db setup
+
+Create db tables. is kind of already impletented.
+
+```bash
+kanbatte db setup
+```
+
+
+
 
