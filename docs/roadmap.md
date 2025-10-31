@@ -291,4 +291,11 @@ kanbatte db setup
 
 
 
+## Migration from current version
+
+- rename task to session
+- remove comments and followups
+- can keep projects, but need to update the cli
+- can keep current folder and files structure
+
 
