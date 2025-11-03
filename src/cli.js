@@ -13,6 +13,7 @@ import { createLibSqlUmzug } from "umzug-libsql";
 import { createClient } from "@libsql/client";
 import { agent } from "./agent/agent.js";
 import { formatOutput } from "./utils/output.js";
+import { createTask } from "./taskCommands.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = join(__dirname, "..");
@@ -202,6 +203,26 @@ updateCmd
   .action((followupId, options) => {
     // TODO: Implement followup update logic
     console.log("Updating followup:", followupId, options);
+  });
+
+// Task command group
+const taskCmd = program.command("task");
+
+// Task create command
+taskCmd
+  .command("create")
+  .description("Create a new task file")
+  .argument("<type>", "Task type (TASK, FEAT, BUG, etc.)")
+  .requiredOption("-t, --title <title>", "Task title")
+  .option("-d, --description <description>", "Task description")
+  .option("-p, --priority <priority>", "Task priority (low, medium, high)")
+  .action((type, options) => {
+    const result = createTask(projectRoot, { type, ...options });
+    if (result) {
+      console.log("Task created successfully!");
+      console.log(`Task ID: ${result.taskId}`);
+      console.log(`File: ${result.filePath}`);
+    }
   });
 
 // Parse command line arguments
