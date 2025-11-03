@@ -1,6 +1,6 @@
 ---
 title: Add kanbatte task create command to CLI
-status: todo
+status: done
 priority: high
 ---
 
@@ -102,4 +102,50 @@ kanbatte task create TASK -t 'title of the task' -d 'task description' -p 'high'
 
 # Implement Plan
 
-Write down your implement plan here.
+## 1. Add New CLI Command Structure
+- Add a new `task` command group to CLI (separate from existing `new task` command)
+- Implement `kanbatte task create <TYPE>` subcommand with required arguments:
+  - Positional: task type (TASK, FEAT, BUG, etc.)
+  - Required: `-t/--title` for task title
+  - Optional: `-d/--description` for task description
+  - Optional: `-p/--priority` for task priority (low/medium/high, default: low)
+
+## 2. Implement Folder/File Management Logic
+- Create function to scan existing task folders and find next available ID
+- Logic: Check `tasks/<TYPE>/` folders in order (000, 100, 200, etc.)
+- For each folder, scan for existing task files and find next available number
+- Create new folder if needed (e.g., if 000 is full, create 100)
+- Generate task ID as `<TYPE>-###` format (e.g., TASK-002)
+
+## 3. Implement Task File Creation
+- Create markdown file with YAML frontmatter structure:
+  ```yaml
+  ---
+  title: <task title>
+  status: todo
+  priority: <priority>
+  ---
+
+  # Description
+
+  <task description>
+  ```
+- Ensure proper folder creation (`mkdir -p` if directory doesn't exist)
+- Write file to correct path: `tasks/<TYPE>/<FOLDER>/<TYPE>-###.md`
+
+## 4. Add Helper Functions
+- `getNextTaskId(type)` - Scans folders and returns next available ID
+- `createTaskFolders(type)` - Creates necessary folder structure
+- `formatPriority(priority)` - Validates and formats priority values
+- `generateTaskContent(title, description, priority)` - Creates markdown content
+
+## 5. Integration Points
+- Add new command group to `src/cli.js`
+- Create new file `src/taskCommands.js` for task-specific logic
+- Reuse existing output formatting utilities from `src/utils/output.js`
+- Ensure error handling matches existing CLI patterns
+
+## 6. Testing Strategy
+- Test creating tasks with all combinations of arguments
+- Test folder creation when directories don't exist
+- Verify file creation with correct frontmatter and content structure
