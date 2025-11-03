@@ -95,9 +95,10 @@ cd docs && bun run ../src/cli.js task locate TASK-001 | xargs head -1
     - 100-199 → folder "100"
     - 200-299 → folder "200"
     - etc.
-  - Construct expected file path: `./tasks/<TYPE>/<FOLDER>/<TYPE>-<NUM>.md`
+  - Construct expected file path using absolute path: `projectRoot/tasks/<TYPE>/<FOLDER>/<TYPE>-<NUM>.md`
   - Verify file exists at that path
-  - Return relative path if found, error if not found
+  - Convert absolute path to relative path using `path.relative(currentDir, filePath)`
+- Return relative path if found, error if not found
 
 ## 3. Add Helper Functions
 - `parseTaskId(taskId)` - Extract type and number from task ID
@@ -115,12 +116,12 @@ cd docs && bun run ../src/cli.js task locate TASK-001 | xargs head -1
 
 ## 5. Integration Points
 - Extend existing task command group in `src/cli.js` with locate subcommand
-- Add locate functionality to `src/taskCommands.js` or create new function in `src/taskUtils.js`
+- Add locate functionality to `src/taskCommands.js` using helper functions from `src/utils/tasks.js`
 - Reuse existing error handling patterns from other commands
 - Ensure output format is consistent with CLI conventions
 
 ## 6. Output Format
-- Always return relative path starting with `./tasks/`
+- Return relative path calculated by `path.relative(currentDir, filePath)` (no hardcoded prefix)
 - No additional formatting or explanation (just the path)
 - Error messages go to stderr
 - Non-zero exit code for errors, zero for success
