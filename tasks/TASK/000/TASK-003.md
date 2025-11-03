@@ -1,6 +1,6 @@
 ---
 title: Add kanbatte task locate command to CLI
-status: todo
+status: done
 priority: high
 ---
 
@@ -20,25 +20,64 @@ More information about tasks can reference to `./TASK-001.md`
 
 # Acceptance Criteria
 
-When implemented, running the following command should work:
+## Test Cases and Results
 
+### Test Case 1: Locate existing task from project root
 ```bash
-kanbatte task locate TASK-001
-# Should output: ./tasks/TASK/000/TASK-001.md
-
-kanbatte task locate TASK-001 | xargs vim
-# Should open the task file in vim editor
-
-kanbatte task locate NONEXISTENT
-# Should output appropriate error message and return non-zero exit code
+bun run src/cli.js task locate TASK-001
 ```
+**Expected**: `tasks/TASK/000/TASK-001.md`
+**Actual**: ✅ `tasks/TASK/000/TASK-001.md`
 
-Expected behavior:
-- Takes task ID as positional argument
-- Returns relative path to the task file
-- Handles non-existent task IDs with proper error messages
-- Works with all task types (TASK, FEAT, BUG, etc.)
-- Path is relative to current working directory
+### Test Case 2: Locate task with different type
+```bash
+bun run src/cli.js task locate BUG-001
+```
+**Expected**: `tasks/BUG/000/BUG-001.md`
+**Actual**: ✅ `tasks/BUG/000/BUG-001.md`
+
+### Test Case 3: Locate non-existent task ID
+```bash
+bun run src/cli.js task locate TASK-999
+```
+**Expected**: Error message "Task file not found: TASK-999" and non-zero exit code
+**Actual**: ✅ `Task file not found: TASK-999` (exit code: 1)
+
+### Test Case 4: Invalid task ID format
+```bash
+bun run src/cli.js task locate INVALID
+```
+**Expected**: Error message "Invalid task ID format: INVALID. Expected format: TYPE-123"
+**Actual**: ✅ `Invalid task ID format: INVALID. Expected format: TYPE-123`
+
+### Test Case 5: Path from different working directory
+```bash
+cd /tmp && bun run /home/jny738ngx/develop/kanbatte/src/cli.js task locate TASK-001
+```
+**Expected**: Path relative to `/tmp` directory
+**Actual**: ✅ `../home/jny738ngx/develop/kanbatte/tasks/TASK/000/TASK-001.md`
+**Note**: This is correct! From `/tmp` to `/home/user/project`, you need `..` to go back to `/`, then `home/user/project`
+
+### Test Case 6: Path from subdirectory
+```bash
+mkdir test && cd test && bun run ../src/cli.js task locate TASK-001
+```
+**Expected**: Path relative to `test` subdirectory
+**Actual**: ✅ `../tasks/TASK/000/TASK-001.md`
+
+### Test Case 7: Pipe to editor functionality
+```bash
+bun run src/cli.js task locate BUG-001 | xargs head -1
+```
+**Expected**: First line of BUG-001.md file content
+**Actual**: ✅ `---` (YAML frontmatter start)
+
+### Test Case 8: Pipe from different directory
+```bash
+cd docs && bun run ../src/cli.js task locate TASK-001 | xargs head -1
+```
+**Expected**: First line of TASK-001.md file content
+**Actual**: ✅ `---` (YAML frontmatter start)
 
 # Implement Plan
 
@@ -85,10 +124,3 @@ Expected behavior:
 - No additional formatting or explanation (just the path)
 - Error messages go to stderr
 - Non-zero exit code for errors, zero for success
-
-## 7. Testing Strategy
-- Test locating existing tasks with different types (TASK, FEAT, BUG)
-- Test with valid but non-existent task IDs
-- Test with invalid task ID formats
-- Test pipe to editor (`| xargs vim`) functionality
-- Verify relative paths work from different working directories
