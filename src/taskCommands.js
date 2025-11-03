@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import { writeFileSync, existsSync } from "fs";
-import { join } from "path";
+import { join, relative } from "path";
 import {
   formatPriority,
   createTaskFolders,
@@ -10,8 +10,12 @@ import {
   scanTaskFiles,
   filterByStatus,
   filterByPriority,
-  formatTaskTable
-} from "./taskUtils.js";
+  formatTaskTable,
+  parseTaskId,
+  calculateFolder,
+  buildTaskPath,
+  taskExists
+} from "./utils/tasks.js";
 
 /**
  * Creates a new task file with proper folder structure and ID generation
@@ -72,4 +76,24 @@ export function listTasks(projectRoot, options = {}) {
 
   // Format and return output
   return formatTaskTable(tasks);
+}
+
+/**
+ * Locates a task file and returns its relative path
+ */
+export function locateTask(projectRoot, taskId) {
+  const { type, number } = parseTaskId(taskId);
+  const folder = calculateFolder(number);
+  const filePath = buildTaskPath(projectRoot, type, folder, taskId);
+
+  if (!taskExists(filePath)) {
+    throw new Error(`Task file not found: ${taskId}`);
+  }
+
+  // Return path relative to current working directory
+  const currentDir = process.cwd();
+  const relativePath = relative(currentDir, filePath);
+
+  // If path is already relative (no leading ./ needed for same directory)
+  return relativePath;
 }

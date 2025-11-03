@@ -13,7 +13,7 @@ import { createLibSqlUmzug } from "umzug-libsql";
 import { createClient } from "@libsql/client";
 import { agent } from "./agent/agent.js";
 import { formatOutput } from "./utils/output.js";
-import { createTask, listTasks } from "./taskCommands.js";
+import { createTask, listTasks, locateTask } from "./taskCommands.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = join(__dirname, "..");
@@ -235,6 +235,21 @@ taskCmd
   .action((type, options) => {
     const result = listTasks(projectRoot, { type, ...options });
     console.log(result);
+  });
+
+// Task locate command
+taskCmd
+  .command("locate")
+  .description("Locate a task file and return its relative path")
+  .argument("<taskId>", "Task ID to locate (e.g., TASK-001, FEAT-002)")
+  .action((taskId) => {
+    try {
+      const path = locateTask(projectRoot, taskId);
+      console.log(path);
+    } catch (error) {
+      console.error(error.message);
+      process.exit(1);
+    }
   });
 
 // Parse command line arguments
