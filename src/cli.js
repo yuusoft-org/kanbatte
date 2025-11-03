@@ -13,7 +13,7 @@ import { createLibSqlUmzug } from "umzug-libsql";
 import { createClient } from "@libsql/client";
 import { agent } from "./agent/agent.js";
 import { formatOutput } from "./utils/output.js";
-import { createTask } from "./taskCommands.js";
+import { createTask, listTasks } from "./taskCommands.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = join(__dirname, "..");
@@ -223,6 +223,18 @@ taskCmd
       console.log(`Task ID: ${result.taskId}`);
       console.log(`File: ${result.filePath}`);
     }
+  });
+
+// Task list command
+taskCmd
+  .command("list")
+  .description("List tasks in table format")
+  .argument("[type]", "Task type to filter by (TASK, FEAT, BUG, etc.)")
+  .option("-s, --status <status>", "Filter by status (todo, done)")
+  .option("-p, --priority <priority>", "Filter by priority (low, medium, high, comma-separated)")
+  .action((type, options) => {
+    const result = listTasks(projectRoot, { type, ...options });
+    console.log(result);
   });
 
 // Parse command line arguments
