@@ -1,5 +1,5 @@
 import { query } from "@anthropic-ai/claude-agent-sdk";
-import * as commands from "../commands.js";
+import { updateSession } from "../sessionCommands.js";
 import { setupWorktree } from "../utils/git.js";
 
 export async function agent(deps) {
@@ -54,13 +54,8 @@ Work on implementing this task. You can read files, write code, and make changes
     }
   }
 
-  await commands.addComment(deps, {
-    taskId: task.taskId,
-    content: agentResponse.trim(),
-  });
-
-  await commands.updateTask(deps, {
-    taskId: task.taskId,
+  await updateSession(deps, {
+    sessionId: task.taskId,
     status: "review",
   });
 

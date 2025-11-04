@@ -20,14 +20,6 @@ export const formatOutput = (data, format, type) => {
       console.log(`# ${data.taskId}: ${data.title}\n`);
       console.log(`**Status:** ${data.status}\n`);
       console.log(`**Description:** ${data.description || "N/A"}\n`);
-      if (data.comments && data.comments.length > 0) {
-        console.log(`## Comments\n`);
-        data.comments.forEach((c) => console.log(`- ${c.content}`));
-      }
-      if (data.followups && data.followups.length > 0) {
-        console.log(`\n## Followups\n`);
-        data.followups.forEach((f) => console.log(`- ${f.content}`));
-      }
     }
     return;
   }
@@ -56,28 +48,6 @@ export const formatOutput = (data, format, type) => {
         { Description: data.description || "N/A" },
       );
       console.log(table.toString());
-
-      if (data.comments && data.comments.length > 0) {
-        console.log("\nComments:");
-        const commentsTable = new Table({
-          head: ["Comment ID", "Content"],
-        });
-        data.comments.forEach((c) =>
-          commentsTable.push([c.commentId, c.content]),
-        );
-        console.log(commentsTable.toString());
-      }
-
-      if (data.followups && data.followups.length > 0) {
-        console.log("\nFollowups:");
-        const followupsTable = new Table({
-          head: ["Followup ID", "Content"],
-        });
-        data.followups.forEach((f) =>
-          followupsTable.push([f.followupId, f.content]),
-        );
-        console.log(followupsTable.toString());
-      }
     }
   }
 };

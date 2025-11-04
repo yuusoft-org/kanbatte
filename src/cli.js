@@ -8,7 +8,7 @@ import { serialize, deserialize } from "./utils/serialization.js";
 import { generateId } from "./utils/helper.js";
 
 import * as libsqlDao from "./dao/libsqlDao.js";
-import * as commands from "./commands.js";
+import { addSession, updateSession, readSession, listSessions, addProject } from "./sessionCommands.js";
 import { createLibSqlUmzug } from "umzug-libsql";
 import { createClient } from "@libsql/client";
 import { agent } from "./agent/agent.js";
@@ -116,25 +116,6 @@ newCmd
     commands.addTask(commandsDeps, options);
   });
 
-// New comment command
-newCmd
-  .command("comment")
-  .description("Create a new comment")
-  .requiredOption("-i, --task-id <taskId>", "Task ID")
-  .requiredOption("-c, --content <content>", "Comment content")
-  .action((options) => {
-    commands.addComment(commandsDeps, options);
-  });
-
-// New followup command
-newCmd
-  .command("followup")
-  .description("Create a new followup")
-  .requiredOption("-i, --task-id <taskId>", "Task ID")
-  .requiredOption("-c, --content <content>", "Followup content")
-  .action((options) => {
-    commands.addFollowup(commandsDeps, options);
-  });
 
 // New project command
 newCmd
@@ -195,16 +176,6 @@ updateCmd
     commands.updateTask(commandsDeps, options);
   });
 
-// Update followup command
-updateCmd
-  .command("followup")
-  .description("Update followup status")
-  .argument("<followupId>", "Followup ID")
-  .requiredOption("-s, --status <status>", "New status")
-  .action((followupId, options) => {
-    // TODO: Implement followup update logic
-    console.log("Updating followup:", followupId, options);
-  });
 
 // Task command group
 const taskCmd = program.command("task");
