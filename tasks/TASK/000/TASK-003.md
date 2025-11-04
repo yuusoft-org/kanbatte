@@ -22,8 +22,6 @@ More information about tasks can reference to `./TASK-001.md`
 
 ## Test Cases and Results
 
-**After review fixes (using process.cwd() instead of __dirname)**
-
 ### Test Case 1: Basic locate in current project
 ```bash
 bun run src/cli.js task locate TASK-001
