@@ -59,6 +59,7 @@ Example task file content:
 title: Task Title
 status: todo
 priority: low
+assignee: username
 ---
 
 # Description
@@ -77,7 +78,7 @@ Everything below the description is freeform. You can add more sections as neede
 
 **Priority:** Can be `low`, `medium`, or `high`.
 
-Additional fields (such as assignee) may be added in the future.
+**Assignee:** Optional field to assign the task to a specific user.
 
 
 ### Tasks CLI
@@ -86,15 +87,15 @@ Additional fields (such as assignee) may be added in the future.
 
 Create a new task with inline parameters:
 ```bash
-kanbatte task create TASK -t 'title of the task' -d 'task description' -p 'high'
+kanbatte task create TASK -t 'title of the task' -d 'task description' -p 'high' -a 'username'
 # Creates file in the correct folder with correct content
 
-kanbatte task create TASK --title 'title of the task' --description 'task description' --priority 'high'
+kanbatte task create TASK --title 'title of the task' --description 'task description' --priority 'high' --assignee 'username'
 ```
 
 **Required:** Task type (positional argument) and title (`-t` / `--title`) are required.
 
-**Optional:** Description (`-d` / `--description`) and priority (`-p` / `--priority`) are optional.
+**Optional:** Description (`-d` / `--description`), priority (`-p` / `--priority`), and assignee (`-a` / `--assignee`) are optional.
 
 For task creation, the system needs to look at existing folders and files to get the latest ID, then create a new task file with the correct ID.
 
@@ -110,13 +111,19 @@ kanbatte task list
 # list all tasks
 
 kanbatte task list TASK
-# Prints a table with columns: taskId, status, title
+# Prints a table with columns: taskId, status, title, assignee
 
 kanbatte task list TASK -s 'todo'
 # Filter by status
 
 kanbatte task list TASK -s 'todo' -p 'high,medium'
 # Filter by status and priority
+
+kanbatte task list TASK -a 'username'
+# Filter by assignee
+
+kanbatte task list TASK -s 'todo' -p 'high' -a 'username'
+# Filter by status, priority, and assignee
 ```
 
 #### Updating Tasks
