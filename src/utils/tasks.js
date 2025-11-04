@@ -261,3 +261,50 @@ export function formatTaskTable(tasks) {
 
   return [header, separator, ...rows].join("\n");
 }
+
+/**
+ * Parses task ID to extract type and number
+ */
+export function parseTaskId(taskId) {
+  const match = taskId.match(/^([A-Z]+)-(\d+)$/);
+  if (!match) {
+    throw new Error(`Invalid task ID format: ${taskId}. Expected format: TYPE-123`);
+  }
+
+  return {
+    type: match[1],
+    number: parseInt(match[2])
+  };
+}
+
+/**
+ * Calculates which folder a task should be in based on its number
+ */
+export function calculateFolder(number) {
+  if (number < 1) {
+    throw new Error(`Invalid task number: ${number}. Task numbers must start from 1`);
+  }
+
+  if (number <= 99) {
+    return "000";
+  } else {
+    // For numbers 100+, find the appropriate 100-range
+    const folderBase = Math.floor((number - 100) / 100) * 100 + 100;
+    return folderBase.toString().padStart(3, "0");
+  }
+}
+
+/**
+ * Builds the absolute path to a task file
+ */
+export function buildTaskPath(projectRoot, type, folder, taskId) {
+  return join(projectRoot, "tasks", type, folder, `${taskId}.md`);
+}
+
+/**
+ * Checks if a task file exists
+ */
+export function taskExists(filePath) {
+  return existsSync(filePath);
+}
+
