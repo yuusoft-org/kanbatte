@@ -15,6 +15,7 @@
       },
       "devDependencies": {
         "@types/bun": "latest",
+        "puty": "^0.0.5-rc1",
       },
     },
   },
@@ -196,6 +197,8 @@
     "promise-limit": ["promise-limit@2.7.0", "", {}, "sha512-7nJ6v5lnJsXwGprnGXga4wx6d1POjvi5Qmf1ivTRxTjH4Z/9Czja/UCMLVmB9N93GeWOU93XaFaEt6jbuoagNw=="],
 
     "punycode": ["punycode@2.3.1", "", {}, "sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg=="],
+
+    "puty": ["puty@0.0.5-rc1", "", { "dependencies": { "js-yaml": "~4.1.0" } }, "sha512-yceuhJtIdPcuUtx6WPijPkbDr2C3MWaPRUY/X+v511Bqd+apfmkOCr8//zPiYh/5VXuKsFGoqSbJ4SJB0+GnZg=="],
 
     "queue-microtask": ["queue-microtask@1.2.3", "", {}, "sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A=="],
 

@@ -4,7 +4,8 @@
   "type": "module",
   "private": true,
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "puty": "^0.0.5-rc1"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.1.11",
