@@ -1,58 +1,71 @@
 ---
-title: Thoroughly reorganize old task system
-status: done
+title: Incrementally reorganize task system - preserve working components, adapt session logic progressively
+status: todo
 priority: high
 ---
 
 # Description
 
-Based on roadmap migration guidance "rename task to session, remove comments and followups, can keep projects, but need to update the cli, can keep current folder and files structure", perform a thorough reorganization of the current task system.
+Based on roadmap migration guidance "rename task to session, remove comments and followups, can keep projects, but need to update the cli, can keep current folder and files structure", perform an incremental reorganization of the current task system.
 
-**Important**: This is about identifying which parts of the existing task system should be renamed to session (because they serve session purposes) vs which should be deleted (because they're no longer needed) vs which should remain as task functionality.
+**Key Principle**: Preserve all working components and adapt them progressively rather than wholesale deletion. This avoids "double work" and maintains system functionality.
 
-**Critical rule**: Absolutely no new logic should be added. Only reorganize existing logic.
+**Important**: This is about identifying which parts should be adapted vs which need fundamental changes, while preserving the maximum amount of working code.
 
 # Acceptance Criteria
 
-1. **Identify and categorize all current task system components**:
-   - Components that should remain as "task" functionality (git markdown file management)
-   - Components that should be renamed to "session" functionality (database AI interaction records)
-   - Components that should be deleted (no longer needed per roadmap)
+1. **Preserve Working Components**:
+   - Keep `sessionCommands.js` but adapt its data structure progressively
+   - Keep `utils/git.js` and `utils/output.js` - they are valuable utilities
+   - Keep `agent/agent.js` - it provides core AI functionality
+   - Keep project management functionality as-is
 
-2. **Execute proper reorganization**:
-   - Keep task-related files that handle git markdown tasks
-   - Rename appropriate database task logic to session terminology
-   - Delete components that are no longer needed according to roadmap
+2. **Adapt Session Data Structure**:
+   - Modify `sessionCommands.js` to use correct session data structure
+   - Update data from task-like (title/description) to session-like (messages)
+   - Maintain existing function signatures where possible
+   - Update related database operations progressively
 
+3. **Update CLI Progressively**:
+   - Adapt existing commands rather than delete them
+   - Update command names and descriptions where needed
+   - Maintain command group structure
+   - Update imports and references incrementally
 
-4. **No new logic**:
-   - Do not add new session functionality
-   - Do not add new data structures
-   - Only reorganize and rename existing logic
+4. **Preserve Database Patterns**:
+   - Keep existing database schema and query patterns
+   - Adapt event handling to new session structure
+   - Maintain backward compatibility during transition
 
 # Implement Plan
 
-1. **Analyze current task system components**:
-   - `taskCommands.js` + `utils/tasks.js` - git markdown task management → KEEP as task
-   - `dao/libsqlDao.js` - database layer → REVIEW for task vs session functions
-   - `utils/output.js` - output formatting → REVIEW for session-specific formatting
-   - `utils/git.js` - git worktree management → KEEP (needed for agent worktrees)
-   - `agent/agent.js` - AI agent → REVIEW for session dependencies
-   - `cli.js` - CLI commands → REVIEW for session vs task commands
+1. **Analyze Existing Session Components**:
+   - Review `sessionCommands.js` for adaptation opportunities
+   - Identify which functions need data structure changes vs simple renames
+   - Assess `utils/git.js`, `utils/output.js` for current usability
 
-2. **Identify session functionality in existing code**:
-   - Look for database operations that should be session (AI interactions) rather than task (file management)
-   - Look for CLI commands that handle session-style operations
-   - Look for database functions that handle AI agent interactions
+2. **Adapt Session Data Structure**:
+   - Modify `sessionCommands.js` functions to handle session data properly
+   - Update data structures from task format to session format
+   - Ensure proper handling of messages array vs title/description
 
-3. **Check utils directory for necessity**:
-   - Review all files in `src/utils/` to determine if they're still needed
-   - Delete any utility files that are no longer used by the remaining codebase
-   - Update any imports to remove references to deleted utils files
+3. **Update Database Layer Incrementally**:
+   - Adapt `libsqlDao.js` to handle both old and new session formats during transition
+   - Update event handling progressively
+   - Maintain database query patterns
 
-4. **Execute reorganization**:
-   - Rename database task functions to session terminology where appropriate
-   - Update CLI commands to reflect task vs session distinction
-   - Update imports and references to use correct terminology
-   - Remove any remaining task-like logic that should be session-specific
+4. **Adapt CLI Commands**:
+   - Update command names and descriptions where needed
+   - Keep existing command structure (taskCmd, newCmd, etc.)
+   - Update imports and function calls
+
+5. **Adapt Supporting Components**:
+   - Update `agent/agent.js` to work with adapted session structure
+   - Ensure `utils/git.js` and `utils/output.js` remain functional
+   - Update cross-component references
+
+6. **Test Progressive Functionality**:
+   - Verify each adapted component works with new session structure
+   - Ensure CLI commands remain functional during transition
+   - Validate that existing project functionality still works
 
