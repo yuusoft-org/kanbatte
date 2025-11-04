@@ -8,12 +8,11 @@ import { serialize, deserialize } from "./utils/serialization.js";
 import { generateId } from "./utils/helper.js";
 
 import * as libsqlDao from "./dao/libsqlDao.js";
-import { addSession, updateSession, readSession, listSessions, addProject } from "./sessionCommands.js";
 import { createLibSqlUmzug } from "umzug-libsql";
 import { createClient } from "@libsql/client";
-import { agent } from "./agent/agent.js";
-import { formatOutput } from "./utils/output.js";
 import { createTask, listTasks, locateTask } from "./taskCommands.js";
+import { addSession, updateSession, readSession, listSessions, addProject } from "./sessionCommands.js";
+import { formatOutput } from "./utils/output.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // Use current working directory for task operations (not CLI file location)
@@ -46,35 +45,6 @@ const libsqlDaoDeps = {
   deserialize,
 };
 
-const commandsDeps = {
-  serialize,
-  deserialize,
-  generateId,
-  formatOutput,
-  libsqlDao: {
-    appendEvent: (payload) => {
-      return libsqlDao.appendEvent(libsqlDaoDeps, payload);
-    },
-    computeAndSaveView: (payload) => {
-      return libsqlDao.computeAndSaveView(libsqlDaoDeps, payload);
-    },
-    getViewByTaskId: (taskId) => {
-      return libsqlDao.getViewByTaskId(libsqlDaoDeps, taskId);
-    },
-    getViewsByProjectId: (payload) => {
-      return libsqlDao.getViewsByProjectId(libsqlDaoDeps, payload);
-    },
-    getNextTaskNumber: (projectId) => {
-      return libsqlDao.getNextTaskNumber(libsqlDaoDeps, projectId);
-    },
-    getTasksByStatus: (status) => {
-      return libsqlDao.getTasksByStatus(libsqlDaoDeps, status);
-    },
-    getProjectById: (projectId) => {
-      return libsqlDao.getProjectById(libsqlDaoDeps, projectId);
-    },
-  },
-};
 
 const program = new Command();
 
@@ -93,88 +63,8 @@ program
     setupDB();
   });
 
-// agent command
-program
-  .command("agent")
-  .description("Run agent on a ready task")
-  .action(async () => {
-    await agent(commandsDeps);
-  });
-
-// New command group
-const newCmd = program.command("new");
-
-// New task command
-newCmd
-  .command("task")
-  .description("Create a new task")
-  .option("-p, --project <projectId>", "Project ID")
-  .option("-t, --title <title>", "Task title")
-  .option("--description <description>", "Task description")
-  .option("-f, --file <path>", "Create task from markdown file")
-  .action((options) => {
-    commands.addTask(commandsDeps, options);
-  });
 
 
-// New project command
-newCmd
-  .command("project")
-  .description("Create a new project")
-  .requiredOption("-p, --project-id <projectId>", "Project ID")
-  .requiredOption("-n, --name <name>", "Project name")
-  .option("-r, --repository <repository>", "Repository URL")
-  .option("--description <description>", "Project description")
-  .action((options) => {
-    commands.addProject(commandsDeps, options);
-  });
-
-// List command
-program
-  .command("list")
-  .description("List tasks in a project")
-  .requiredOption("-p, --project <projectId>", "Project ID")
-  .option("-s, --status <statuses>", "Filter by status (comma-separated)")
-  .option(
-    "-f, --format <format>",
-    "Output format: table, json, markdown",
-    "table",
-  )
-  .action(async (options) => {
-    const tasks = await commands.listTasks(commandsDeps, options);
-    if (tasks) {
-      commandsDeps.formatOutput(tasks, options.format, "list");
-    }
-  });
-
-// Read command
-program
-  .command("read")
-  .description("Read and display a specific task")
-  .argument("<taskId>", "Task ID")
-  .option(
-    "-f, --format <format>",
-    "Output format: table, json, markdown",
-    "table",
-  )
-  .action((taskId, options) => {
-    commands.readTask(commandsDeps, taskId, options.format);
-  });
-
-// Update command group
-const updateCmd = program.command("update");
-
-// Update task command
-updateCmd
-  .command("task")
-  .description("Update task properties")
-  .requiredOption("-i, --task-id <taskId>", "Task ID")
-  .option("-s, --status <status>", "New status")
-  .option("-t, --title <title>", "New title")
-  .option("--description <description>", "New description")
-  .action((options) => {
-    commands.updateTask(commandsDeps, options);
-  });
 
 
 // Task command group
@@ -222,6 +112,186 @@ taskCmd
       console.error(error.message);
       process.exit(1);
     }
+  });
+
+// Session command group
+const sessionCmd = program.command("session");
+
+// Session queue command
+sessionCmd
+  .command("queue")
+  .description("Create a new session and queue it for agent processing")
+  .requiredOption("-p, --project <projectId>", "Project ID")
+  .requiredOption("-m, --message <message>", "Initial message content")
+  .action((options) => {
+    const sessionDeps = {
+      serialize,
+      deserialize,
+      generateId,
+      libsqlDao: {
+        appendEvent: (payload) => {
+          return libsqlDao.appendEvent(libsqlDaoDeps, payload);
+        },
+        computeAndSaveView: (payload) => {
+          return libsqlDao.computeAndSaveView(libsqlDaoDeps, payload);
+        },
+        getViewBySessionId: (sessionId) => {
+          return libsqlDao.getViewBySessionId(libsqlDaoDeps, sessionId);
+        },
+        getViewsByProjectId: (payload) => {
+          return libsqlDao.getViewsByProjectId(libsqlDaoDeps, payload);
+        },
+        getNextSessionNumber: (projectId) => {
+          return libsqlDao.getNextSessionNumber(libsqlDaoDeps, projectId);
+        },
+        getSessionsByStatus: (status) => {
+          return libsqlDao.getSessionsByStatus(libsqlDaoDeps, status);
+        },
+        getProjectById: (projectId) => {
+          return libsqlDao.getProjectById(libsqlDaoDeps, projectId);
+        },
+      },
+    };
+    addSession(sessionDeps, options);
+  });
+
+// Session append command
+sessionCmd
+  .command("append")
+  .description("Append a message to an existing session")
+  .argument("<sessionId>", "Session ID")
+  .requiredOption("-m, --message <message>", "Message content")
+  .action((sessionId, options) => {
+    const sessionDeps = {
+      serialize,
+      deserialize,
+      libsqlDao: {
+        getViewBySessionId: (sessionId) => {
+          return libsqlDao.getViewBySessionId(libsqlDaoDeps, sessionId);
+        },
+        appendEvent: (payload) => {
+          return libsqlDao.appendEvent(libsqlDaoDeps, payload);
+        },
+        computeAndSaveView: (payload) => {
+          return libsqlDao.computeAndSaveView(libsqlDaoDeps, payload);
+        },
+      },
+    };
+    updateSession(sessionDeps, { sessionId, ...options });
+  });
+
+// Session status command
+sessionCmd
+  .command("status")
+  .description("Update session status")
+  .argument("<sessionId>", "Session ID")
+  .requiredOption("-s, --status <status>", "New status")
+  .action((sessionId, options) => {
+    const sessionDeps = {
+      serialize,
+      libsqlDao: {
+        getViewBySessionId: (sessionId) => {
+          return libsqlDao.getViewBySessionId(libsqlDaoDeps, sessionId);
+        },
+        appendEvent: (payload) => {
+          return libsqlDao.appendEvent(libsqlDaoDeps, payload);
+        },
+        computeAndSaveView: (payload) => {
+          return libsqlDao.computeAndSaveView(libsqlDaoDeps, payload);
+        },
+      },
+    };
+    updateSession(sessionDeps, { sessionId, ...options });
+  });
+
+// Session list command
+sessionCmd
+  .command("list")
+  .description("List sessions in a project")
+  .requiredOption("-p, --project <projectId>", "Project ID")
+  .option("-s, --status <status>", "Filter by status")
+  .action((options) => {
+    const sessionDeps = {
+      libsqlDao: {
+        getViewsByProjectId: (payload) => {
+          return libsqlDao.getViewsByProjectId(libsqlDaoDeps, payload);
+        },
+      },
+      formatOutput,
+    };
+    const sessions = listSessions(sessionDeps, options);
+    if (sessions) {
+      formatOutput(sessions, options.format || "table", "list");
+    }
+  });
+
+// Session view command
+sessionCmd
+  .command("view")
+  .description("View a specific session")
+  .argument("<sessionId>", "Session ID")
+  .option("-f, --format <format>", "Output format: table, json, markdown", "table")
+  .action((sessionId, options) => {
+    const sessionDeps = {
+      libsqlDao: {
+        getViewBySessionId: (sessionId) => {
+          return libsqlDao.getViewBySessionId(libsqlDaoDeps, sessionId);
+        },
+      },
+      formatOutput,
+    };
+    readSession(sessionDeps, sessionId, options.format);
+  });
+
+// Project command group
+const projectCmd = program.command("project");
+
+// Project create command
+projectCmd
+  .command("create")
+  .description("Create a new project")
+  .requiredOption("-p, --project-id <projectId>", "Project ID")
+  .requiredOption("-n, --name <name>", "Project name")
+  .option("-r, --repository <repository>", "Repository URL")
+  .option("--description <description>", "Project description")
+  .action((options) => {
+    const projectDeps = {
+      serialize,
+      libsqlDao: {
+        getProjectById: (projectId) => {
+          return libsqlDao.getProjectById(libsqlDaoDeps, projectId);
+        },
+        appendEvent: (payload) => {
+          return libsqlDao.appendEvent(libsqlDaoDeps, payload);
+        },
+        computeAndSaveView: (payload) => {
+          return libsqlDao.computeAndSaveView(libsqlDaoDeps, payload);
+        },
+      },
+    };
+    addProject(projectDeps, options);
+  });
+
+// Agent command
+program
+  .command("agent")
+  .description("Run agent on ready sessions")
+  .action(async () => {
+    const { agent } = await import("./agent/agent.js");
+    const agentDeps = {
+      libsqlDao: {
+        getSessionsByStatus: (status) => {
+          return libsqlDao.getSessionsByStatus(libsqlDaoDeps, status);
+        },
+        getViewBySessionId: (sessionId) => {
+          return libsqlDao.getViewBySessionId(libsqlDaoDeps, sessionId);
+        },
+        updateSession: (deps, payload) => {
+          return updateSession(deps, payload);
+        },
+      },
+    };
+    await agent(agentDeps);
   });
 
 // Parse command line arguments

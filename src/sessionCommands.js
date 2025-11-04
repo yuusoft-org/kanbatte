@@ -1,9 +1,9 @@
 export const addSession = async (deps, payload) => {
   const { serialize, libsqlDao } = deps;
 
-  if (!payload.title) {
+  if (!payload.message) {
     console.error(
-      "Error: Session title is required (use -t or --title, or provide -f for file)",
+      "Error: Session message is required (use -m or --message)",
     );
     return;
   }
@@ -21,12 +21,20 @@ export const addSession = async (deps, payload) => {
 
   const sessionNumber = await libsqlDao.getNextSessionNumber(payload.project);
   const sessionId = `${payload.project}-${sessionNumber}`;
+  const now = Date.now();
 
   const sessionData = {
-    title: payload.title,
-    description: payload.description || "",
-    projectId: payload.project,
+    messages: [
+      {
+        role: "user",
+        content: payload.message,
+        timestamp: now
+      }
+    ],
+    project: payload.project,
     status: "ready",
+    createdAt: now,
+    updatedAt: now,
   };
 
   const eventData = serialize({
@@ -68,18 +76,27 @@ export const updateSession = async (deps, payload) => {
     return;
   }
 
-  const allowedUpdates = ["status", "title", "description"];
   const validUpdates = {};
 
-  for (const [key, value] of Object.entries(payload)) {
-    if (allowedUpdates.includes(key) && value !== undefined) {
-      validUpdates[key] = value;
-    }
+  // Handle message updates
+  if (payload.message !== undefined) {
+    validUpdates.messages = [
+      ...(session.messages || []),
+      {
+        role: "user",
+        content: payload.message,
+        timestamp: Date.now()
+      }
+    ];
   }
+
+  // Handle other updates
+  if (payload.status !== undefined) validUpdates.status = payload.status;
+  if (payload.project !== undefined) validUpdates.project = payload.project;
 
   if (Object.keys(validUpdates).length === 0) {
     console.error(
-      "Error: At least one update field is required (-s, -t, or --description)",
+      "Error: At least one update field is required (-s or --message)",
     );
     return;
   }

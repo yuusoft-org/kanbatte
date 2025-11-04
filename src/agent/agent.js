@@ -14,29 +14,37 @@ export async function agent(deps) {
     },
   };
 
-  const readyTasks = await libsqlDao.getTasksByStatus("ready");
+  const readySessions = await libsqlDao.getSessionsByStatus("ready");
 
-  if (readyTasks.length === 0) {
-    console.log("No tasks with status 'ready' found");
+  if (readySessions.length === 0) {
+    console.log("No sessions with status 'ready' found");
     return;
   }
 
-  const task = readyTasks[0];
-  console.log(`Running agent for task: ${task.taskId}`);
-  console.log(`Title: ${task.title}\n`);
+  const session = readySessions[0];
+  console.log(`Running agent for session: ${session.sessionId}`);
+  console.log(`Messages count: ${session.messages.length}\n`);
 
-  // Setup git worktree
-  const worktreePath = await setupWorktree(task.taskId, libsqlDao);
+  // Setup git worktree using session project
+  const worktreePath = await setupWorktree(session.sessionId, libsqlDao);
   console.log(`\nWorktree ready at: ${worktreePath}\n`);
 
-  const systemPrompt = `You are working on task ${task.taskId}: ${task.title}
-Current working directory: ${worktreePath}
-Task status: ${task.status}
+  // Build context from session messages
+  const messageContext = session.messages
+    .map(msg => `${msg.role}: ${msg.content}`)
+    .join('\n');
 
-Work on implementing this task. You can read files, write code, and make changes.`;
+  const systemPrompt = `You are working on session ${session.sessionId}
+Current working directory: ${worktreePath}
+Session status: ${session.status}
+
+Session conversation so far:
+${messageContext}
+
+Please continue working on this session. You can read files, write code, and make changes.`;
 
   const result = query({
-    prompt: `${systemPrompt}\n\nTask Description: ${task.description}`,
+    prompt: systemPrompt,
     options,
     cwd: worktreePath,
   });
@@ -55,9 +63,14 @@ Work on implementing this task. You can read files, write code, and make changes
   }
 
   await updateSession(deps, {
-    sessionId: task.taskId,
+    sessionId: session.sessionId,
+    message: agentResponse.trim(),
+  });
+
+  await updateSession(deps, {
+    sessionId: session.sessionId,
     status: "review",
   });
 
-  console.log(`\nTask ${task.taskId} moved to review`);
+  console.log(`\nSession ${session.sessionId} moved to review`);
 }
