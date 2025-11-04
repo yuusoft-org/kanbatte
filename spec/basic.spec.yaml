@@ -1,0 +1,11 @@
+file: "./testHelper.js"
+group: basic
+---
+### Array Index
+suite: basic
+exportName: default
+---
+case: fixture001 - create task
+in:
+  - fixtures/fixture001
+out: true
