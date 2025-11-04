@@ -1,6 +1,6 @@
 ---
 title: Thoroughly reorganize old task system
-status: todo
+status: done
 priority: high
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: Make libsqlDao.js conform to roadmap session specification
-status: todo
+status: done
 priority: high
 ---
 
