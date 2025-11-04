@@ -42,12 +42,14 @@ export async function computeAndSaveView(deps, payload) {
     };
     viewKey = `project:${id}`;
   } else {
+    const now = Date.now();
     state = {
       sessionId: id,
-      title: "",
-      description: "",
+      messages: [],
       status: "ready",
-      projectId: "",
+      project: "",
+      createdAt: now,
+      updatedAt: now,
     };
     viewKey = `session:${id}`;
   }
@@ -67,17 +69,18 @@ export async function computeAndSaveView(deps, payload) {
         break;
 
       case "session_created":
-        state.title = event.data.title;
-        state.description = event.data.description;
-        state.status = event.data.status;
-        state.projectId = event.data.projectId;
+        state.messages = event.data.messages || state.messages;
+        state.status = event.data.status || state.status;
+        state.project = event.data.project || state.project;
+        state.createdAt = event.data.createdAt || state.createdAt;
+        state.updatedAt = event.timestamp;
         break;
 
       case "session_updated":
-        if (event.data.title !== undefined) state.title = event.data.title;
-        if (event.data.description !== undefined)
-          state.description = event.data.description;
+        if (event.data.messages !== undefined) state.messages = event.data.messages;
         if (event.data.status !== undefined) state.status = event.data.status;
+        if (event.data.project !== undefined) state.project = event.data.project;
+        state.updatedAt = event.timestamp;
         break;
     }
   }
