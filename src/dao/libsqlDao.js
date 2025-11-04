@@ -48,8 +48,6 @@ export async function computeAndSaveView(deps, payload) {
       description: "",
       status: "todo",
       projectId: "",
-      comments: [],
-      followups: [],
     };
     viewKey = `task:${id}`;
   }
@@ -80,22 +78,6 @@ export async function computeAndSaveView(deps, payload) {
         if (event.data.description !== undefined)
           state.description = event.data.description;
         if (event.data.status !== undefined) state.status = event.data.status;
-        break;
-
-      case "comment_added":
-        state.comments.push({
-          commentId: event.data.commentId,
-          content: event.data.content,
-          timestamp: event.timestamp,
-        });
-        break;
-
-      case "followup_added":
-        state.followups.push({
-          followupId: event.data.followupId,
-          content: event.data.content,
-          timestamp: event.timestamp,
-        });
         break;
     }
   }
