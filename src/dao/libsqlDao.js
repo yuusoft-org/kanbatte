@@ -8,12 +8,12 @@ export async function appendEvent(deps, payload) {
   });
 }
 
-export async function fetchEventsByTaskId(deps, taskId) {
+export async function fetchEventsBySessionId(deps, sessionId) {
   const { db } = deps;
 
   const result = await db.execute({
     sql: "SELECT id, data, created_at FROM event_log WHERE key = ? ORDER BY created_at ASC",
-    args: [taskId],
+    args: [sessionId],
   });
 
   return result.rows;
@@ -23,7 +23,7 @@ export async function computeAndSaveView(deps, payload) {
   const { db, generateId, deserialize, serialize } = deps;
   const { id } = payload;
 
-  const events = await fetchEventsByTaskId(deps, id);
+  const events = await fetchEventsBySessionId(deps, id);
 
   if (events.length === 0) {
     return null;
@@ -43,13 +43,13 @@ export async function computeAndSaveView(deps, payload) {
     viewKey = `project:${id}`;
   } else {
     state = {
-      taskId: id,
+      sessionId: id,
       title: "",
       description: "",
-      status: "todo",
+      status: "ready",
       projectId: "",
     };
-    viewKey = `task:${id}`;
+    viewKey = `session:${id}`;
   }
 
   let lastEventId = null;
@@ -66,14 +66,14 @@ export async function computeAndSaveView(deps, payload) {
         state.description = event.data.description;
         break;
 
-      case "task_created":
+      case "session_created":
         state.title = event.data.title;
         state.description = event.data.description;
         state.status = event.data.status;
         state.projectId = event.data.projectId;
         break;
 
-      case "task_updated":
+      case "session_updated":
         if (event.data.title !== undefined) state.title = event.data.title;
         if (event.data.description !== undefined)
           state.description = event.data.description;
@@ -105,12 +105,12 @@ export async function computeAndSaveView(deps, payload) {
   return state;
 }
 
-export async function getViewByTaskId(deps, taskId) {
+export async function getViewBySessionId(deps, sessionId) {
   const { db, deserialize } = deps;
 
   const result = await db.execute({
     sql: "SELECT data FROM view WHERE key = ?",
-    args: [`task:${taskId}`],
+    args: [`session:${sessionId}`],
   });
 
   if (result.rows.length === 0) {
@@ -126,29 +126,29 @@ export async function getViewsByProjectId(deps, payload) {
 
   const result = await db.execute({
     sql: "SELECT data FROM view WHERE key LIKE ?",
-    args: [`task:${projectId}-%`],
+    args: [`session:${projectId}-%`],
   });
 
   if (result.rows.length === 0) {
     return [];
   }
 
-  const tasks = result.rows
+  const sessions = result.rows
     .map((row) => deserialize(row.data))
-    .filter((task) => {
+    .filter((session) => {
       if (!statuses || statuses.length === 0) return true;
-      return statuses.includes(task.status);
+      return statuses.includes(session.status);
     });
 
-  return tasks;
+  return sessions;
 }
 
-export async function getNextTaskNumber(deps, projectId) {
+export async function getNextSessionNumber(deps, projectId) {
   const { db } = deps;
 
   const result = await db.execute({
     sql: "SELECT key FROM view WHERE key LIKE ? ORDER BY created_at DESC LIMIT 1",
-    args: [`task:${projectId}-%`],
+    args: [`session:${projectId}-%`],
   });
 
   if (result.rows.length === 0) {
@@ -156,7 +156,7 @@ export async function getNextTaskNumber(deps, projectId) {
   }
 
   const latestKey = result.rows[0].key;
-  const match = latestKey.match(/^task:[A-Z]+-(\d+)$/);
+  const match = latestKey.match(/^session:[A-Z]+-(\d+)$/);
 
   if (!match) {
     return 1;
@@ -165,23 +165,23 @@ export async function getNextTaskNumber(deps, projectId) {
   return parseInt(match[1], 10) + 1;
 }
 
-export async function getTasksByStatus(deps, status) {
+export async function getSessionsByStatus(deps, status) {
   const { db, deserialize } = deps;
 
   const result = await db.execute({
     sql: "SELECT data FROM view WHERE key LIKE ?",
-    args: ["task:%"],
+    args: ["session:%"],
   });
 
   if (result.rows.length === 0) {
     return [];
   }
 
-  const tasks = result.rows
+  const sessions = result.rows
     .map((row) => deserialize(row.data))
-    .filter((task) => task.status === status);
+    .filter((session) => session.status === status);
 
-  return tasks;
+  return sessions;
 }
 
 export async function getProjectById(deps, projectId) {
