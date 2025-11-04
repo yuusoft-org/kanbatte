@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import { writeFileSync, existsSync } from "fs";
-import { join, relative } from "path";
+import { join } from "path";
 import {
   formatPriority,
   createTaskFolders,
@@ -90,10 +90,6 @@ export function locateTask(projectRoot, taskId) {
     throw new Error(`Task file not found: ${taskId}`);
   }
 
-  // Return path relative to current working directory
-  const currentDir = process.cwd();
-  const relativePath = relative(currentDir, filePath);
-
-  // If path is already relative (no leading ./ needed for same directory)
-  return relativePath;
+  // Return relative path from current working directory to task file
+  return `./tasks/${type}/${folder}/${taskId}.md`;
 }

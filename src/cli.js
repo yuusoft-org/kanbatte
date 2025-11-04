@@ -16,7 +16,8 @@ import { formatOutput } from "./utils/output.js";
 import { createTask, listTasks, locateTask } from "./taskCommands.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const projectRoot = join(__dirname, "..");
+// Use current working directory for task operations (not CLI file location)
+const projectRoot = process.cwd();
 const dbPath = join(projectRoot, "local.db");
 const migrationsPath = join(projectRoot, "db/migrations/*.sql");
 

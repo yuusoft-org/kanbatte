@@ -22,62 +22,46 @@ More information about tasks can reference to `./TASK-001.md`
 
 ## Test Cases and Results
 
-### Test Case 1: Locate existing task from project root
+**After review fixes (using process.cwd() instead of __dirname)**
+
+### Test Case 1: Basic locate in current project
 ```bash
 bun run src/cli.js task locate TASK-001
 ```
-**Expected**: `tasks/TASK/000/TASK-001.md`
-**Actual**: ✅ `tasks/TASK/000/TASK-001.md`
+**Expected**: `./tasks/TASK/000/TASK-001.md`
+**Actual**: ✅ `./tasks/TASK/000/TASK-001.md`
 
-### Test Case 2: Locate task with different type
+### Test Case 2: Create and locate task in new project
 ```bash
-bun run src/cli.js task locate BUG-001
+mkdir -p /tmp/test-kanbatte-project && cd /tmp/test-kanbatte-project
+bun run /home/jny738ngx/develop/kanbatte/src/cli.js task create TEST -t 'Test task in new project'
+bun run /home/jny738ngx/develop/kanbatte/src/cli.js task locate TEST-001
 ```
-**Expected**: `tasks/BUG/000/BUG-001.md`
-**Actual**: ✅ `tasks/BUG/000/BUG-001.md`
+**Expected**: Task created in `/tmp/test-kanbatte-project/tasks/`, return `./tasks/TEST/000/TEST-001.md`
+**Actual**: ✅
+- Task created successfully: `/tmp/test-kanbatte-project/tasks/TEST/000/TEST-001.md`
+- Locate result: `./tasks/TEST/000/TEST-001.md`
 
-### Test Case 3: Locate non-existent task ID
+### Test Case 3: Error handling - Invalid format
+```bash
+bun run src/cli.js task locate INVALID
+```
+**Expected**: Error message "Invalid task ID format: INVALID. Expected format: TYPE-123" and non-zero exit code
+**Actual**: ✅ `Invalid task ID format: INVALID. Expected format: TYPE-123`
+
+### Test Case 4: Error handling - Non-existent task
 ```bash
 bun run src/cli.js task locate TASK-999
 ```
 **Expected**: Error message "Task file not found: TASK-999" and non-zero exit code
-**Actual**: ✅ `Task file not found: TASK-999` (exit code: 1)
+**Actual**: ✅ `Task file not found: TASK-999`
 
-### Test Case 4: Invalid task ID format
-```bash
-bun run src/cli.js task locate INVALID
-```
-**Expected**: Error message "Invalid task ID format: INVALID. Expected format: TYPE-123"
-**Actual**: ✅ `Invalid task ID format: INVALID. Expected format: TYPE-123`
-
-### Test Case 5: Path from different working directory
-```bash
-cd /tmp && bun run /home/jny738ngx/develop/kanbatte/src/cli.js task locate TASK-001
-```
-**Expected**: Path relative to `/tmp` directory
-**Actual**: ✅ `../home/jny738ngx/develop/kanbatte/tasks/TASK/000/TASK-001.md`
-**Note**: This is correct! From `/tmp` to `/home/user/project`, you need `..` to go back to `/`, then `home/user/project`
-
-### Test Case 6: Path from subdirectory
-```bash
-mkdir test && cd test && bun run ../src/cli.js task locate TASK-001
-```
-**Expected**: Path relative to `test` subdirectory
-**Actual**: ✅ `../tasks/TASK/000/TASK-001.md`
-
-### Test Case 7: Pipe to editor functionality
+### Test Case 5: Pipe functionality
 ```bash
 bun run src/cli.js task locate BUG-001 | xargs head -1
 ```
-**Expected**: First line of BUG-001.md file content
-**Actual**: ✅ `---` (YAML frontmatter start)
-
-### Test Case 8: Pipe from different directory
-```bash
-cd docs && bun run ../src/cli.js task locate TASK-001 | xargs head -1
-```
-**Expected**: First line of TASK-001.md file content
-**Actual**: ✅ `---` (YAML frontmatter start)
+**Expected**: First line of BUG-001.md file content (YAML frontmatter)
+**Actual**: ✅ `---`
 
 # Implement Plan
 
@@ -95,10 +79,9 @@ cd docs && bun run ../src/cli.js task locate TASK-001 | xargs head -1
     - 100-199 → folder "100"
     - 200-299 → folder "200"
     - etc.
-  - Construct expected file path using absolute path: `projectRoot/tasks/<TYPE>/<FOLDER>/<TYPE>-<NUM>.md`
+  - Construct expected file path using `projectRoot/tasks/<TYPE>/<FOLDER>/<TYPE>-<NUM>.md` (where projectRoot = process.cwd())
   - Verify file exists at that path
-  - Convert absolute path to relative path using `path.relative(currentDir, filePath)`
-- Return relative path if found, error if not found
+  - Return relative path `./tasks/<TYPE>/<FOLDER>/<TYPE>-<NUM>.md` if found, error if not found
 
 ## 3. Add Helper Functions
 - `parseTaskId(taskId)` - Extract type and number from task ID
@@ -121,7 +104,7 @@ cd docs && bun run ../src/cli.js task locate TASK-001 | xargs head -1
 - Ensure output format is consistent with CLI conventions
 
 ## 6. Output Format
-- Return relative path calculated by `path.relative(currentDir, filePath)` (no hardcoded prefix)
+- Return relative path `./tasks/<TYPE>/<FOLDER>/<TYPE>-<NUM>.md` (consistent format)
 - No additional formatting or explanation (just the path)
 - Error messages go to stderr
 - Non-zero exit code for errors, zero for success
