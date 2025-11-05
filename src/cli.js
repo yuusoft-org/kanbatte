@@ -250,7 +250,8 @@ const sessionProjectCmd = sessionCmd.command("project");
 sessionProjectCmd
   .command("create")
   .description("Create a new project")
-  .requiredOption("-p, --project <project>", "Project name")
+  .requiredOption("-p, --project <project>", "Project ID")
+  .requiredOption("-n, --name <name>", "Project name")
   .requiredOption("-r, --repository <repository>", "Repository URL")
   .option("-d, --description <description>", "Project description")
   .action(async (options) => {
@@ -268,14 +269,20 @@ sessionProjectCmd
         },
       },
     };
-    await addProject(projectDeps, { projectId: options.project, name: options.project, repository: options.repository, description: options.description });
+    await addProject(projectDeps, {
+      projectId: options.project,
+      name: options.name,
+      repository: options.repository,
+      description: options.description
+    });
   });
 
 // Session project update command
 sessionProjectCmd
   .command("update")
   .description("Update an existing project")
-  .requiredOption("-p, --project <project>", "Project name")
+  .requiredOption("-p, --project <project>", "Project ID")
+  .option("-n, --name <name>", "Project name")
   .option("-r, --repository <repository>", "Repository URL")
   .option("-d, --description <description>", "Project description")
   .action(async (options) => {
@@ -294,6 +301,7 @@ sessionProjectCmd
       },
     };
     const updateData = { projectId: options.project };
+    if (options.name !== undefined) updateData.name = options.name;
     if (options.repository !== undefined) updateData.repository = options.repository;
     if (options.description !== undefined) updateData.description = options.description;
     await updateProject(projectDeps, updateData);

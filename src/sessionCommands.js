@@ -159,8 +159,8 @@ export const addProject = async (deps, payload) => {
   const projectData = {
     projectId: payload.projectId,
     name: payload.name,
-    repository: payload.repository || "",
-    description: payload.description || "",
+    repository: payload.repository,
+    description: payload.description,
   };
 
   const eventData = serialize({
