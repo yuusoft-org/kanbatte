@@ -8,45 +8,132 @@ export const formatOutput = (data, format, type) => {
 
   if (format === "markdown") {
     if (type === "list" && Array.isArray(data)) {
-      console.log("| Task ID | Title | Status | Description |");
-      console.log("|---------|-------|--------|-------------|");
-      data.forEach((task) => {
-        const desc = (task.description || "").substring(0, 50);
-        console.log(
-          `| ${task.taskId} | ${task.title} | ${task.status} | ${desc} |`,
-        );
-      });
+      if (data.length > 0 && data[0].sessionId) {
+        // Session list formatting
+        console.log("| Session ID | Project | Status | Created |");
+        console.log("|------------|---------|--------|----------|");
+        data.forEach((session) => {
+          const created = new Date(session.createdAt).toISOString().split('T')[0];
+          console.log(
+            `| ${session.sessionId} | ${session.project} | ${session.status} | ${created} |`,
+          );
+        });
+      } else {
+        // Task list formatting
+        console.log("| Task ID | Title | Status | Description |");
+        console.log("|---------|-------|--------|-------------|");
+        data.forEach((task) => {
+          const desc = (task.description || "").substring(0, 50);
+          console.log(
+            `| ${task.taskId} | ${task.title} | ${task.status} | ${desc} |`,
+          );
+        });
+      }
     } else if (type === "read") {
-      console.log(`# ${data.taskId}: ${data.title}\n`);
-      console.log(`**Status:** ${data.status}\n`);
-      console.log(`**Description:** ${data.description || "N/A"}\n`);
+      if (data.sessionId) {
+        // Session formatting
+        console.log(`# Session ${data.sessionId}\n`);
+        console.log(`**Project:** ${data.project}\n`);
+        console.log(`**Status:** ${data.status}\n`);
+        console.log(`**Created:** ${new Date(data.createdAt).toISOString()}\n`);
+        console.log(`**Updated:** ${new Date(data.updatedAt).toISOString()}\n\n`);
+
+        if (data.messages && data.messages.length > 0) {
+          console.log(`## Messages\n\n`);
+          data.messages.forEach((msg) => {
+            const role = msg.role === 'user' ? '👤 User' : '🤖 Assistant';
+            const timestamp = new Date(msg.timestamp).toISOString();
+            console.log(`### ${role} (${timestamp})\n\n`);
+            console.log(`${msg.content}\n\n`);
+          });
+        }
+      } else {
+        // Task formatting
+        console.log(`# ${data.taskId}: ${data.title}\n`);
+        console.log(`**Status:** ${data.status}\n`);
+        console.log(`**Description:** ${data.description || "N/A"}\n`);
+      }
     }
     return;
   }
 
   if (format === "table") {
     if (type === "list" && Array.isArray(data)) {
-      const table = new Table({
-        head: ["Task ID", "Title", "Status", "Description"],
-        colWidths: [12, 30, 15, 50],
-      });
-      data.forEach((task) => {
-        table.push([
-          task.taskId,
-          task.title,
-          task.status,
-          (task.description || "").substring(0, 47),
-        ]);
-      });
-      console.log(table.toString());
+      if (data.length > 0 && data[0].sessionId) {
+        // Session list table with required columns
+        const extractSentence = (content) => {
+          if (!content) return '';
+          const firstSentence = content.split(/[.!?]/)[0].trim();
+          return firstSentence.length > 40 ? firstSentence.substring(0, 37) + '...' : firstSentence + (content.includes('.') ? '.' : '');
+        };
+
+        const table = new Table({
+          head: ["Session ID", "Status", "First Message", "Last Message", "Start Date", "Last Update"],
+          colWidths: [15, 12, 25, 25, 12, 12],
+        });
+
+        data.forEach((session) => {
+          const startDate = new Date(session.createdAt).toISOString().split('T')[0];
+          const lastUpdate = new Date(session.updatedAt).toISOString().split('T')[0];
+
+          let firstMessage = '';
+          let lastMessage = '';
+
+          if (session.messages && session.messages.length > 0) {
+            firstMessage = extractSentence(session.messages[0].content);
+            lastMessage = extractSentence(session.messages[session.messages.length - 1].content);
+          }
+
+          table.push([
+            session.sessionId,
+            session.status,
+            firstMessage,
+            lastMessage,
+            startDate,
+            lastUpdate,
+          ]);
+        });
+        console.log(table.toString());
+      } else {
+        // Task list table
+        const table = new Table({
+          head: ["Task ID", "Title", "Status", "Description"],
+          colWidths: [12, 30, 15, 50],
+        });
+        data.forEach((task) => {
+          table.push([
+            task.taskId,
+            task.title,
+            task.status,
+            (task.description || "").substring(0, 47),
+          ]);
+        });
+        console.log(table.toString());
+      }
     } else if (type === "read") {
       const table = new Table();
-      table.push(
-        { "Task ID": data.taskId },
-        { Title: data.title },
-        { Status: data.status },
-        { Description: data.description || "N/A" },
-      );
+      if (data.sessionId) {
+        // Session table
+        table.push(
+          { "Session ID": data.sessionId },
+          { Project: data.project },
+          { Status: data.status },
+          { Created: new Date(data.createdAt).toISOString() },
+          { Updated: new Date(data.updatedAt).toISOString() },
+        );
+
+        if (data.messages && data.messages.length > 0) {
+          table.push({ "Messages": `${data.messages.length} message(s)` });
+        }
+      } else {
+        // Task table
+        table.push(
+          { "Task ID": data.taskId },
+          { Title: data.title },
+          { Status: data.status },
+          { Description: data.description || "N/A" },
+        );
+      }
       console.log(table.toString());
     }
   }

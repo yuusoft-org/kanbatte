@@ -159,13 +159,13 @@ export async function getNextSessionNumber(deps, projectId) {
   }
 
   const latestKey = result.rows[0].key;
-  const match = latestKey.match(/^session:[A-Z]+-(\d+)$/);
+  const match = latestKey.match(/^session:(.+)-(\d+)$/);
 
   if (!match) {
     return 1;
   }
 
-  return parseInt(match[1], 10) + 1;
+  return parseInt(match[2], 10) + 1;
 }
 
 export async function getSessionsByStatus(deps, status) {
