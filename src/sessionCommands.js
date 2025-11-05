@@ -2,7 +2,7 @@ export const addSession = async (deps, payload) => {
   const { serialize, libsqlDao } = deps;
 
   if (!payload.message) {
-    throw new Error("Session message is required (use -m or --message)");
+    throw new Error("Session message is required (provide message as argument)");
   }
 
   if (!payload.project) {

@@ -121,9 +121,9 @@ const sessionCmd = program.command("session");
 sessionCmd
   .command("queue")
   .description("Create a new session and queue it for agent processing")
+  .argument("<message>", "Initial message content")
   .requiredOption("-p, --project <projectId>", "Project ID")
-  .requiredOption("-m, --message <message>", "Initial message content")
-  .action((options) => {
+  .action((message, options) => {
     const sessionDeps = {
       serialize,
       deserialize,
@@ -152,7 +152,7 @@ sessionCmd
         },
       },
     };
-    addSession(sessionDeps, options);
+    addSession(sessionDeps, { ...options, message });
   });
 
 // Session append command
@@ -230,7 +230,7 @@ sessionCmd
   .command("view")
   .description("View a specific session")
   .argument("<sessionId>", "Session ID")
-  .option("-f, --format <format>", "Output format: table, json, markdown", "table")
+  .option("-f, --format <format>", "Output format: table, json, markdown", "markdown")
   .action((sessionId, options) => {
     const sessionDeps = {
       libsqlDao: {
