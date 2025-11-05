@@ -11,7 +11,7 @@ import * as libsqlDao from "./dao/libsqlDao.js";
 import { createLibSqlUmzug } from "umzug-libsql";
 import { createClient } from "@libsql/client";
 import { createTask, listTasks, locateTask } from "./taskCommands.js";
-import { addSession, updateSession, readSession, listSessions, addProject } from "./sessionCommands.js";
+import { addSession, updateSession, readSession, listSessions, addProject, updateProject, listProjects } from "./sessionCommands.js";
 import { formatOutput } from "./utils/output.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -243,18 +243,18 @@ sessionCmd
     readSession(sessionDeps, sessionId, options.format);
   });
 
-// Project command group
-const projectCmd = program.command("project");
+// Session project command group
+const sessionProjectCmd = sessionCmd.command("project");
 
-// Project create command
-projectCmd
+// Session project create command
+sessionProjectCmd
   .command("create")
   .description("Create a new project")
-  .requiredOption("-p, --project-id <projectId>", "Project ID")
+  .requiredOption("-p, --project <project>", "Project ID")
   .requiredOption("-n, --name <name>", "Project name")
-  .option("-r, --repository <repository>", "Repository URL")
-  .option("--description <description>", "Project description")
-  .action((options) => {
+  .requiredOption("-r, --repository <repository>", "Repository URL")
+  .option("-d, --description <description>", "Project description")
+  .action(async (options) => {
     const projectDeps = {
       serialize,
       libsqlDao: {
@@ -269,7 +269,59 @@ projectCmd
         },
       },
     };
-    addProject(projectDeps, options);
+    await addProject(projectDeps, {
+      projectId: options.project,
+      name: options.name,
+      repository: options.repository,
+      description: options.description
+    });
+  });
+
+// Session project update command
+sessionProjectCmd
+  .command("update")
+  .description("Update an existing project")
+  .requiredOption("-p, --project <project>", "Project ID")
+  .option("-n, --name <name>", "Project name")
+  .option("-r, --repository <repository>", "Repository URL")
+  .option("-d, --description <description>", "Project description")
+  .action(async (options) => {
+    const projectDeps = {
+      serialize,
+      libsqlDao: {
+        getProjectById: (projectId) => {
+          return libsqlDao.getProjectById(libsqlDaoDeps, projectId);
+        },
+        appendEvent: (payload) => {
+          return libsqlDao.appendEvent(libsqlDaoDeps, payload);
+        },
+        computeAndSaveView: (payload) => {
+          return libsqlDao.computeAndSaveView(libsqlDaoDeps, payload);
+        },
+      },
+    };
+    const updateData = { projectId: options.project };
+    if (options.name !== undefined) updateData.name = options.name;
+    if (options.repository !== undefined) updateData.repository = options.repository;
+    if (options.description !== undefined) updateData.description = options.description;
+    await updateProject(projectDeps, updateData);
+  });
+
+// Session project list command
+sessionProjectCmd
+  .command("list")
+  .description("List all projects")
+  .action(async (options) => {
+    const projectDeps = {
+      formatOutput,
+      libsqlDaoDeps,
+      deserialize,
+    };
+    const projects = await listProjects(projectDeps);
+    if (projects.length > 0) {
+      console.log("Projects:");
+      console.table(projects);
+    }
   });
 
 // Agent command

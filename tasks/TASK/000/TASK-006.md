@@ -1,6 +1,6 @@
 ---
 title: Incrementally reorganize task system - preserve working components, adapt session logic progressively
-status: todo
+status: done
 priority: high
 ---
 
