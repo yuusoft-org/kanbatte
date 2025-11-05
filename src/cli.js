@@ -210,7 +210,7 @@ sessionCmd
   .description("List sessions in a project")
   .requiredOption("-p, --project <projectId>", "Project ID")
   .option("-s, --status <status>", "Filter by status")
-  .action((options) => {
+  .action(async (options) => {
     const sessionDeps = {
       libsqlDao: {
         getViewsByProjectId: (payload) => {
@@ -219,9 +219,11 @@ sessionCmd
       },
       formatOutput,
     };
-    const sessions = listSessions(sessionDeps, options);
-    if (sessions) {
+    const sessions = await listSessions(sessionDeps, options);
+    if (sessions && sessions.length > 0) {
       formatOutput(sessions, options.format || "table", "list");
+    } else {
+      console.log("No sessions found for this project.");
     }
   });
 

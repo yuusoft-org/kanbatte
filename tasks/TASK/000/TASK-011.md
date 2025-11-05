@@ -1,6 +1,6 @@
 ---
 title: add sessin queue
-status: todo
+status: done
 priority: high
 ---
 
@@ -53,9 +53,19 @@ kanbatte session view 'session id' | less
 
 You need to first check the existing session creation logic in src/sessionCommands.js, and modify the parameters and logic to conform to the CLI specifications provided above.
 
+```bash
+# List sessions (outputs a table with columns: session id, status, first sentence, last sentence, start date, last update date)
+kanbatte session list -p project-name
+
+# Filter sessions by status
+kanbatte session list -p project-name -s 'ready,in-progress'
+```
+
 # Acceptance Criteria
 
-Create some sessions using `kanbatte session queue`. After creation, use the returned session IDs to run `kanbatte session view 'session id'` and verify that the session information is displayed correctly.
+- [x] Create some sessions using `kanbatte session queue`. 
+- [x] After creation, use the returned session IDs to run `kanbatte session view 'session id'` and verify that the session information is displayed correctly.
+- [ ] Run `kanbatte session list -p project-name` to see if this can work correctly.
 
 # Implement Plan
 
@@ -135,5 +145,32 @@ Create some sessions using `kanbatte session queue`. After creation, use the ret
    - **Test view with pager**: `kanbatte session view <session-id> | less`
    - **Verify data structure**: Ensure session has required fields (id, project, messages, status, timestamps)
 
-8. **Documentation updates**
-   - No documentation changes needed - current examples already match desired CLI pattern
+8. **Implement and enhance session list functionality**
+   - **Current state**: `src/cli.js:208-226` already has `session list` command
+   - **Required features**:
+     - Display table with columns: session id, status, first sentence, last sentence, start date, last update date
+     - Support status filtering with `-s` option
+   - **Files to modify**:
+     - `src/utils/output.js`: Update session list formatting in table mode
+     - Ensure first/last sentence extraction from messages array
+   - **Implementation details**:
+     ```javascript
+     // Extract first and last sentences from messages
+     const extractSentence = (content) => {
+       return content.split(/[.!?]/)[0].trim() + (content.includes('.') ? '.' : '');
+     };
+
+     // Update table output format for sessions
+     // Columns: Session ID | Status | First Message | Last Message | Start Date | Last Update
+     ```
+
+9. **Testing and validation**
+   - **Test queue command**: `kanbatte session queue -p test-project "Create a task to do something"`
+   - **Test view command**: `kanbatte session view <session-id>` (should output markdown by default)
+   - **Test view with pager**: `kanbatte session view <session-id> | less`
+   - **Test list command**: `kanbatte session list -p test-project`
+   - **Test list with status filter**: `kanbatte session list -p test-project -s 'ready,in-progress'`
+   - **Verify data structure**: Ensure session has required fields (id, project, messages, status, timestamps)
+
+10. **Documentation updates**
+    - No documentation changes needed - current examples already match desired CLI pattern

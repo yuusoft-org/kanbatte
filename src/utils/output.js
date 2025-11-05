@@ -60,18 +60,37 @@ export const formatOutput = (data, format, type) => {
   if (format === "table") {
     if (type === "list" && Array.isArray(data)) {
       if (data.length > 0 && data[0].sessionId) {
-        // Session list table
+        // Session list table with required columns
+        const extractSentence = (content) => {
+          if (!content) return '';
+          const firstSentence = content.split(/[.!?]/)[0].trim();
+          return firstSentence.length > 40 ? firstSentence.substring(0, 37) + '...' : firstSentence + (content.includes('.') ? '.' : '');
+        };
+
         const table = new Table({
-          head: ["Session ID", "Project", "Status", "Created"],
-          colWidths: [15, 20, 15, 20],
+          head: ["Session ID", "Status", "First Message", "Last Message", "Start Date", "Last Update"],
+          colWidths: [15, 12, 25, 25, 12, 12],
         });
+
         data.forEach((session) => {
-          const created = new Date(session.createdAt).toISOString().split('T')[0];
+          const startDate = new Date(session.createdAt).toISOString().split('T')[0];
+          const lastUpdate = new Date(session.updatedAt).toISOString().split('T')[0];
+
+          let firstMessage = '';
+          let lastMessage = '';
+
+          if (session.messages && session.messages.length > 0) {
+            firstMessage = extractSentence(session.messages[0].content);
+            lastMessage = extractSentence(session.messages[session.messages.length - 1].content);
+          }
+
           table.push([
             session.sessionId,
-            session.project,
             session.status,
-            created,
+            firstMessage,
+            lastMessage,
+            startDate,
+            lastUpdate,
           ]);
         });
         console.log(table.toString());
