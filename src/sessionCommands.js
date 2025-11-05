@@ -2,21 +2,16 @@ export const addSession = async (deps, payload) => {
   const { serialize, libsqlDao } = deps;
 
   if (!payload.message) {
-    console.error(
-      "Error: Session message is required (use -m or --message)",
-    );
-    return;
+    throw new Error("Session message is required (use -m or --message)");
   }
 
   if (!payload.project) {
-    console.error("Error: Project ID is required (use -p or --project)");
-    return;
+    throw new Error("Project ID is required (use -p or --project)");
   }
 
   const project = await libsqlDao.getProjectById(payload.project);
   if (!project) {
-    console.error(`Error: Project '${payload.project}' does not exist`);
-    return;
+    throw new Error(`Project '${payload.project}' does not exist`);
   }
 
   const sessionNumber = await libsqlDao.getNextSessionNumber(payload.project);
@@ -44,21 +39,12 @@ export const addSession = async (deps, payload) => {
     timestamp: Date.now(),
   });
 
-  try {
-    const appendPayload = { entityId: sessionId, eventData };
-    await libsqlDao.appendEvent(appendPayload);
-    await libsqlDao.computeAndSaveView({ id: sessionId });
+  const appendPayload = { entityId: sessionId, eventData };
+  await libsqlDao.appendEvent(appendPayload);
+  await libsqlDao.computeAndSaveView({ id: sessionId });
 
-    console.log("Session created successfully!" + ` Session ID: ${sessionId}`);
-    return { sessionId, ...sessionData };
-  } catch (error) {
-    if (error.message.includes("no such table")) {
-      console.error("Failed to create session:", error.message);
-      console.info("Run 'kanbatte setup db' command to setup your database");
-      return;
-    }
-    throw error;
-  }
+  console.log("Session created successfully!" + ` Session ID: ${sessionId}`);
+  return { sessionId, ...sessionData };
 };
 
 
@@ -66,14 +52,12 @@ export const updateSession = async (deps, payload) => {
   const { serialize, libsqlDao, formatOutput } = deps;
 
   if (!payload.sessionId) {
-    console.error("Error: Session ID is required (use -i or --session-id)");
-    return;
+    throw new Error("Session ID is required (use -i or --session-id)");
   }
 
   const session = await libsqlDao.getViewBySessionId(payload.sessionId);
   if (!session) {
-    console.error(`Error: Session '${payload.sessionId}' does not exist`);
-    return;
+    throw new Error(`Session '${payload.sessionId}' does not exist`);
   }
 
   const validUpdates = {};
@@ -95,10 +79,7 @@ export const updateSession = async (deps, payload) => {
   if (payload.project !== undefined) validUpdates.project = payload.project;
 
   if (Object.keys(validUpdates).length === 0) {
-    console.error(
-      "Error: At least one update field is required (-s or --message)",
-    );
-    return;
+    throw new Error("At least one update field is required (-s or --message)");
   }
 
   const eventData = serialize({
@@ -108,23 +89,18 @@ export const updateSession = async (deps, payload) => {
     timestamp: Date.now(),
   });
 
-  try {
-    const appendPayload = {
-      entityId: payload.sessionId,
-      eventData,
-    };
-    await libsqlDao.appendEvent(appendPayload);
-    await libsqlDao.computeAndSaveView({ id: payload.sessionId });
+  const appendPayload = {
+    entityId: payload.sessionId,
+    eventData,
+  };
+  await libsqlDao.appendEvent(appendPayload);
+  await libsqlDao.computeAndSaveView({ id: payload.sessionId });
 
-    console.log("Session updated successfully!", {
-      sessionId: payload.sessionId,
-      ...validUpdates,
-    });
-    return { sessionId: payload.sessionId, ...validUpdates };
-  } catch (error) {
-    console.error("Failed to update session:", error.message);
-    throw error;
-  }
+  console.log("Session updated successfully!", {
+    sessionId: payload.sessionId,
+    ...validUpdates,
+  });
+  return { sessionId: payload.sessionId, ...validUpdates };
 };
 
 
@@ -132,70 +108,52 @@ export const readSession = async (deps, sessionId, format = "table") => {
   const { libsqlDao, formatOutput } = deps;
 
   if (!sessionId) {
-    console.error("Error: Session ID is required");
-    return;
+    throw new Error("Session ID is required");
   }
 
-  try {
-    const sessionData = await libsqlDao.getViewBySessionId(sessionId);
+  const sessionData = await libsqlDao.getViewBySessionId(sessionId);
 
-    if (!sessionData) {
-      console.error(`Error: Session ${sessionId} not found`);
-      return;
-    }
-
-    formatOutput(sessionData, format, "read");
-    return sessionData;
-  } catch (error) {
-    console.error("Failed to read session:", error.message);
-    throw error;
+  if (!sessionData) {
+    throw new Error(`Session ${sessionId} not found`);
   }
+
+  formatOutput(sessionData, format, "read");
+  return sessionData;
 };
 
 export const listSessions = async (deps, payload) => {
   const { libsqlDao, formatOutput } = deps;
 
   if (!payload.project) {
-    console.error("Error: Project ID is required (use -p or --project)");
-    return;
+    throw new Error("Project ID is required (use -p or --project)");
   }
 
-  try {
-    const statuses = payload.status
-      ? payload.status.split(",").map((s) => s.trim())
-      : null;
+  const statuses = payload.status
+    ? payload.status.split(",").map((s) => s.trim())
+    : null;
 
-    const sessions = await libsqlDao.getViewsByProjectId({
-      projectId: payload.project,
-      statuses,
-    });
+  const sessions = await libsqlDao.getViewsByProjectId({
+    projectId: payload.project,
+    statuses,
+  });
 
-    return sessions;
-  } catch (error) {
-    console.error("Failed to list sessions:", error.message);
-    throw error;
-  }
+  return sessions;
 };
 
 export const addProject = async (deps, payload) => {
   const { serialize, libsqlDao } = deps;
 
   if (!payload.projectId) {
-    console.error("Error: Project ID is required (use -p or --project-id)");
-    return;
+    throw new Error("Project ID is required (use -p or --project-id)");
   }
 
   if (!payload.name) {
-    console.error("Error: Project name is required (use -n or --name)");
-    return;
+    throw new Error("Project name is required (use -n or --name)");
   }
 
   const existing = await libsqlDao.getProjectById(payload.projectId);
   if (existing) {
-    console.error(
-      `Error: Project with ID '${payload.projectId}' already exists`,
-    );
-    return;
+    throw new Error(`Project with ID '${payload.projectId}' already exists`);
   }
 
   const projectData = {
@@ -212,17 +170,78 @@ export const addProject = async (deps, payload) => {
     timestamp: Date.now(),
   });
 
-  try {
-    const appendPayload = { entityId: payload.projectId, eventData };
-    await libsqlDao.appendEvent(appendPayload);
-    await libsqlDao.computeAndSaveView({ id: payload.projectId });
+  const appendPayload = { entityId: payload.projectId, eventData };
+  await libsqlDao.appendEvent(appendPayload);
+  await libsqlDao.computeAndSaveView({ id: payload.projectId });
 
-    console.log("Project created successfully!", {
-      projectId: payload.projectId,
-    });
-    return projectData;
-  } catch (error) {
-    console.error("Failed to create project:", error.message);
-    throw error;
+  console.log("Project created successfully!", {
+    projectId: payload.projectId,
+  });
+  return projectData;
+};
+
+export const updateProject = async (deps, payload) => {
+  const { serialize, libsqlDao } = deps;
+
+  if (!payload.projectId) {
+    throw new Error("Project ID is required (use -p or --project-id)");
   }
+
+  const existing = await libsqlDao.getProjectById(payload.projectId);
+  if (!existing) {
+    throw new Error(`Project '${payload.projectId}' does not exist`);
+  }
+
+  const validUpdates = {};
+
+  // Only update fields that are provided
+  if (payload.name !== undefined) validUpdates.name = payload.name;
+  if (payload.repository !== undefined) validUpdates.repository = payload.repository;
+  if (payload.description !== undefined) validUpdates.description = payload.description;
+
+  if (Object.keys(validUpdates).length === 0) {
+    throw new Error("At least one update field is required (-n, -r, or --description)");
+  }
+
+  const eventData = serialize({
+    type: "project_updated",
+    projectId: payload.projectId,
+    data: validUpdates,
+    timestamp: Date.now(),
+  });
+
+  const appendPayload = { entityId: payload.projectId, eventData };
+  await libsqlDao.appendEvent(appendPayload);
+  await libsqlDao.computeAndSaveView({ id: payload.projectId });
+
+  console.log("Project updated successfully!", {
+    projectId: payload.projectId,
+    ...validUpdates,
+  });
+  return { projectId: payload.projectId, ...validUpdates };
+};
+
+export const listProjects = async (deps) => {
+  const { libsqlDaoDeps, deserialize } = deps;
+
+  const result = await libsqlDaoDeps.db.execute({
+    sql: "SELECT key, data FROM view WHERE key LIKE 'project:%' ORDER BY created_at ASC",
+  });
+
+  if (result.rows.length === 0) {
+    console.log("No projects found.");
+    return [];
+  }
+
+  const projects = result.rows.map(row => {
+    const data = deserialize(row.data);
+    return {
+      'project-id': data.projectId,
+      'name': data.name,
+      'repository': data.repository,
+      'description': data.description
+    };
+  });
+
+  return projects;
 };
