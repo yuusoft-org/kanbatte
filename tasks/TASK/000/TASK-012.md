@@ -44,7 +44,6 @@ agentCmd
   .command("start")
   .description("Start agent to process ready sessions")
   .action(async () => {
-    const { agent } = await import("./agent/agent.js");
     const agentDeps = {
       libsqlDao: {
         getSessionsByStatus: (status) => {

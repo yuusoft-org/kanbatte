@@ -13,6 +13,7 @@ import { createClient } from "@libsql/client";
 import { createTask, listTasks, locateTask } from "./taskCommands.js";
 import { addSession, updateSession, readSession, listSessions, addProject, updateProject, listProjects } from "./sessionCommands.js";
 import { formatOutput } from "./utils/output.js";
+import { agent } from "./agent/agent.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // Use current working directory for task operations (not CLI file location)
@@ -333,7 +334,6 @@ agentCmd
   .command("start")
   .description("Start agent to process ready sessions")
   .action(async () => {
-    const { agent } = await import("./agent/agent.js");
     const agentDeps = {
       getSessionsByStatus: (status) => {
         return libsqlDao.getSessionsByStatus(libsqlDaoDeps, status);

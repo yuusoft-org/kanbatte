@@ -56,16 +56,16 @@ Please continue working on this session. You can read files, write code, and mak
     });
 
     for await (const message of result) {
-      // Include all message types, not just assistant
-      if (message.type) {
-        messages.push(message);
+      messages.push(message);
 
-        if (message.type === "assistant") {
-          const text = message.message?.content
-            ?.filter((c) => c.type === "text")
-            ?.map((c) => c.text)
-            ?.join("") || "";
-          console.log(text);
+      // Display assistant messages to console
+      if (message.type === "assistant" && message.message?.content) {
+        const textContent = message.message.content
+          .filter(c => c.type === "text")
+          .map(c => c.text)
+          .join("");
+        if (textContent) {
+          console.log(textContent);
         }
       }
     }
