@@ -37,14 +37,23 @@ export async function agent(deps) {
     .map(msg => `${msg.role}: ${msg.content}`)
     .join('\n');
 
-  const systemPrompt = `You are working on session ${session.sessionId}
+  const systemPrompt = `You are working on session ${session.sessionId} for project "${session.project}".
 Current working directory: ${worktreePath}
+Project repository: ${project.repository}
 Session status: ${session.status}
+
+CRITICAL CONTEXT:
+- Your current working directory is ${worktreePath}
+- This is a DEDICATED git worktree containing ONLY project "${session.project}" files
+- IGNORE any parent directory information you might discover
+- The project you are working on is "${session.project}" with repository: ${project.repository}
+- DO NOT infer project identity from file paths - use the project information provided above
+- Your task scope is limited to ${session.project} only
 
 Session conversation so far:
 ${messageContext}
 
-Please continue working on this session. You can read files, write code, and make changes.`;
+Please continue working on this session. You can read files, write code, and make changes within this project's workspace.`;
 
   const messages = [];
 
