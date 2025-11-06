@@ -41,10 +41,37 @@ export const formatOutput = (data, format, type) => {
         if (data.messages && data.messages.length > 0) {
           console.log(`## Messages\n\n`);
           data.messages.forEach((msg) => {
-            const role = msg.role === 'user' ? '👤 User' : '🤖 Assistant';
-            const timestamp = new Date(msg.timestamp).toISOString();
+            let role = '🤖 Assistant';
+            let timestamp = new Date(msg.timestamp).toISOString();
+            let content = '';
+
+            // Handle different message types
+            if (msg.role === 'user') {
+              role = '👤 User';
+              content = msg.content || '';
+            } else if (msg.role === 'assistant') {
+              role = '🤖 Assistant';
+              content = msg.content || '';
+            } else if (msg.type === 'agent_response') {
+              role = '🤖 Assistant';
+              // Extract text from AI response
+              if (Array.isArray(msg.content)) {
+                const assistantMessages = msg.content.filter(m => m.type === 'assistant' && m.message?.content);
+                content = assistantMessages
+                  .flatMap(m => m.message.content.filter(c => c.type === 'text').map(c => c.text))
+                  .join('\n\n');
+              }
+            } else if (msg.type === 'error') {
+              role = '❌ Error';
+              content = `Error: ${msg.content}`;
+            } else {
+              // Fallback for unknown types
+              role = '📝 Message';
+              content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content, null, 2);
+            }
+
             console.log(`### ${role} (${timestamp})\n\n`);
-            console.log(`${msg.content}\n\n`);
+            console.log(`${content}\n\n`);
           });
         }
       } else {
@@ -63,8 +90,31 @@ export const formatOutput = (data, format, type) => {
         // Session list table with required columns
         const extractSentence = (content) => {
           if (!content) return '';
-          const firstSentence = content.split(/[.!?]/)[0].trim();
-          return firstSentence.length > 40 ? firstSentence.substring(0, 37) + '...' : firstSentence + (content.includes('.') ? '.' : '');
+
+          let textContent = '';
+
+          // Handle different message types
+          if (typeof content === 'string') {
+            textContent = content;
+          } else if (typeof content === 'object') {
+            // Handle AI response objects
+            if (content.type === 'agent_response' && Array.isArray(content.content)) {
+              // Extract text from assistant messages in the response
+              const assistantMessages = content.content.filter(msg => msg.type === 'assistant' && msg.message?.content);
+              textContent = assistantMessages
+                .flatMap(msg => msg.message.content.filter(c => c.type === 'text').map(c => c.text))
+                .join(' ');
+            } else if (content.type === 'error') {
+              textContent = `Error: ${content.content}`;
+            } else if (content.content) {
+              textContent = JSON.stringify(content.content);
+            }
+          }
+
+          if (!textContent) return '';
+
+          const firstSentence = textContent.split(/[.!?]/)[0].trim();
+          return firstSentence.length > 40 ? firstSentence.substring(0, 37) + '...' : firstSentence + (textContent.includes('.') ? '.' : '');
         };
 
         const table = new Table({

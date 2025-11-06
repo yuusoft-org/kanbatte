@@ -82,6 +82,13 @@ export async function computeAndSaveView(deps, payload) {
         if (event.data.project !== undefined) state.project = event.data.project;
         state.updatedAt = event.timestamp;
         break;
+
+      case "session_append":
+        if (event.data.message) {
+          state.messages.push(event.data.message);
+        }
+        state.updatedAt = event.timestamp;
+        break;
     }
   }
 

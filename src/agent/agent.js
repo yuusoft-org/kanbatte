@@ -18,26 +18,30 @@ export async function agent(deps) {
     return;
   }
 
-  const session = readySessions[0];
-  console.log(`Running agent for session: ${session.sessionId}`);
-  console.log(`Messages count: ${session.messages.length}\n`);
+  console.log(`Found ${readySessions.length} ready sessions`);
 
-  // Get project repository
-  const project = await deps.getProjectById(session.project);
-  if (!project || !project.repository) {
-    throw new Error(`No repository found for project ${session.project}`);
-  }
+  // Process all ready sessions
+  for (const session of readySessions) {
+    console.log(`\nRunning agent for session: ${session.sessionId}`);
+    console.log(`Messages count: ${session.messages.length}`);
 
-  // Setup git worktree using project repository
-  const worktreePath = await setupWorktree(session.sessionId, project.repository);
-  console.log(`\nWorktree ready at: ${worktreePath}\n`);
+    try {
+      // Get project repository
+      const project = await deps.getProjectById(session.project);
+      if (!project || !project.repository) {
+        throw new Error(`No repository found for project ${session.project}`);
+      }
 
-  // Build context from session messages
-  const messageContext = session.messages
-    .map(msg => `${msg.role}: ${msg.content}`)
-    .join('\n');
+      // Setup git worktree using project repository
+      const worktreePath = await setupWorktree(session.sessionId, project.repository);
+      console.log(`\nWorktree ready at: ${worktreePath}\n`);
 
-  const systemPrompt = `You are working on session ${session.sessionId} for project "${session.project}".
+      // Build context from session messages
+      const messageContext = session.messages
+        .map(msg => `${msg.role}: ${msg.content}`)
+        .join('\n');
+
+      const systemPrompt = `You are working on session ${session.sessionId} for project "${session.project}".
 Current working directory: ${worktreePath}
 Project repository: ${project.repository}
 Session status: ${session.status}
@@ -53,52 +57,60 @@ CRITICAL CONTEXT:
 Session conversation so far:
 ${messageContext}
 
-Please continue working on this session. You can read files, write code, and make changes within this project's workspace.`;
+Please continue working on this session for project "${session.project}". You can read files, write code, and make changes within this workspace.`;
 
-  const messages = [];
+      const messages = [];
 
-  try {
-    const result = query({
-      prompt: systemPrompt,
-      options,
-      cwd: worktreePath,
-    });
+      try {
+        const result = query({
+          prompt: systemPrompt,
+          options,
+          cwd: worktreePath,
+        });
 
-    for await (const message of result) {
-      messages.push(message);
+        for await (const message of result) {
+          messages.push(message);
 
-      // Display assistant messages to console
-      if (message.type === "assistant" && message.message?.content) {
-        const textContent = message.message.content
-          .filter(c => c.type === "text")
-          .map(c => c.text)
-          .join("");
-        if (textContent) {
-          console.log(textContent);
+          // Display assistant messages to console
+          if (message.type === "assistant" && message.message?.content) {
+            const textContent = message.message.content
+              .filter(c => c.type === "text")
+              .map(c => c.text)
+              .join("");
+            if (textContent) {
+              console.log(textContent);
+            }
+          }
         }
+
+        // Append the complete message structure as JSON
+        await deps.appendToSession(session.sessionId, {
+          type: "agent_response",
+          content: messages,
+          timestamp: Date.now()
+        });
+
+      } catch (error) {
+        console.error(`Error processing session ${session.sessionId}:`, error);
+
+        // Append error message as JSON
+        await deps.appendToSession(session.sessionId, {
+          type: "error",
+          content: error.message,
+          timestamp: Date.now()
+        });
       }
+
+      // Always set status to review (both success and error cases)
+      await deps.updateSessionStatus(session.sessionId, "review");
+
+      console.log(`\nSession ${session.sessionId} moved to review`);
+
+    } catch (error) {
+      console.error(`Failed to process session ${session.sessionId}:`, error);
+      // Continue to next session
     }
-
-    // Append the complete message structure as JSON
-    await deps.appendToSession(session.sessionId, {
-      type: "agent_response",
-      content: messages,
-      timestamp: Date.now()
-    });
-
-  } catch (error) {
-    console.error(`Error processing session ${session.sessionId}:`, error);
-
-    // Append error message as JSON
-    await deps.appendToSession(session.sessionId, {
-      type: "error",
-      content: error.message,
-      timestamp: Date.now()
-    });
   }
 
-  // Always set status to review (both success and error cases)
-  await deps.updateSessionStatus(session.sessionId, "review");
-
-  console.log(`\nSession ${session.sessionId} moved to review`);
+  console.log(`\nAll ${readySessions.length} sessions processed`);
 }
