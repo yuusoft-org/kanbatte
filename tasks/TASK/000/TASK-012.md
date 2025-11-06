@@ -82,7 +82,7 @@ agentCmd
    # First create a test project and session
    bun src/cli.js db setup
    bun src/cli.js session project create -p vv-bot -n "VV Bot" -r git@github.com:738NGX/vv-bot.git
-   bun src/cli.js session queue -p test "How the project work?"
+   bun src/cli.js session queue -p vv-bot "How the project work?"
 
    # Then test agent start
    bun src/cli.js agent start
