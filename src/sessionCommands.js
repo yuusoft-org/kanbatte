@@ -48,7 +48,7 @@ export const addSession = async (deps, payload) => {
 };
 
 
-export const getSessionStatus = async (deps, sessionId) => {
+export const getSession = async (deps, sessionId) => {
   const { libsqlDao } = deps;
 
   if (!sessionId) {
@@ -60,7 +60,7 @@ export const getSessionStatus = async (deps, sessionId) => {
     throw new Error(`Session '${sessionId}' does not exist`);
   }
 
-  return session.status;
+  return session;
 };
 
 export const updateSession = async (deps, payload) => {
