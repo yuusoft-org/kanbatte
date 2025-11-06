@@ -8,6 +8,32 @@ export async function appendEvent(deps, payload) {
   });
 }
 
+export async function appendSessionMessage(deps, sessionId, message) {
+  const { serialize } = deps;
+  const eventData = serialize({
+    type: "session_append_messages",
+    sessionId: sessionId,
+    data: { message, timestamp: Date.now() },
+    timestamp: Date.now()
+  });
+
+  await appendEvent(deps, { entityId: sessionId, eventData });
+  await computeAndSaveView(deps, { id: sessionId });
+}
+
+export async function updateSessionStatus(deps, sessionId, status) {
+  const { serialize } = deps;
+  const eventData = serialize({
+    type: "session_updated",
+    sessionId: sessionId,
+    data: { status, timestamp: Date.now() },
+    timestamp: Date.now()
+  });
+
+  await appendEvent(deps, { entityId: sessionId, eventData });
+  await computeAndSaveView(deps, { id: sessionId });
+}
+
 export async function fetchEventsBySessionId(deps, sessionId) {
   const { db } = deps;
 
@@ -80,6 +106,13 @@ export async function computeAndSaveView(deps, payload) {
         if (event.data.messages !== undefined) state.messages = event.data.messages;
         if (event.data.status !== undefined) state.status = event.data.status;
         if (event.data.project !== undefined) state.project = event.data.project;
+        state.updatedAt = event.timestamp;
+        break;
+
+      case "session_append_messages":
+        if (event.data.message) {
+          state.messages.push(event.data.message);
+        }
         state.updatedAt = event.timestamp;
         break;
     }

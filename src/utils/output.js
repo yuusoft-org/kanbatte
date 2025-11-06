@@ -41,10 +41,30 @@ export const formatOutput = (data, format, type) => {
         if (data.messages && data.messages.length > 0) {
           console.log(`## Messages\n\n`);
           data.messages.forEach((msg) => {
-            const role = msg.role === 'user' ? '👤 User' : '🤖 Assistant';
-            const timestamp = new Date(msg.timestamp).toISOString();
+            let role = '🤖 Assistant';
+            let timestamp = new Date(msg.timestamp).toISOString();
+            let content = '';
+
+            // Handle different message types
+            if (msg.role === 'user') {
+              role = '👤 User';
+              content = msg.content || '';
+            } else if (msg.role === 'assistant') {
+              role = '🤖 Assistant';
+              // Extract text from standard completion API format
+              content = msg.content
+                .filter(c => c.type === 'text')
+                .map(c => c.text)
+                .join('\n\n');
+            } else if (msg.type === 'error') {
+              role = '❌ Error';
+              content = `Error: ${msg.content}`;
+            } else {
+              throw new Error(`Unknown message format: ${JSON.stringify(msg, null, 2)}`);
+            }
+
             console.log(`### ${role} (${timestamp})\n\n`);
-            console.log(`${msg.content}\n\n`);
+            console.log(`${content}\n\n`);
           });
         }
       } else {
@@ -63,8 +83,28 @@ export const formatOutput = (data, format, type) => {
         // Session list table with required columns
         const extractSentence = (content) => {
           if (!content) return '';
-          const firstSentence = content.split(/[.!?]/)[0].trim();
-          return firstSentence.length > 40 ? firstSentence.substring(0, 37) + '...' : firstSentence + (content.includes('.') ? '.' : '');
+
+          let textContent = '';
+
+          // Handle standard completion API format
+          if (content.role === 'user' && typeof content.content === 'string') {
+            textContent = content.content;
+          } else if (content.role === 'assistant' && Array.isArray(content.content)) {
+            // Extract text from assistant messages
+            textContent = content.content
+              .filter(c => c.type === 'text')
+              .map(c => c.text)
+              .join(' ');
+          } else if (content.type === 'error') {
+            textContent = `Error: ${content.content}`;
+          } else {
+            throw new Error(`Unknown message format in extractSentence: ${JSON.stringify(content, null, 2)}`);
+          }
+
+          if (!textContent) return '';
+
+          const firstSentence = textContent.split(/[.!?]/)[0].trim();
+          return firstSentence.length > 40 ? firstSentence.substring(0, 37) + '...' : firstSentence + (textContent.includes('.') ? '.' : '');
         };
 
         const table = new Table({

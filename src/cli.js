@@ -13,6 +13,7 @@ import { createClient } from "@libsql/client";
 import { createTask, listTasks, locateTask } from "./taskCommands.js";
 import { addSession, updateSession, readSession, listSessions, addProject, updateProject, listProjects } from "./sessionCommands.js";
 import { formatOutput } from "./utils/output.js";
+import { agent } from "./agent/agent.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // Use current working directory for task operations (not CLI file location)
@@ -326,24 +327,16 @@ sessionProjectCmd
     }
   });
 
-// Agent command
-program
-  .command("agent")
-  .description("Run agent on ready sessions")
+// Agent command group
+const agentCmd = program.command("agent").description("Control AI agents");
+
+agentCmd
+  .command("start")
+  .description("Start agent to process ready sessions")
   .action(async () => {
-    const { agent } = await import("./agent/agent.js");
     const agentDeps = {
-      libsqlDao: {
-        getSessionsByStatus: (status) => {
-          return libsqlDao.getSessionsByStatus(libsqlDaoDeps, status);
-        },
-        getViewBySessionId: (sessionId) => {
-          return libsqlDao.getViewBySessionId(libsqlDaoDeps, sessionId);
-        },
-        updateSession: (deps, payload) => {
-          return updateSession(deps, payload);
-        },
-      },
+      libsqlDao,
+      libsqlDaoDeps
     };
     await agent(agentDeps);
   });
