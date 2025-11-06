@@ -69,24 +69,15 @@ Please continue working on this session. You can read files, write code, and mak
 
   } catch (error) {
     console.error(`Error processing session ${session.sessionId}:`, error);
-    agentResponse = `Agent encountered an error: ${error.message}. Session reset to ready for retry.`;
+    agentResponse = `Agent encountered an error: ${error.message}. Session marked for review.`;
 
     await deps.libsqlDao.updateSession({
       sessionId: session.sessionId,
       message: agentResponse,
     });
-
-    // Set status back to ready for next retry
-    await deps.libsqlDao.updateSession({
-      sessionId: session.sessionId,
-      status: "ready",
-    });
-
-    console.log(`\nSession ${session.sessionId} reset to ready due to error`);
-    return;
   }
 
-  // Set status to review only on successful completion
+  // Always set status to review (both success and error cases)
   await deps.libsqlDao.updateSession({
     sessionId: session.sessionId,
     status: "review",
