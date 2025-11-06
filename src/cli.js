@@ -11,7 +11,7 @@ import * as libsqlDao from "./dao/libsqlDao.js";
 import { createLibSqlUmzug } from "umzug-libsql";
 import { createClient } from "@libsql/client";
 import { createTask, listTasks, locateTask } from "./taskCommands.js";
-import { addSession, updateSession, readSession, listSessions, addProject, updateProject, listProjects } from "./sessionCommands.js";
+import { addSession, updateSession as updateSessionCmd, readSession, listSessions, addProject, updateProject, listProjects } from "./sessionCommands.js";
 import { formatOutput } from "./utils/output.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -326,10 +326,12 @@ sessionProjectCmd
     }
   });
 
-// Agent command
-program
-  .command("agent")
-  .description("Run agent on ready sessions")
+// Agent command group
+const agentCmd = program.command("agent").description("Control AI agents");
+
+agentCmd
+  .command("start")
+  .description("Start agent to process ready sessions")
   .action(async () => {
     const { agent } = await import("./agent/agent.js");
     const agentDeps = {
@@ -340,8 +342,26 @@ program
         getViewBySessionId: (sessionId) => {
           return libsqlDao.getViewBySessionId(libsqlDaoDeps, sessionId);
         },
-        updateSession: (deps, payload) => {
-          return updateSession(deps, payload);
+        getProjectById: (projectId) => {
+          return libsqlDao.getProjectById(libsqlDaoDeps, projectId);
+        },
+        updateSession: (payload) => {
+          const sessionDeps = {
+            ...libsqlDaoDeps,
+            libsqlDao: {
+              getViewBySessionId: (sessionId) => {
+                return libsqlDao.getViewBySessionId(libsqlDaoDeps, sessionId);
+              },
+              appendEvent: (eventData) => {
+                return libsqlDao.appendEvent(libsqlDaoDeps, eventData);
+              },
+              computeAndSaveView: (viewData) => {
+                return libsqlDao.computeAndSaveView(libsqlDaoDeps, viewData);
+              },
+            },
+            formatOutput
+          };
+          return updateSessionCmd(sessionDeps, payload);
         },
       },
     };

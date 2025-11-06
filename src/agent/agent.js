@@ -1,5 +1,4 @@
 import { query } from "@anthropic-ai/claude-agent-sdk";
-import { updateSession } from "../sessionCommands.js";
 import { setupWorktree } from "../utils/git.js";
 
 export async function agent(deps) {
@@ -26,7 +25,7 @@ export async function agent(deps) {
   console.log(`Messages count: ${session.messages.length}\n`);
 
   // Setup git worktree using session project
-  const worktreePath = await setupWorktree(session.sessionId, libsqlDao);
+  const worktreePath = await setupWorktree(session.sessionId, libsqlDao, session.project);
   console.log(`\nWorktree ready at: ${worktreePath}\n`);
 
   // Build context from session messages
@@ -43,31 +42,52 @@ ${messageContext}
 
 Please continue working on this session. You can read files, write code, and make changes.`;
 
-  const result = query({
-    prompt: systemPrompt,
-    options,
-    cwd: worktreePath,
-  });
-
   let agentResponse = "";
 
-  for await (const message of result) {
-    if (message.type === "assistant") {
-      const text = message.message.content
-        .filter((c) => c.type === "text")
-        .map((c) => c.text)
-        .join("");
-      agentResponse += text + "\n";
-      console.log(text);
+  try {
+    const result = query({
+      prompt: systemPrompt,
+      options,
+      cwd: worktreePath,
+    });
+
+    for await (const message of result) {
+      if (message.type === "assistant") {
+        const text = message.message.content
+          .filter((c) => c.type === "text")
+          .map((c) => c.text)
+          .join("");
+        agentResponse += text + "\n";
+        console.log(text);
+      }
     }
+
+    await deps.libsqlDao.updateSession({
+      sessionId: session.sessionId,
+      message: agentResponse.trim(),
+    });
+
+  } catch (error) {
+    console.error(`Error processing session ${session.sessionId}:`, error);
+    agentResponse = `Agent encountered an error: ${error.message}. Session reset to ready for retry.`;
+
+    await deps.libsqlDao.updateSession({
+      sessionId: session.sessionId,
+      message: agentResponse,
+    });
+
+    // Set status back to ready for next retry
+    await deps.libsqlDao.updateSession({
+      sessionId: session.sessionId,
+      status: "ready",
+    });
+
+    console.log(`\nSession ${session.sessionId} reset to ready due to error`);
+    return;
   }
 
-  await updateSession(deps, {
-    sessionId: session.sessionId,
-    message: agentResponse.trim(),
-  });
-
-  await updateSession(deps, {
+  // Set status to review only on successful completion
+  await deps.libsqlDao.updateSession({
     sessionId: session.sessionId,
     status: "review",
   });

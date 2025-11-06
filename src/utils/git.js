@@ -72,21 +72,29 @@ async function createWorktree(repoPath, worktreePath, taskId) {
   }
 }
 
-export async function setupWorktree(taskId, libsqlDao) {
-  const prefix = getProjectPrefix(taskId);
-  const project = await libsqlDao.getProjectById(prefix);
+export async function setupWorktree(worktreeId, libsqlDao, projectId = null) {
+  let project;
 
-  if (!project) throw new Error(`Project ${prefix} not found`);
+  if (projectId) {
+    // Use provided project ID (for sessions)
+    project = await libsqlDao.getProjectById(projectId);
+  } else {
+    // Extract project prefix from worktree ID (for tasks)
+    const prefix = getProjectPrefix(worktreeId);
+    project = await libsqlDao.getProjectById(prefix);
+  }
+
+  if (!project) throw new Error(`Project not found`);
   if (!project.repository)
-    throw new Error(`No repository for project ${prefix}`);
+    throw new Error(`No repository for project`);
 
   const repoName = getRepoName(project.repository);
   const cwd = process.cwd();
   const repoPath = join(cwd, "repositories", repoName);
-  const worktreePath = join(cwd, "worktrees", taskId);
+  const worktreePath = join(cwd, "worktrees", worktreeId);
 
   await ensureRepo(project.repository, repoPath);
-  await createWorktree(repoPath, worktreePath, taskId);
+  await createWorktree(repoPath, worktreePath, worktreeId);
 
   return worktreePath;
 }
