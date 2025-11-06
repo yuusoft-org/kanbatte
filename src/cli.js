@@ -11,7 +11,7 @@ import * as libsqlDao from "./dao/libsqlDao.js";
 import { createLibSqlUmzug } from "umzug-libsql";
 import { createClient } from "@libsql/client";
 import { createTask, listTasks, locateTask } from "./taskCommands.js";
-import { addSession, updateSession as updateSessionCmd, readSession, listSessions, addProject, updateProject, listProjects } from "./sessionCommands.js";
+import { addSession, updateSession, readSession, listSessions, addProject, updateProject, listProjects } from "./sessionCommands.js";
 import { formatOutput } from "./utils/output.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -335,35 +335,30 @@ agentCmd
   .action(async () => {
     const { agent } = await import("./agent/agent.js");
     const agentDeps = {
-      libsqlDao: {
-        getSessionsByStatus: (status) => {
-          return libsqlDao.getSessionsByStatus(libsqlDaoDeps, status);
-        },
-        getViewBySessionId: (sessionId) => {
-          return libsqlDao.getViewBySessionId(libsqlDaoDeps, sessionId);
-        },
-        getProjectById: (projectId) => {
-          return libsqlDao.getProjectById(libsqlDaoDeps, projectId);
-        },
-        updateSession: (payload) => {
-          const sessionDeps = {
-            ...libsqlDaoDeps,
-            libsqlDao: {
-              getViewBySessionId: (sessionId) => {
-                return libsqlDao.getViewBySessionId(libsqlDaoDeps, sessionId);
-              },
-              appendEvent: (eventData) => {
-                return libsqlDao.appendEvent(libsqlDaoDeps, eventData);
-              },
-              computeAndSaveView: (viewData) => {
-                return libsqlDao.computeAndSaveView(libsqlDaoDeps, viewData);
-              },
-            },
-            formatOutput
-          };
-          return updateSessionCmd(sessionDeps, payload);
-        },
+      getSessionsByStatus: (status) => {
+        return libsqlDao.getSessionsByStatus(libsqlDaoDeps, status);
       },
+      getProjectById: (projectId) => {
+        return libsqlDao.getProjectById(libsqlDaoDeps, projectId);
+      },
+      appendToSession: (sessionId, message) => {
+        const eventData = serialize({
+          type: "session_append",
+          sessionId: sessionId,
+          data: { message, timestamp: Date.now() },
+          timestamp: Date.now()
+        });
+        return libsqlDao.appendEvent(libsqlDaoDeps, { entityId: sessionId, eventData });
+      },
+      updateSessionStatus: (sessionId, status) => {
+        const eventData = serialize({
+          type: "session_update",
+          sessionId: sessionId,
+          data: { status, timestamp: Date.now() },
+          timestamp: Date.now()
+        });
+        return libsqlDao.appendEvent(libsqlDaoDeps, { entityId: sessionId, eventData });
+      }
     };
     await agent(agentDeps);
   });

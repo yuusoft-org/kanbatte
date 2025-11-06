@@ -2,8 +2,6 @@ import { query } from "@anthropic-ai/claude-agent-sdk";
 import { setupWorktree } from "../utils/git.js";
 
 export async function agent(deps) {
-  const { libsqlDao } = deps;
-
   const options = {
     canUseTool: (toolName, inputData) => {
       return {
@@ -13,7 +11,7 @@ export async function agent(deps) {
     },
   };
 
-  const readySessions = await libsqlDao.getSessionsByStatus("ready");
+  const readySessions = await deps.getSessionsByStatus("ready");
 
   if (readySessions.length === 0) {
     console.log("No sessions with status 'ready' found");
@@ -24,8 +22,14 @@ export async function agent(deps) {
   console.log(`Running agent for session: ${session.sessionId}`);
   console.log(`Messages count: ${session.messages.length}\n`);
 
-  // Setup git worktree using session project
-  const worktreePath = await setupWorktree(session.sessionId, libsqlDao, session.project);
+  // Get project repository
+  const project = await deps.getProjectById(session.project);
+  if (!project || !project.repository) {
+    throw new Error(`No repository found for project ${session.project}`);
+  }
+
+  // Setup git worktree using project repository
+  const worktreePath = await setupWorktree(session.sessionId, project.repository);
   console.log(`\nWorktree ready at: ${worktreePath}\n`);
 
   // Build context from session messages
@@ -42,7 +46,7 @@ ${messageContext}
 
 Please continue working on this session. You can read files, write code, and make changes.`;
 
-  let agentResponse = "";
+  const messages = [];
 
   try {
     const result = query({
@@ -52,36 +56,40 @@ Please continue working on this session. You can read files, write code, and mak
     });
 
     for await (const message of result) {
-      if (message.type === "assistant") {
-        const text = message.message.content
-          .filter((c) => c.type === "text")
-          .map((c) => c.text)
-          .join("");
-        agentResponse += text + "\n";
-        console.log(text);
+      // Include all message types, not just assistant
+      if (message.type) {
+        messages.push(message);
+
+        if (message.type === "assistant") {
+          const text = message.message?.content
+            ?.filter((c) => c.type === "text")
+            ?.map((c) => c.text)
+            ?.join("") || "";
+          console.log(text);
+        }
       }
     }
 
-    await deps.libsqlDao.updateSession({
-      sessionId: session.sessionId,
-      message: agentResponse.trim(),
+    // Append the complete message structure as JSON
+    await deps.appendToSession(session.sessionId, {
+      type: "agent_response",
+      content: messages,
+      timestamp: Date.now()
     });
 
   } catch (error) {
     console.error(`Error processing session ${session.sessionId}:`, error);
-    agentResponse = `Agent encountered an error: ${error.message}. Session marked for review.`;
 
-    await deps.libsqlDao.updateSession({
-      sessionId: session.sessionId,
-      message: agentResponse,
+    // Append error message as JSON
+    await deps.appendToSession(session.sessionId, {
+      type: "error",
+      content: error.message,
+      timestamp: Date.now()
     });
   }
 
   // Always set status to review (both success and error cases)
-  await deps.libsqlDao.updateSession({
-    sessionId: session.sessionId,
-    status: "review",
-  });
+  await deps.updateSessionStatus(session.sessionId, "review");
 
   console.log(`\nSession ${session.sessionId} moved to review`);
 }
