@@ -55,11 +55,12 @@ program
   .version(packageJson.version);
 
 //Setup db
+const dbCmd = program.command("db").description("Database operations");
 
-program
-  .command("db")
+dbCmd
+  .command("setup")
   .description("Set up database for kanbatte")
-  .action((options) => {
+  .action(() => {
     console.log("Setting up database for kanbatte");
     setupDB();
   });
