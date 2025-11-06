@@ -185,12 +185,13 @@ sessionCmd
 // Session status command
 sessionCmd
   .command("status")
-  .description("Update session status")
+  .description("Get or update session status")
   .argument("<sessionId>", "Session ID")
-  .requiredOption("-s, --status <status>", "New status")
-  .action((sessionId, options) => {
+  .argument("[status]", "New status (optional)")
+  .action(async (sessionId, status) => {
     const sessionDeps = {
       serialize,
+      formatOutput,
       libsqlDao: {
         getViewBySessionId: (sessionId) => {
           return libsqlDao.getViewBySessionId(libsqlDaoDeps, sessionId);
@@ -203,7 +204,19 @@ sessionCmd
         },
       },
     };
-    updateSession(sessionDeps, { sessionId, ...options });
+
+    if (status) {
+      // Update status
+      await updateSession(sessionDeps, { sessionId, status });
+    } else {
+      // Get current status
+      const session = await libsqlDao.getViewBySessionId(libsqlDaoDeps, sessionId);
+      if (session) {
+        console.log(session.status);
+      } else {
+        throw new Error(`Session '${sessionId}' does not exist`);
+      }
+    }
   });
 
 // Session list command
