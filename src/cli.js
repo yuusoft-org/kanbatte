@@ -11,7 +11,7 @@ import * as libsqlDao from "./dao/libsqlDao.js";
 import { createLibSqlUmzug } from "umzug-libsql";
 import { createClient } from "@libsql/client";
 import { createTask, listTasks, locateTask } from "./taskCommands.js";
-import { addSession, updateSession, readSession, listSessions, addProject, updateProject, listProjects } from "./sessionCommands.js";
+import { addSession, updateSession, readSession, listSessions, addProject, updateProject, listProjects, getSessionStatus } from "./sessionCommands.js";
 import { formatOutput } from "./utils/output.js";
 import { agent } from "./agent/agent.js";
 
@@ -210,12 +210,8 @@ sessionCmd
       await updateSession(sessionDeps, { sessionId, status });
     } else {
       // Get current status
-      const session = await libsqlDao.getViewBySessionId(libsqlDaoDeps, sessionId);
-      if (session) {
-        console.log(session.status);
-      } else {
-        throw new Error(`Session '${sessionId}' does not exist`);
-      }
+      const currentStatus = await getSessionStatus(sessionDeps, sessionId);
+      console.log(currentStatus);
     }
   });
 

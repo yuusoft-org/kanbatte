@@ -48,6 +48,21 @@ export const addSession = async (deps, payload) => {
 };
 
 
+export const getSessionStatus = async (deps, sessionId) => {
+  const { libsqlDao } = deps;
+
+  if (!sessionId) {
+    throw new Error("Session ID is required");
+  }
+
+  const session = await libsqlDao.getViewBySessionId(sessionId);
+  if (!session) {
+    throw new Error(`Session '${sessionId}' does not exist`);
+  }
+
+  return session.status;
+};
+
 export const updateSession = async (deps, payload) => {
   const { serialize, libsqlDao, formatOutput } = deps;
 
