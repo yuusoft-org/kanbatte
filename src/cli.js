@@ -335,32 +335,8 @@ agentCmd
   .description("Start agent to process ready sessions")
   .action(async () => {
     const agentDeps = {
-      getSessionsByStatus: (status) => {
-        return libsqlDao.getSessionsByStatus(libsqlDaoDeps, status);
-      },
-      getProjectById: (projectId) => {
-        return libsqlDao.getProjectById(libsqlDaoDeps, projectId);
-      },
-      appendToSession: (sessionId, message) => {
-        const eventData = serialize({
-          type: "session_append",
-          sessionId: sessionId,
-          data: { message, timestamp: Date.now() },
-          timestamp: Date.now()
-        });
-        return libsqlDao.appendEvent(libsqlDaoDeps, { entityId: sessionId, eventData })
-          .then(() => libsqlDao.computeAndSaveView(libsqlDaoDeps, { id: sessionId }));
-      },
-      updateSessionStatus: (sessionId, status) => {
-        const eventData = serialize({
-          type: "session_updated",
-          sessionId: sessionId,
-          data: { status, timestamp: Date.now() },
-          timestamp: Date.now()
-        });
-        return libsqlDao.appendEvent(libsqlDaoDeps, { entityId: sessionId, eventData })
-          .then(() => libsqlDao.computeAndSaveView(libsqlDaoDeps, { id: sessionId }));
-      }
+      libsqlDao,
+      libsqlDaoDeps
     };
     await agent(agentDeps);
   });

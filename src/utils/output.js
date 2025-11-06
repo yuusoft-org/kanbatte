@@ -51,23 +51,16 @@ export const formatOutput = (data, format, type) => {
               content = msg.content || '';
             } else if (msg.role === 'assistant') {
               role = '🤖 Assistant';
-              content = msg.content || '';
-            } else if (msg.type === 'agent_response') {
-              role = '🤖 Assistant';
-              // Extract text from AI response
-              if (Array.isArray(msg.content)) {
-                const assistantMessages = msg.content.filter(m => m.type === 'assistant' && m.message?.content);
-                content = assistantMessages
-                  .flatMap(m => m.message.content.filter(c => c.type === 'text').map(c => c.text))
-                  .join('\n\n');
-              }
+              // Extract text from standard completion API format
+              content = msg.content
+                .filter(c => c.type === 'text')
+                .map(c => c.text)
+                .join('\n\n');
             } else if (msg.type === 'error') {
               role = '❌ Error';
               content = `Error: ${msg.content}`;
             } else {
-              // Fallback for unknown types
-              role = '📝 Message';
-              content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content, null, 2);
+              throw new Error(`Unknown message format: ${JSON.stringify(msg, null, 2)}`);
             }
 
             console.log(`### ${role} (${timestamp})\n\n`);
@@ -93,22 +86,19 @@ export const formatOutput = (data, format, type) => {
 
           let textContent = '';
 
-          // Handle different message types
-          if (typeof content === 'string') {
-            textContent = content;
-          } else if (typeof content === 'object') {
-            // Handle AI response objects
-            if (content.type === 'agent_response' && Array.isArray(content.content)) {
-              // Extract text from assistant messages in the response
-              const assistantMessages = content.content.filter(msg => msg.type === 'assistant' && msg.message?.content);
-              textContent = assistantMessages
-                .flatMap(msg => msg.message.content.filter(c => c.type === 'text').map(c => c.text))
-                .join(' ');
-            } else if (content.type === 'error') {
-              textContent = `Error: ${content.content}`;
-            } else if (content.content) {
-              textContent = JSON.stringify(content.content);
-            }
+          // Handle standard completion API format
+          if (content.role === 'user' && typeof content.content === 'string') {
+            textContent = content.content;
+          } else if (content.role === 'assistant' && Array.isArray(content.content)) {
+            // Extract text from assistant messages
+            textContent = content.content
+              .filter(c => c.type === 'text')
+              .map(c => c.text)
+              .join(' ');
+          } else if (content.type === 'error') {
+            textContent = `Error: ${content.content}`;
+          } else {
+            throw new Error(`Unknown message format in extractSentence: ${JSON.stringify(content, null, 2)}`);
           }
 
           if (!textContent) return '';
