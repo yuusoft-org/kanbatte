@@ -247,3 +247,75 @@ export const listProjects = async (deps) => {
 
   return projects;
 };
+
+export const appendSessionMessages = async (deps, payload) => {
+  const { libsqlDao } = deps;
+
+  if (!payload.sessionId) {
+    throw new Error("Session ID is required");
+  }
+
+  if (!payload.messages) {
+    throw new Error("Messages are required (provide messages as JSON array)");
+  }
+
+  // Parse JSON input
+  let messages;
+  try {
+    messages = JSON.parse(payload.messages);
+  } catch (error) {
+    throw new Error("Invalid JSON format: " + error.message);
+  }
+
+  // Validate that input is an array
+  if (!Array.isArray(messages)) {
+    throw new Error("Input must be a JSON array of messages");
+  }
+
+  // Validate array is not empty
+  if (messages.length === 0) {
+    throw new Error("Messages array cannot be empty");
+  }
+
+  // Validate each message in the array
+  for (let i = 0; i < messages.length; i++) {
+    const message = messages[i];
+
+    // Check that message is an object
+    if (typeof message !== 'object' || message === null) {
+      throw new Error(`Message at index ${i} must be an object`);
+    }
+
+    // Check required fields
+    if (!message.role) {
+      throw new Error(`Message at index ${i} missing required field: role`);
+    }
+
+    if (!message.content) {
+      throw new Error(`Message at index ${i} missing required field: content`);
+    }
+
+    // Validate role
+    const validRoles = ['system', 'user', 'assistant'];
+    if (!validRoles.includes(message.role)) {
+      throw new Error(`Message at index ${i} has invalid role: ${message.role}. Valid roles: ${validRoles.join(', ')}`);
+    }
+  }
+
+  // Check if session exists
+  const session = await libsqlDao.getViewBySessionId(payload.sessionId);
+  if (!session) {
+    throw new Error(`Session '${payload.sessionId}' does not exist`);
+  }
+
+  // Append each message
+  for (const message of messages) {
+    await libsqlDao.appendSessionMessage(payload.sessionId, {
+      role: message.role,
+      content: message.content,
+      timestamp: Date.now()
+    });
+  }
+
+  return { sessionId: payload.sessionId, messagesCount: messages.length };
+};

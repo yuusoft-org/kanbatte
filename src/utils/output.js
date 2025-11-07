@@ -41,26 +41,44 @@ export const formatOutput = (data, format, type) => {
         if (data.messages && data.messages.length > 0) {
           console.log(`## Messages\n\n`);
           data.messages.forEach((msg) => {
+            if (!msg.role || !msg.content) {
+              throw new Error(`Invalid completion API message format: ${JSON.stringify(msg, null, 2)}. Expected format: {role: string, content: string | Array}`);
+            }
+
             let role = '🤖 Assistant';
             let timestamp = new Date(msg.timestamp).toISOString();
             let content = '';
 
-            // Handle different message types
+            // Only support standard completion API format
             if (msg.role === 'user') {
               role = '👤 User';
-              content = msg.content || '';
+              if (typeof msg.content === 'string') {
+                content = msg.content;
+              } else {
+                throw new Error(`User message content must be a string, got: ${typeof msg.content}`);
+              }
             } else if (msg.role === 'assistant') {
               role = '🤖 Assistant';
-              // Extract text from standard completion API format
-              content = msg.content
-                .filter(c => c.type === 'text')
-                .map(c => c.text)
-                .join('\n\n');
-            } else if (msg.type === 'error') {
-              role = '❌ Error';
-              content = `Error: ${msg.content}`;
+              if (typeof msg.content === 'string') {
+                content = msg.content;
+              } else if (Array.isArray(msg.content)) {
+                // Extract text from assistant messages with array content
+                content = msg.content
+                  .filter(c => c.type === 'text')
+                  .map(c => c.text)
+                  .join('\n\n');
+              } else {
+                throw new Error(`Assistant message content must be a string or array, got: ${typeof msg.content}`);
+              }
+            } else if (msg.role === 'system') {
+              role = '⚙️ System';
+              if (typeof msg.content === 'string') {
+                content = msg.content;
+              } else {
+                throw new Error(`System message content must be a string, got: ${typeof msg.content}`);
+              }
             } else {
-              throw new Error(`Unknown message format: ${JSON.stringify(msg, null, 2)}`);
+              throw new Error(`Unknown role: ${msg.role}. Valid roles: user, assistant, system`);
             }
 
             console.log(`### ${role} (${timestamp})\n\n`);
@@ -81,24 +99,22 @@ export const formatOutput = (data, format, type) => {
     if (type === "list" && Array.isArray(data)) {
       if (data.length > 0 && data[0].sessionId) {
         // Session list table with required columns
-        const extractSentence = (content) => {
-          if (!content) return '';
+        const extractSentence = (message) => {
+          if (!message) return '';
 
           let textContent = '';
 
-          // Handle standard completion API format
-          if (content.role === 'user' && typeof content.content === 'string') {
-            textContent = content.content;
-          } else if (content.role === 'assistant' && Array.isArray(content.content)) {
-            // Extract text from assistant messages
-            textContent = content.content
+          // Only support standard completion API format
+          if (message.role && typeof message.content === 'string') {
+            textContent = message.content;
+          } else if (message.role === 'assistant' && Array.isArray(message.content)) {
+            // Extract text from assistant messages with array content
+            textContent = message.content
               .filter(c => c.type === 'text')
               .map(c => c.text)
               .join(' ');
-          } else if (content.type === 'error') {
-            textContent = `Error: ${content.content}`;
           } else {
-            throw new Error(`Unknown message format in extractSentence: ${JSON.stringify(content, null, 2)}`);
+            throw new Error(`Invalid completion API message format: ${JSON.stringify(message, null, 2)}. Expected format: {role: string, content: string | Array}`);
           }
 
           if (!textContent) return '';
@@ -120,8 +136,8 @@ export const formatOutput = (data, format, type) => {
           let lastMessage = '';
 
           if (session.messages && session.messages.length > 0) {
-            firstMessage = extractSentence(session.messages[0].content);
-            lastMessage = extractSentence(session.messages[session.messages.length - 1].content);
+            firstMessage = extractSentence(session.messages[0]);
+            lastMessage = extractSentence(session.messages[session.messages.length - 1]);
           }
 
           table.push([

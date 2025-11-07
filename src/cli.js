@@ -11,7 +11,7 @@ import * as libsqlDao from "./dao/libsqlDao.js";
 import { createLibSqlUmzug } from "umzug-libsql";
 import { createClient } from "@libsql/client";
 import { createTask, listTasks, locateTask } from "./taskCommands.js";
-import { addSession, updateSession, readSession, listSessions, addProject, updateProject, listProjects, getSession } from "./sessionCommands.js";
+import { addSession, updateSession, readSession, listSessions, addProject, updateProject, listProjects, getSession, appendSessionMessages } from "./sessionCommands.js";
 import { formatOutput } from "./utils/output.js";
 import { agent } from "./agent/agent.js";
 
@@ -161,10 +161,10 @@ sessionCmd
 // Session append command
 sessionCmd
   .command("append")
-  .description("Append a message to an existing session")
+  .description("Append messages to an existing session (JSON array format)")
   .argument("<sessionId>", "Session ID")
-  .requiredOption("-m, --message <message>", "Message content")
-  .action((sessionId, options) => {
+  .requiredOption("-m, --messages <messages>", "Messages in JSON array format")
+  .action(async (sessionId, options) => {
     const sessionDeps = {
       serialize,
       deserialize,
@@ -172,15 +172,13 @@ sessionCmd
         getViewBySessionId: (sessionId) => {
           return libsqlDao.getViewBySessionId(libsqlDaoDeps, sessionId);
         },
-        appendEvent: (payload) => {
-          return libsqlDao.appendEvent(libsqlDaoDeps, payload);
-        },
-        computeAndSaveView: (payload) => {
-          return libsqlDao.computeAndSaveView(libsqlDaoDeps, payload);
+        appendSessionMessage: (sessionId, message) => {
+          return libsqlDao.appendSessionMessage(libsqlDaoDeps, sessionId, message);
         },
       },
     };
-    updateSession(sessionDeps, { sessionId, ...options });
+    await appendSessionMessages(sessionDeps, { sessionId, messages: options.messages });
+    console.log("Messages appended successfully to session:", sessionId);
   });
 
 // Session status command
