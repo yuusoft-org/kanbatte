@@ -1,6 +1,6 @@
 ---
 title: Unify the message format to the completion API.
-status: todo
+status: done
 priority: high
 ---
 
