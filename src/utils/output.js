@@ -42,7 +42,7 @@ export const formatOutput = (data, format, type) => {
           console.log(`## Messages\n\n`);
           data.messages.forEach((msg) => {
             if (!msg.role || !msg.content) {
-              throw new Error(`Invalid completion API message format: ${JSON.stringify(msg, null, 2)}. Expected format: {role: string, content: string | Array}`);
+              console.warn(`Invalid completion API message format: ${JSON.stringify(msg, null, 2)}. Expected format: {role: string, content: string | Array}`);
             }
 
             let role = '🤖 Assistant';
@@ -55,7 +55,7 @@ export const formatOutput = (data, format, type) => {
               if (typeof msg.content === 'string') {
                 content = msg.content;
               } else {
-                throw new Error(`User message content must be a string, got: ${typeof msg.content}`);
+                console.warn(`User message content must be a string, got: ${typeof msg.content}`);
               }
             } else if (msg.role === 'assistant') {
               role = '🤖 Assistant';
@@ -68,17 +68,17 @@ export const formatOutput = (data, format, type) => {
                   .map(c => c.text)
                   .join('\n\n');
               } else {
-                throw new Error(`Assistant message content must be a string or array, got: ${typeof msg.content}`);
+                console.warn(`Assistant message content must be a string or array, got: ${typeof msg.content}`);
               }
             } else if (msg.role === 'system') {
               role = '⚙️ System';
               if (typeof msg.content === 'string') {
                 content = msg.content;
               } else {
-                throw new Error(`System message content must be a string, got: ${typeof msg.content}`);
+                console.warn(`System message content must be a string, got: ${typeof msg.content}`);
               }
             } else {
-              throw new Error(`Unknown role: ${msg.role}. Valid roles: user, assistant, system`);
+              console.warn(`Unknown role: ${msg.role}. Valid roles: user, assistant, system`);
             }
 
             console.log(`### ${role} (${timestamp})\n\n`);
@@ -114,7 +114,7 @@ export const formatOutput = (data, format, type) => {
               .map(c => c.text)
               .join(' ');
           } else {
-            throw new Error(`Invalid completion API message format: ${JSON.stringify(message, null, 2)}. Expected format: {role: string, content: string | Array}`);
+            console.warn(`Invalid completion API message format: ${JSON.stringify(message, null, 2)}. Expected format: {role: string, content: string | Array}`);
           }
 
           if (!textContent) return '';

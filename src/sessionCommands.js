@@ -308,14 +308,7 @@ export const appendSessionMessages = async (deps, payload) => {
     throw new Error(`Session '${payload.sessionId}' does not exist`);
   }
 
-  // Append each message
-  for (const message of messages) {
-    await libsqlDao.appendSessionMessage(payload.sessionId, {
-      role: message.role,
-      content: message.content,
-      timestamp: Date.now()
-    });
-  }
+  await libsqlDao.appendSessionMessages(payload.sessionId, messages);
 
   return { sessionId: payload.sessionId, messagesCount: messages.length };
 };

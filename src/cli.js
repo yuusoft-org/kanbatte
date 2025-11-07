@@ -172,8 +172,8 @@ sessionCmd
         getViewBySessionId: (sessionId) => {
           return libsqlDao.getViewBySessionId(libsqlDaoDeps, sessionId);
         },
-        appendSessionMessage: (sessionId, message) => {
-          return libsqlDao.appendSessionMessage(libsqlDaoDeps, sessionId, message);
+        appendSessionMessages: (sessionId, messages) => {
+          return libsqlDao.appendSessionMessages(libsqlDaoDeps, sessionId, messages);
         },
       },
     };

@@ -88,21 +88,14 @@ Please continue working on this session for project "${session.project}". You ca
         }
 
         // Append single message in standard completion API format
-        await deps.libsqlDao.appendSessionMessage(deps.libsqlDaoDeps, session.sessionId, {
+        await deps.libsqlDao.appendSessionMessages(deps.libsqlDaoDeps, session.sessionId, [{
           role: "assistant",
           content: assistantContent, // Content array in standard format
           timestamp: Date.now()
-        });
+        }]);
 
       } catch (error) {
         console.error(`Error processing session ${session.sessionId}:`, error);
-
-        // Append error message as JSON
-        await deps.libsqlDao.appendSessionMessage(deps.libsqlDaoDeps, session.sessionId, {
-          type: "error",
-          content: error.message,
-          timestamp: Date.now()
-        });
       }
 
       // Always set status to review (both success and error cases)
