@@ -8,15 +8,18 @@ export async function appendEvent(deps, payload) {
   });
 }
 
-export async function appendSessionMessage(deps, sessionId, message) {
+export async function appendSessionMessages(deps, sessionId, messages) {
   const { serialize } = deps;
+  const messagesWithTimestamps = messages.map(msg => ({
+    ...msg,
+    timestamp: msg.timestamp || Date.now()
+  }));
   const eventData = serialize({
     type: "session_append_messages",
     sessionId: sessionId,
-    data: { message, timestamp: Date.now() },
+    data: { messages: messagesWithTimestamps, timestamp: Date.now() },
     timestamp: Date.now()
   });
-
   await appendEvent(deps, { entityId: sessionId, eventData });
   await computeAndSaveView(deps, { id: sessionId });
 }
@@ -110,8 +113,10 @@ export async function computeAndSaveView(deps, payload) {
         break;
 
       case "session_append_messages":
-        if (event.data.message) {
-          state.messages.push(event.data.message);
+        if (event.data.messages) {
+          for (const msg of event.data.messages) {
+            state.messages.push(msg);
+          }
         }
         state.updatedAt = event.timestamp;
         break;

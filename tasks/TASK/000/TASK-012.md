@@ -1,6 +1,6 @@
 ---
 title: Fix agent command structure to support 'agent start'
-status: todo
+status: done
 priority: high
 assignee:
 ---
