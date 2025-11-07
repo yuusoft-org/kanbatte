@@ -304,3 +304,15 @@ The agent runs in a continuous loop:
 - can keep current folder and files structure
 
 
+## Next Step
+
+- Push PR autoly
+- when agent start, should always running and listening to the ready sessions.
+  - start logic in a function, accept a session id, only execute one session at a time
+  - while loop, will call the function
+- UI
+  - task page (read only)
+  - agent page
+- improve code
+
+
