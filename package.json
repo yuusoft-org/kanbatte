@@ -4,7 +4,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yuusoft-org/kantabtte.git"
+    "url": "https://github.com/yuusoft-org/kanbatte.git"
   },
   "type": "module",
   "bin": {
