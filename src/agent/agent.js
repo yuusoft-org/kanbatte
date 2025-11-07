@@ -2,15 +2,6 @@ import { query } from "@anthropic-ai/claude-agent-sdk";
 import { setupWorktree } from "../utils/git.js";
 
 export async function agent(deps) {
-  const options = {
-    canUseTool: (toolName, inputData) => {
-      return {
-        behavior: "allow",
-        updatedInput: inputData,
-      };
-    },
-  };
-
   const readySessions = await deps.libsqlDao.getSessionsByStatus(deps.libsqlDaoDeps, "ready");
 
   if (readySessions.length === 0) {
@@ -42,19 +33,7 @@ export async function agent(deps) {
         .join('\n');
 
       // Build user prompt with context
-      const userPrompt = `You are working on session ${session.sessionId} for project "${session.project}".
-Current working directory: ${worktreePath}
-Project repository: ${project.repository}
-Session status: ${session.status}
-
-CRITICAL CONTEXT:
-- Your current working directory is ${worktreePath}
-- This is a DEDICATED git worktree containing ONLY project "${session.project}" files
-- IGNORE any parent directory information you might discover
-- The project you are working on is "${session.project}" with repository: ${project.repository}
-- DO NOT infer project identity from file paths - use the project information provided above
-- Your task scope is limited to ${session.project} only
-
+      const userPrompt = `
 Session conversation so far:
 ${messageContext}
 
@@ -63,8 +42,15 @@ Please continue working on this session for project "${session.project}". You ca
       try {
         const result = query({
           prompt: userPrompt,
-          options,
-          cwd: worktreePath,
+          options: {
+            canUseTool: (toolName, inputData) => {
+              return {
+                behavior: "allow",
+                updatedInput: inputData,
+              };
+            },
+            cwd: worktreePath,
+          },
         });
 
         const assistantContent = [];
