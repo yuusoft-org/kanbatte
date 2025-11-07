@@ -43,10 +43,24 @@ export const addSession = async (deps, payload) => {
   await libsqlDao.appendEvent(appendPayload);
   await libsqlDao.computeAndSaveView({ id: sessionId });
 
-  console.log("Session created successfully!" + ` Session ID: ${sessionId}`);
   return { sessionId, ...sessionData };
 };
 
+
+export const getSession = async (deps, sessionId) => {
+  const { libsqlDao } = deps;
+
+  if (!sessionId) {
+    throw new Error("Session ID is required");
+  }
+
+  const session = await libsqlDao.getViewBySessionId(sessionId);
+  if (!session) {
+    throw new Error(`Session '${sessionId}' does not exist`);
+  }
+
+  return session;
+};
 
 export const updateSession = async (deps, payload) => {
   const { serialize, libsqlDao, formatOutput } = deps;
@@ -96,10 +110,6 @@ export const updateSession = async (deps, payload) => {
   await libsqlDao.appendEvent(appendPayload);
   await libsqlDao.computeAndSaveView({ id: payload.sessionId });
 
-  console.log("Session updated successfully!", {
-    sessionId: payload.sessionId,
-    ...validUpdates,
-  });
   return { sessionId: payload.sessionId, ...validUpdates };
 };
 
@@ -174,9 +184,6 @@ export const addProject = async (deps, payload) => {
   await libsqlDao.appendEvent(appendPayload);
   await libsqlDao.computeAndSaveView({ id: payload.projectId });
 
-  console.log("Project created successfully!", {
-    projectId: payload.projectId,
-  });
   return projectData;
 };
 
@@ -214,10 +221,6 @@ export const updateProject = async (deps, payload) => {
   await libsqlDao.appendEvent(appendPayload);
   await libsqlDao.computeAndSaveView({ id: payload.projectId });
 
-  console.log("Project updated successfully!", {
-    projectId: payload.projectId,
-    ...validUpdates,
-  });
   return { projectId: payload.projectId, ...validUpdates };
 };
 
@@ -229,7 +232,6 @@ export const listProjects = async (deps) => {
   });
 
   if (result.rows.length === 0) {
-    console.log("No projects found.");
     return [];
   }
 

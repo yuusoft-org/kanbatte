@@ -11,7 +11,7 @@ import * as libsqlDao from "./dao/libsqlDao.js";
 import { createLibSqlUmzug } from "umzug-libsql";
 import { createClient } from "@libsql/client";
 import { createTask, listTasks, locateTask } from "./taskCommands.js";
-import { addSession, updateSession, readSession, listSessions, addProject, updateProject, listProjects } from "./sessionCommands.js";
+import { addSession, updateSession, readSession, listSessions, addProject, updateProject, listProjects, getSession } from "./sessionCommands.js";
 import { formatOutput } from "./utils/output.js";
 import { agent } from "./agent/agent.js";
 
@@ -125,7 +125,7 @@ sessionCmd
   .description("Create a new session and queue it for agent processing")
   .argument("<message>", "Initial message content")
   .requiredOption("-p, --project <projectId>", "Project ID")
-  .action((message, options) => {
+  .action(async (message, options) => {
     const sessionDeps = {
       serialize,
       deserialize,
@@ -154,7 +154,8 @@ sessionCmd
         },
       },
     };
-    addSession(sessionDeps, { ...options, message });
+    const session = await addSession(sessionDeps, { ...options, message });
+    console.log("Session created successfully! Session ID:", session.sessionId);
   });
 
 // Session append command
@@ -185,12 +186,13 @@ sessionCmd
 // Session status command
 sessionCmd
   .command("status")
-  .description("Update session status")
+  .description("Get or update session status")
   .argument("<sessionId>", "Session ID")
-  .requiredOption("-s, --status <status>", "New status")
-  .action((sessionId, options) => {
+  .argument("[status]", "New status (optional)")
+  .action(async (sessionId, status) => {
     const sessionDeps = {
       serialize,
+      formatOutput,
       libsqlDao: {
         getViewBySessionId: (sessionId) => {
           return libsqlDao.getViewBySessionId(libsqlDaoDeps, sessionId);
@@ -203,7 +205,16 @@ sessionCmd
         },
       },
     };
-    updateSession(sessionDeps, { sessionId, ...options });
+
+    if (status) {
+      // Update status
+      const result = await updateSession(sessionDeps, { sessionId, status });
+      console.log("Session status updated successfully!", { sessionId, status: result.status });
+    } else {
+      // Get current status
+      const session = await getSession(sessionDeps, sessionId);
+      console.log(session.status);
+    }
   });
 
 // Session list command
@@ -273,12 +284,13 @@ sessionProjectCmd
         },
       },
     };
-    await addProject(projectDeps, {
+    const project = await addProject(projectDeps, {
       projectId: options.project,
       name: options.name,
       repository: options.repository,
       description: options.description
     });
+    console.log("Project created successfully!", { projectId: project.projectId });
   });
 
 // Session project update command
@@ -308,7 +320,8 @@ sessionProjectCmd
     if (options.name !== undefined) updateData.name = options.name;
     if (options.repository !== undefined) updateData.repository = options.repository;
     if (options.description !== undefined) updateData.description = options.description;
-    await updateProject(projectDeps, updateData);
+    const result = await updateProject(projectDeps, updateData);
+    console.log("Project updated successfully!", { projectId: result.projectId });
   });
 
 // Session project list command
@@ -325,6 +338,8 @@ sessionProjectCmd
     if (projects.length > 0) {
       console.log("Projects:");
       console.table(projects);
+    } else {
+      console.log("No projects found.");
     }
   });
 
