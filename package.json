@@ -1,8 +1,15 @@
 {
   "name": "kanbatte",
-  "module": "index.ts",
+  "version": "0.0.1",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yuusoft-org/kantabtte.git"
+  },
   "type": "module",
-  "private": true,
+  "bin": {
+    "kanbatte": "./src/cli.js"
+  },
   "devDependencies": {
     "@types/bun": "latest",
     "puty": "^0.0.5-rc1"
