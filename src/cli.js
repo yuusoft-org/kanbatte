@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import { Command } from "commander";
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import { serialize, deserialize } from "./utils/serialization.js";
@@ -34,17 +34,31 @@ const packageJson = JSON.parse(
   readFileSync(join(__dirname, "../package.json"), "utf8"),
 );
 
-const config = {
-  url: `file:${dbPath}`,
-};
-const db = createClient(config);
+function getDatabaseClient() {
+  // Check if database file exists before creating client
+  if (!existsSync(dbPath)) {
+    return null;
+  }
 
-const libsqlDaoDeps = {
-  db,
-  generateId,
-  serialize,
-  deserialize,
-};
+  const config = {
+    url: `file:${dbPath}`,
+  };
+  return createClient(config);
+}
+
+function getLibsqlDaoDeps() {
+  const db = getDatabaseClient();
+  if (!db) {
+    return null;
+  }
+
+  return {
+    db,
+    generateId,
+    serialize,
+    deserialize,
+  };
+}
 
 
 const program = new Command();
@@ -126,6 +140,11 @@ sessionCmd
   .argument("<message>", "Initial message content")
   .requiredOption("-p, --project <projectId>", "Project ID")
   .action(async (message, options) => {
+    const libsqlDaoDeps = getLibsqlDaoDeps();
+    if (!libsqlDaoDeps) {
+      throw new Error("Database not found. Please run 'kanbatte db setup' first.");
+    }
+
     const sessionDeps = {
       serialize,
       deserialize,
@@ -165,6 +184,11 @@ sessionCmd
   .argument("<sessionId>", "Session ID")
   .requiredOption("-m, --messages <messages>", "Messages in JSON array format")
   .action(async (sessionId, options) => {
+    const libsqlDaoDeps = getLibsqlDaoDeps();
+    if (!libsqlDaoDeps) {
+      throw new Error("Database not found. Please run 'kanbatte db setup' first.");
+    }
+
     const sessionDeps = {
       serialize,
       deserialize,
@@ -188,6 +212,11 @@ sessionCmd
   .argument("<sessionId>", "Session ID")
   .argument("[status]", "New status (optional)")
   .action(async (sessionId, status) => {
+    const libsqlDaoDeps = getLibsqlDaoDeps();
+    if (!libsqlDaoDeps) {
+      throw new Error("Database not found. Please run 'kanbatte db setup' first.");
+    }
+
     const sessionDeps = {
       serialize,
       formatOutput,
@@ -222,6 +251,11 @@ sessionCmd
   .requiredOption("-p, --project <projectId>", "Project ID")
   .option("-s, --status <status>", "Filter by status")
   .action(async (options) => {
+    const libsqlDaoDeps = getLibsqlDaoDeps();
+    if (!libsqlDaoDeps) {
+      throw new Error("Database not found. Please run 'kanbatte db setup' first.");
+    }
+
     const sessionDeps = {
       libsqlDao: {
         getViewsByProjectId: (payload) => {
@@ -245,6 +279,11 @@ sessionCmd
   .argument("<sessionId>", "Session ID")
   .option("-f, --format <format>", "Output format: table, json, markdown", "markdown")
   .action((sessionId, options) => {
+    const libsqlDaoDeps = getLibsqlDaoDeps();
+    if (!libsqlDaoDeps) {
+      throw new Error("Database not found. Please run 'kanbatte db setup' first.");
+    }
+
     const sessionDeps = {
       libsqlDao: {
         getViewBySessionId: (sessionId) => {
@@ -268,6 +307,11 @@ sessionProjectCmd
   .requiredOption("-r, --repository <repository>", "Repository URL")
   .option("-d, --description <description>", "Project description")
   .action(async (options) => {
+    const libsqlDaoDeps = getLibsqlDaoDeps();
+    if (!libsqlDaoDeps) {
+      throw new Error("Database not found. Please run 'kanbatte db setup' first.");
+    }
+
     const projectDeps = {
       serialize,
       libsqlDao: {
@@ -300,6 +344,11 @@ sessionProjectCmd
   .option("-r, --repository <repository>", "Repository URL")
   .option("-d, --description <description>", "Project description")
   .action(async (options) => {
+    const libsqlDaoDeps = getLibsqlDaoDeps();
+    if (!libsqlDaoDeps) {
+      throw new Error("Database not found. Please run 'kanbatte db setup' first.");
+    }
+
     const projectDeps = {
       serialize,
       libsqlDao: {
@@ -327,6 +376,11 @@ sessionProjectCmd
   .command("list")
   .description("List all projects")
   .action(async (options) => {
+    const libsqlDaoDeps = getLibsqlDaoDeps();
+    if (!libsqlDaoDeps) {
+      throw new Error("Database not found. Please run 'kanbatte db setup' first.");
+    }
+
     const projectDeps = {
       formatOutput,
       libsqlDaoDeps,
@@ -348,6 +402,11 @@ agentCmd
   .command("start")
   .description("Start agent to process ready sessions")
   .action(async () => {
+    const libsqlDaoDeps = getLibsqlDaoDeps();
+    if (!libsqlDaoDeps) {
+      throw new Error("Database not found. Please run 'kanbatte db setup' first.");
+    }
+
     const agentDeps = {
       libsqlDao,
       libsqlDaoDeps
