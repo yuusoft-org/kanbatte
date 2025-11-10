@@ -55,3 +55,14 @@ kanbatte task build
 
 We will then run this on every git merge and publish to github pages. And add the link to it in the README.
 
+# Example code:
+
+https://github.com/yuusoft-org/rettangoli/blob/c343502938e2b28a19dfd00fb245711f7c8eb63e/packages/rettangoli-cli/cli.js#L250
+
+import { buildSite, watchSite, screenshotCommand } from "@rettangoli/sites/cli";
+
+    await buildSite({
+      rootDir: options.rootDir,
+      outputPath: options.outputPath,
+    });
+
