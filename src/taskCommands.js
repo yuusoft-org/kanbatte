@@ -14,14 +14,14 @@ import {
   parseTaskId,
   calculateFolder,
   buildTaskPath,
-  taskExists
+  taskExists,
 } from "./utils/tasks.js";
 
 /**
  * Creates a new task file with proper folder structure and ID generation
  */
 export function createTask(projectRoot, options) {
-  const { type, title, description, priority } = options;
+  const { type, title, description, priority, assignee } = options;
 
   // Validate required fields
   if (!type) {
@@ -47,7 +47,12 @@ export function createTask(projectRoot, options) {
   const folderPath = createTaskFolders(projectRoot, type, folder);
 
   // Generate file content
-  const content = generateTaskContent(title, description, formattedPriority);
+  const content = generateTaskContent(
+    title,
+    description,
+    formattedPriority,
+    assignee,
+  );
 
   // Write file
   const filePath = join(folderPath, `${taskId}.md`);
