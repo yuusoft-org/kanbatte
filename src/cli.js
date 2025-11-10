@@ -11,7 +11,17 @@ import * as libsqlDao from "./dao/libsqlDao.js";
 import { createLibSqlUmzug } from "umzug-libsql";
 import { createClient } from "@libsql/client";
 import { createTask, listTasks, locateTask } from "./taskCommands.js";
-import { addSession, updateSession, readSession, listSessions, addProject, updateProject, listProjects, getSession, appendSessionMessages } from "./sessionCommands.js";
+import {
+  addSession,
+  updateSession,
+  readSession,
+  listSessions,
+  addProject,
+  updateProject,
+  listProjects,
+  getSession,
+  appendSessionMessages,
+} from "./sessionCommands.js";
 import { formatOutput } from "./utils/output.js";
 import { agent } from "./agent/agent.js";
 
@@ -60,7 +70,6 @@ function getLibsqlDaoDeps() {
   };
 }
 
-
 const program = new Command();
 
 program
@@ -79,10 +88,6 @@ dbCmd
     setupDB();
   });
 
-
-
-
-
 // Task command group
 const taskCmd = program.command("task");
 
@@ -94,6 +99,7 @@ taskCmd
   .requiredOption("-t, --title <title>", "Task title")
   .option("-d, --description <description>", "Task description")
   .option("-p, --priority <priority>", "Task priority (low, medium, high)")
+  .option("-a, --assignee <assignee>", "Task assignee")
   .action((type, options) => {
     const result = createTask(projectRoot, { type, ...options });
     if (result) {
@@ -109,7 +115,10 @@ taskCmd
   .description("List tasks in table format")
   .argument("[type]", "Task type to filter by (TASK, FEAT, BUG, etc.)")
   .option("-s, --status <status>", "Filter by status (todo, done)")
-  .option("-p, --priority <priority>", "Filter by priority (low, medium, high, comma-separated)")
+  .option(
+    "-p, --priority <priority>",
+    "Filter by priority (low, medium, high, comma-separated)",
+  )
   .action((type, options) => {
     const result = listTasks(projectRoot, { type, ...options });
     console.log(result);
@@ -142,7 +151,9 @@ sessionCmd
   .action(async (message, options) => {
     const libsqlDaoDeps = getLibsqlDaoDeps();
     if (!libsqlDaoDeps) {
-      throw new Error("Database not found. Please run 'kanbatte db setup' first.");
+      throw new Error(
+        "Database not found. Please run 'kanbatte db setup' first.",
+      );
     }
 
     const sessionDeps = {
@@ -186,7 +197,9 @@ sessionCmd
   .action(async (sessionId, options) => {
     const libsqlDaoDeps = getLibsqlDaoDeps();
     if (!libsqlDaoDeps) {
-      throw new Error("Database not found. Please run 'kanbatte db setup' first.");
+      throw new Error(
+        "Database not found. Please run 'kanbatte db setup' first.",
+      );
     }
 
     const sessionDeps = {
@@ -197,11 +210,18 @@ sessionCmd
           return libsqlDao.getViewBySessionId(libsqlDaoDeps, sessionId);
         },
         appendSessionMessages: (sessionId, messages) => {
-          return libsqlDao.appendSessionMessages(libsqlDaoDeps, sessionId, messages);
+          return libsqlDao.appendSessionMessages(
+            libsqlDaoDeps,
+            sessionId,
+            messages,
+          );
         },
       },
     };
-    await appendSessionMessages(sessionDeps, { sessionId, messages: options.messages });
+    await appendSessionMessages(sessionDeps, {
+      sessionId,
+      messages: options.messages,
+    });
     console.log("Messages appended successfully to session:", sessionId);
   });
 
@@ -214,7 +234,9 @@ sessionCmd
   .action(async (sessionId, status) => {
     const libsqlDaoDeps = getLibsqlDaoDeps();
     if (!libsqlDaoDeps) {
-      throw new Error("Database not found. Please run 'kanbatte db setup' first.");
+      throw new Error(
+        "Database not found. Please run 'kanbatte db setup' first.",
+      );
     }
 
     const sessionDeps = {
@@ -236,7 +258,10 @@ sessionCmd
     if (status) {
       // Update status
       const result = await updateSession(sessionDeps, { sessionId, status });
-      console.log("Session status updated successfully!", { sessionId, status: result.status });
+      console.log("Session status updated successfully!", {
+        sessionId,
+        status: result.status,
+      });
     } else {
       // Get current status
       const session = await getSession(sessionDeps, sessionId);
@@ -253,7 +278,9 @@ sessionCmd
   .action(async (options) => {
     const libsqlDaoDeps = getLibsqlDaoDeps();
     if (!libsqlDaoDeps) {
-      throw new Error("Database not found. Please run 'kanbatte db setup' first.");
+      throw new Error(
+        "Database not found. Please run 'kanbatte db setup' first.",
+      );
     }
 
     const sessionDeps = {
@@ -277,11 +304,17 @@ sessionCmd
   .command("view")
   .description("View a specific session")
   .argument("<sessionId>", "Session ID")
-  .option("-f, --format <format>", "Output format: table, json, markdown", "markdown")
+  .option(
+    "-f, --format <format>",
+    "Output format: table, json, markdown",
+    "markdown",
+  )
   .action((sessionId, options) => {
     const libsqlDaoDeps = getLibsqlDaoDeps();
     if (!libsqlDaoDeps) {
-      throw new Error("Database not found. Please run 'kanbatte db setup' first.");
+      throw new Error(
+        "Database not found. Please run 'kanbatte db setup' first.",
+      );
     }
 
     const sessionDeps = {
@@ -309,7 +342,9 @@ sessionProjectCmd
   .action(async (options) => {
     const libsqlDaoDeps = getLibsqlDaoDeps();
     if (!libsqlDaoDeps) {
-      throw new Error("Database not found. Please run 'kanbatte db setup' first.");
+      throw new Error(
+        "Database not found. Please run 'kanbatte db setup' first.",
+      );
     }
 
     const projectDeps = {
@@ -330,9 +365,11 @@ sessionProjectCmd
       projectId: options.project,
       name: options.name,
       repository: options.repository,
-      description: options.description
+      description: options.description,
     });
-    console.log("Project created successfully!", { projectId: project.projectId });
+    console.log("Project created successfully!", {
+      projectId: project.projectId,
+    });
   });
 
 // Session project update command
@@ -346,7 +383,9 @@ sessionProjectCmd
   .action(async (options) => {
     const libsqlDaoDeps = getLibsqlDaoDeps();
     if (!libsqlDaoDeps) {
-      throw new Error("Database not found. Please run 'kanbatte db setup' first.");
+      throw new Error(
+        "Database not found. Please run 'kanbatte db setup' first.",
+      );
     }
 
     const projectDeps = {
@@ -365,10 +404,14 @@ sessionProjectCmd
     };
     const updateData = { projectId: options.project };
     if (options.name !== undefined) updateData.name = options.name;
-    if (options.repository !== undefined) updateData.repository = options.repository;
-    if (options.description !== undefined) updateData.description = options.description;
+    if (options.repository !== undefined)
+      updateData.repository = options.repository;
+    if (options.description !== undefined)
+      updateData.description = options.description;
     const result = await updateProject(projectDeps, updateData);
-    console.log("Project updated successfully!", { projectId: result.projectId });
+    console.log("Project updated successfully!", {
+      projectId: result.projectId,
+    });
   });
 
 // Session project list command
@@ -378,7 +421,9 @@ sessionProjectCmd
   .action(async (options) => {
     const libsqlDaoDeps = getLibsqlDaoDeps();
     if (!libsqlDaoDeps) {
-      throw new Error("Database not found. Please run 'kanbatte db setup' first.");
+      throw new Error(
+        "Database not found. Please run 'kanbatte db setup' first.",
+      );
     }
 
     const projectDeps = {
@@ -404,12 +449,14 @@ agentCmd
   .action(async () => {
     const libsqlDaoDeps = getLibsqlDaoDeps();
     if (!libsqlDaoDeps) {
-      throw new Error("Database not found. Please run 'kanbatte db setup' first.");
+      throw new Error(
+        "Database not found. Please run 'kanbatte db setup' first.",
+      );
     }
 
     const agentDeps = {
       libsqlDao,
-      libsqlDaoDeps
+      libsqlDaoDeps,
     };
     await agent(agentDeps);
   });

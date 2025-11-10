@@ -1,6 +1,12 @@
 #!/usr/bin/env bun
 
-import { readdirSync, mkdirSync, writeFileSync, existsSync, readFileSync } from "fs";
+import {
+  readdirSync,
+  mkdirSync,
+  writeFileSync,
+  existsSync,
+  readFileSync,
+} from "fs";
 import { join, basename, extname } from "path";
 import * as YAML from "js-yaml";
 
@@ -14,7 +20,11 @@ export function formatPriority(priority) {
   const formatted = priority.toLowerCase();
 
   if (!validPriorities.includes(formatted)) {
-    console.error(`Error: Invalid priority '${priority}'. Must be one of: ${validPriorities.join(", ")}`);
+    console.error(
+      `Error: Invalid priority '${priority}'. Must be one of: ${validPriorities.join(
+        ", ",
+      )}`,
+    );
     return null;
   }
 
@@ -52,21 +62,21 @@ export function getNextTaskId(basePath, type) {
 
   // Get all folder directories (000, 100, 200, etc.)
   const folders = readdirSync(taskTypePath, { withFileTypes: true })
-    .filter(dirent => dirent.isDirectory())
-    .map(dirent => dirent.name)
+    .filter((dirent) => dirent.isDirectory())
+    .map((dirent) => dirent.name)
     .sort((a, b) => parseInt(a) - parseInt(b));
 
   // Check each folder for available IDs
   for (const folder of folders) {
     const folderPath = join(taskTypePath, folder);
     const files = readdirSync(folderPath)
-      .filter(file => file.endsWith(".md") && file.startsWith(type + "-"))
-      .map(file => {
+      .filter((file) => file.endsWith(".md") && file.startsWith(type + "-"))
+      .map((file) => {
         // Extract number from file name (e.g., TASK-001.md -> 1)
         const match = file.match(new RegExp(`${type}-(\\d+)\\.md`));
         return match ? parseInt(match[1]) : 0;
       })
-      .filter(num => num > 0)
+      .filter((num) => num > 0)
       .sort((a, b) => a - b);
 
     // Find the first available number in this folder
@@ -78,38 +88,40 @@ export function getNextTaskId(basePath, type) {
       if (!files.includes(expectedNum)) {
         return {
           taskId: `${type}-${expectedNum.toString().padStart(3, "0")}`,
-          folder: folder
+          folder: folder,
         };
       }
     }
   }
 
   // If all existing folders are full, create a new one
-  const lastFolderNum = folders.length > 0 ? parseInt(folders[folders.length - 1]) : 0;
+  const lastFolderNum =
+    folders.length > 0 ? parseInt(folders[folders.length - 1]) : 0;
   const newFolderNum = lastFolderNum + 100;
   const newFolder = newFolderNum.toString().padStart(3, "0");
 
   return {
     taskId: `${type}-${newFolderNum.toString().padStart(3, "0")}`,
-    folder: newFolder
+    folder: newFolder,
   };
 }
 
 /**
  * Generates markdown content for a task file
  */
-export function generateTaskContent(title, description, priority) {
+export function generateTaskContent(title, description, priority, assignee) {
   const yamlFrontmatter = [
     "---",
     `title: ${title}`,
     "status: todo",
+    `assignee: ${assignee}`,
     `priority: ${priority}`,
     "---",
     "",
     "# Description",
     "",
     description || "",
-    ""
+    "",
   ];
 
   return yamlFrontmatter.join("\n");
@@ -138,7 +150,7 @@ export function parseTaskFile(filePath) {
     taskId,
     title: metadata.title,
     status: metadata.status,
-    priority: metadata.priority
+    priority: metadata.priority,
   };
 }
 
@@ -165,8 +177,8 @@ export function scanTaskFiles(basePath, typeFilter = null) {
   } else {
     // Scan all task types
     typeDirs = readdirSync(tasksPath, { withFileTypes: true })
-      .filter(dirent => dirent.isDirectory())
-      .map(dirent => dirent.name);
+      .filter((dirent) => dirent.isDirectory())
+      .map((dirent) => dirent.name);
   }
 
   // Scan each type directory
@@ -175,15 +187,16 @@ export function scanTaskFiles(basePath, typeFilter = null) {
 
     // Get numeric folders (000, 100, 200, etc.)
     const numericFolders = readdirSync(typePath, { withFileTypes: true })
-      .filter(dirent => dirent.isDirectory() && /^\d{3}$/.test(dirent.name))
-      .map(dirent => dirent.name)
+      .filter((dirent) => dirent.isDirectory() && /^\d{3}$/.test(dirent.name))
+      .map((dirent) => dirent.name)
       .sort((a, b) => parseInt(a) - parseInt(b));
 
     // Scan each numeric folder for task files
     for (const folder of numericFolders) {
       const folderPath = join(typePath, folder);
-      const files = readdirSync(folderPath)
-        .filter(file => file.endsWith(".md"));
+      const files = readdirSync(folderPath).filter((file) =>
+        file.endsWith(".md"),
+      );
 
       for (const file of files) {
         const filePath = join(folderPath, file);
@@ -192,7 +205,9 @@ export function scanTaskFiles(basePath, typeFilter = null) {
           allTasks.push(task);
         } catch (error) {
           // Skip files that can't be parsed, but continue processing other files
-          console.error(`Warning: Skipping invalid task file ${filePath}: ${error.message}`);
+          console.error(
+            `Warning: Skipping invalid task file ${filePath}: ${error.message}`,
+          );
         }
       }
     }
@@ -207,7 +222,7 @@ export function scanTaskFiles(basePath, typeFilter = null) {
  */
 export function filterByStatus(tasks, status) {
   if (!status) return tasks;
-  return tasks.filter(task => task.status === status);
+  return tasks.filter((task) => task.status === status);
 }
 
 /**
@@ -215,8 +230,8 @@ export function filterByStatus(tasks, status) {
  */
 export function filterByPriority(tasks, priorities) {
   if (!priorities) return tasks;
-  const priorityList = priorities.split(",").map(p => p.trim().toLowerCase());
-  return tasks.filter(task => priorityList.includes(task.priority));
+  const priorityList = priorities.split(",").map((p) => p.trim().toLowerCase());
+  return tasks.filter((task) => priorityList.includes(task.priority));
 }
 
 /**
@@ -228,15 +243,28 @@ export function formatTaskTable(tasks) {
   }
 
   // Calculate column widths
-  const maxTaskIdWidth = Math.max("Task ID".length, ...tasks.map(t => t.taskId.length));
-  const maxStatusWidth = Math.max("Status".length, ...tasks.map(t => t.status.length));
-  const maxPriorityWidth = Math.max("Priority".length, ...tasks.map(t => t.priority.length));
-  const maxTitleWidth = Math.max("Title".length, ...tasks.map(t => t.title.length));
+  const maxTaskIdWidth = Math.max(
+    "Task ID".length,
+    ...tasks.map((t) => t.taskId.length),
+  );
+  const maxStatusWidth = Math.max(
+    "Status".length,
+    ...tasks.map((t) => t.status.length),
+  );
+  const maxPriorityWidth = Math.max(
+    "Priority".length,
+    ...tasks.map((t) => t.priority.length),
+  );
+  const maxTitleWidth = Math.max(
+    "Title".length,
+    ...tasks.map((t) => t.title.length),
+  );
 
   // Truncate title if too long (max 50 chars)
-  const truncatedTasks = tasks.map(task => ({
+  const truncatedTasks = tasks.map((task) => ({
     ...task,
-    title: task.title.length > 50 ? task.title.substring(0, 47) + "..." : task.title
+    title:
+      task.title.length > 50 ? task.title.substring(0, 47) + "..." : task.title,
   }));
   const actualMaxTitleWidth = Math.min(50, maxTitleWidth);
 
@@ -245,19 +273,21 @@ export function formatTaskTable(tasks) {
     "Task ID".padEnd(maxTaskIdWidth),
     "Status".padEnd(maxStatusWidth),
     "Priority".padEnd(maxPriorityWidth),
-    "Title".padEnd(actualMaxTitleWidth)
+    "Title".padEnd(actualMaxTitleWidth),
   ].join(" | ");
 
   // Build separator
   const separator = "-".repeat(header.length);
 
   // Build table rows
-  const rows = truncatedTasks.map(task => [
-    task.taskId.padEnd(maxTaskIdWidth),
-    task.status.padEnd(maxStatusWidth),
-    task.priority.padEnd(maxPriorityWidth),
-    task.title.padEnd(actualMaxTitleWidth)
-  ].join(" | "));
+  const rows = truncatedTasks.map((task) =>
+    [
+      task.taskId.padEnd(maxTaskIdWidth),
+      task.status.padEnd(maxStatusWidth),
+      task.priority.padEnd(maxPriorityWidth),
+      task.title.padEnd(actualMaxTitleWidth),
+    ].join(" | "),
+  );
 
   return [header, separator, ...rows].join("\n");
 }
@@ -268,12 +298,14 @@ export function formatTaskTable(tasks) {
 export function parseTaskId(taskId) {
   const match = taskId.match(/^([A-Z]+)-(\d+)$/);
   if (!match) {
-    throw new Error(`Invalid task ID format: ${taskId}. Expected format: TYPE-123`);
+    throw new Error(
+      `Invalid task ID format: ${taskId}. Expected format: TYPE-123`,
+    );
   }
 
   return {
     type: match[1],
-    number: parseInt(match[2])
+    number: parseInt(match[2]),
   };
 }
 
@@ -282,7 +314,9 @@ export function parseTaskId(taskId) {
  */
 export function calculateFolder(number) {
   if (number < 1) {
-    throw new Error(`Invalid task number: ${number}. Task numbers must start from 1`);
+    throw new Error(
+      `Invalid task number: ${number}. Task numbers must start from 1`,
+    );
   }
 
   if (number <= 99) {
@@ -307,4 +341,3 @@ export function buildTaskPath(projectRoot, type, folder, taskId) {
 export function taskExists(filePath) {
   return existsSync(filePath);
 }
-
