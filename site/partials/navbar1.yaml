@@ -1,0 +1,4 @@
+- rtgl-view bwb=xs w=f ah=c pos=fix bgc=bg:
+    - rtgl-view md-w="100vw" lg-w="768" w="1024" d=h av=c h=64 ph=lg:
+        - $if showBackButton:
+            - rtgl-text href="/tasks": < Back

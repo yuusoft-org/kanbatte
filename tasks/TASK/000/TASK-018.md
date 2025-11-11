@@ -3,7 +3,7 @@ title: setup discord client
 assignee: han4wluc
 status: medium
 priority: low
-lables: [discord]
+labels: [discord]
 ---
 
 # Description

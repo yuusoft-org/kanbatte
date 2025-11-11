@@ -6,7 +6,7 @@ import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import { serialize, deserialize } from "./utils/serialization.js";
 import { generateId } from "./utils/helper.js";
-
+import { buildSite } from "@rettangoli/sites/cli";
 import * as libsqlDao from "./dao/libsqlDao.js";
 import { createLibSqlUmzug } from "umzug-libsql";
 import { createClient } from "@libsql/client";
@@ -14,6 +14,7 @@ import { createTask, listTasks, locateTask } from "./taskCommands.js";
 import { addSession, updateSession, readSession, listSessions, addProject, updateProject, listProjects, getSession, appendSessionMessages } from "./sessionCommands.js";
 import { formatOutput } from "./utils/output.js";
 import { agent } from "./agent/agent.js";
+import { removeDirectory, copyDirectory, copyDirectoryOverwrite, processAllTaskFiles, generateTasksData } from "./utils/buildSite.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // Use current working directory for task operations (not CLI file location)
@@ -128,6 +129,46 @@ taskCmd
       console.error(error.message);
       process.exit(1);
     }
+  });
+
+// Build Task site
+taskCmd
+  .command("build")
+  .description("Build the Task site")
+  .action(async () => {
+    const tempDir = join(projectRoot, ".kanbatte");
+    const templateDir = join(__dirname, "../site");
+    const tasksDir = join(projectRoot, "tasks");
+    const destTasksDir = join(tempDir, "pages", "tasks");
+    const destDataDir = join(tempDir, "data");
+    const finalSiteDir = join(projectRoot, "_site");
+
+    // Remove temporary directory if it exists
+    removeDirectory(tempDir);
+
+    // Copy site template to temporary directory
+    copyDirectory(templateDir, tempDir);
+
+    // Generate tasks.yaml data file
+    generateTasksData(tasksDir, destDataDir);
+
+    // Process and copy task markdown files
+    if (existsSync(tasksDir)) {
+      processAllTaskFiles(tasksDir, destTasksDir);
+    }
+
+    // Build the site in temporary directory
+    await buildSite({ rootDir: tempDir });
+
+    // Copy built _site to project root (overwrite existing files)
+    if (existsSync(join(tempDir, "_site"))) {
+      copyDirectoryOverwrite(join(tempDir, "_site"), finalSiteDir);
+    }
+
+    // Clean up temporary directory
+    removeDirectory(tempDir);
+
+    console.log("Task site built successfully!");
   });
 
 // Session command group
