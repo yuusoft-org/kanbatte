@@ -6,7 +6,7 @@ import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import { serialize, deserialize } from "./utils/serialization.js";
 import { generateId } from "./utils/helper.js";
-
+import { buildSite } from "@rettangoli/sites/cli";
 import * as libsqlDao from "./dao/libsqlDao.js";
 import { createLibSqlUmzug } from "umzug-libsql";
 import { createClient } from "@libsql/client";
@@ -14,6 +14,7 @@ import { createTask, listTasks, locateTask } from "./taskCommands.js";
 import { addSession, updateSession, readSession, listSessions, addProject, updateProject, listProjects, getSession, appendSessionMessages } from "./sessionCommands.js";
 import { formatOutput } from "./utils/output.js";
 import { agent } from "./agent/agent.js";
+import { removeDirectory, copyDirectory, processAllTaskFiles } from "./utils/buildSite.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // Use current working directory for task operations (not CLI file location)
@@ -128,6 +129,39 @@ taskCmd
       console.error(error.message);
       process.exit(1);
     }
+  });
+
+// Build Task site
+taskCmd
+  .command("build")
+  .description("Build the Task site")
+  .action(async () => {
+    console.log("Building Task site...");
+
+    const siteDir = join(projectRoot, "_kanbatte");
+    const templateDir = join(__dirname, "../site");
+    const tasksDir = join(projectRoot, "tasks");
+    const destTasksDir = join(siteDir, "pages", "tasks");
+
+    // Remove existing _kanbatte folder
+    removeDirectory(siteDir);
+    console.log("✓ Removed existing _kanbatte folder");
+
+    // Copy site folder to _kanbatte
+    copyDirectory(templateDir, siteDir);
+    console.log("✓ Copied site files to _kanbatte");
+
+    // Process and copy task markdown files
+    if (existsSync(tasksDir)) {
+      processAllTaskFiles(tasksDir, destTasksDir);
+      console.log("✓ Processed task files with updated frontmatter");
+    } else {
+      console.log("⚠ No tasks directory found, skipping task processing");
+    }
+
+    await buildSite({ rootDir: siteDir });
+
+    console.log("Task site built successfully!");
   });
 
 // Session command group

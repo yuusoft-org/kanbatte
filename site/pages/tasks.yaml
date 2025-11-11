@@ -1,0 +1,32 @@
+---
+template: base
+title: tasks
+---
+- rtgl-view h="96":
+- rtgl-view md-w="100vw" lg-w="768" w="1024" ph=lg:
+    - rtgl-text s="h1" mb="lg": Tasks
+    - rtgl-text s="h3" mv="md": Todo
+    - rtgl-view g="md" w=f:
+        - $for item in sortTasks(collections.tasks):
+            - $if item.data.status == "todo":
+                - 'a href="${item.url}" style="display: contents"':
+                    - 'rtgl-view d=h av=c g=lg pv="md" w=f bgc="su" br="lg" h-bgc="suv" h-cur="p"':
+                        - rtgl-view d=h av=c:
+                            - rtgl-text s="lg": ${extractTaskId(item.url)}
+                            - rtgl-text mh=md: "-"
+                            - rtgl-text: ${item.data.title}
+                        - rtgl-view h=1 bgc=bo flex=1:
+                        - rtgl-text s="sm" c="on-suv" mt="sm": ${item.data.priority}
+    - rtgl-view h=5 w=f mv=lg:
+    - rtgl-text s="h3" mv="md": Done
+    - rtgl-view g="md" w=f:
+        - $for item in sortTasks(collections.tasks):
+            - $if item.data.status == "done":
+                - 'a href="${item.url}" style="display: contents"':
+                    - 'rtgl-view d=h av=c g=lg pv="md" w=f bgc="su" br="lg" h-bgc="suv" h-cur="p"':
+                        - rtgl-view d=h av=c:
+                            - rtgl-text s="lg": ${extractTaskId(item.url)}
+                            - rtgl-text mh=md: "-"
+                            - rtgl-text: ${item.data.title}
+                        - rtgl-view h=1 bgc=bo flex=1:
+                        - rtgl-text s="sm" c="on-suv" mt="sm": ${item.data.priority}

@@ -1,9 +1,9 @@
 ---
 title: add task ui
-status: todo
+status: done
 assignee: 738NGX
 priority: high
-lables: [ui,task]
+labels: [ui,task]
 ---
 
 # Description

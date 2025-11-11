@@ -1,0 +1,26 @@
+- html lang="en":
+    - head:
+        - link rel="stylesheet" href="/public/theme.css":
+        - script src="https://cdn.jsdelivr.net/npm/construct-style-sheets-polyfill@3.1.0/dist/adoptedStyleSheets.min.js":
+        - script src="https://cdn.jsdelivr.net/npm/@rettangoli/ui@0.1.2-rc32/dist/rettangoli-iife-ui.min.js":
+        - script src="/public/rtgl-icons.js":
+    - body.dark:
+        - rtgl-view h="64":
+        - rtgl-view w="f" ah="c":
+            - rtgl-view d=h g=xl pb="lg" md-w="100vw" lg-w="768" w="1024" ph=lg:
+                - rtgl-view id="content-container" lg-w="100%" w="624" g=md:
+                    - rtgl-text s=h1 pt=lg mt=lg: '[${upperCaseFirst(status)}] ${title}'
+                    - rtgl-view d=h g=md:
+                        - $if labels:
+                            - $for label in labels:
+                                - rtgl-view bgc="mu" br="md" ph="lg" pv="xs" mr="sm" mb="sm": 
+                                    - rtgl-text: '${label}'
+                    - rtgl-text: 'Assignee: ${assignee}'
+                    - rtgl-text: 'Priority: ${priority}'
+                    - "${content}"
+                - 'rtgl-view lg-hide flex=1 style="position: sticky; top: 64px;"':
+                    - rtgl-page-outline id="page-outline" target-id="content-container":
+            - rtgl-view d="h" h="30vh":
+        - rtgl-view pos="abs" cor="top" ah="c" bgc="mu":
+            - $partial: navbar1
+              showBackButton: true
