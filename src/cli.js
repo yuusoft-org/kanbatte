@@ -14,7 +14,7 @@ import { createTask, listTasks, locateTask } from "./taskCommands.js";
 import { addSession, updateSession, readSession, listSessions, addProject, updateProject, listProjects, getSession, appendSessionMessages } from "./sessionCommands.js";
 import { formatOutput } from "./utils/output.js";
 import { agent } from "./agent/agent.js";
-import { removeDirectory, copyDirectory, processAllTaskFiles } from "./utils/buildSite.js";
+import { removeDirectory, copyDirectory, copyDirectoryOverwrite, processAllTaskFiles, generateTasksData } from "./utils/buildSite.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // Use current working directory for task operations (not CLI file location)
@@ -136,30 +136,37 @@ taskCmd
   .command("build")
   .description("Build the Task site")
   .action(async () => {
-    console.log("Building Task site...");
-
-    const siteDir = join(projectRoot, "_kanbatte");
+    const tempDir = join(projectRoot, ".kanbatte");
     const templateDir = join(__dirname, "../site");
     const tasksDir = join(projectRoot, "tasks");
-    const destTasksDir = join(siteDir, "pages", "tasks");
+    const destTasksDir = join(tempDir, "pages", "tasks");
+    const destDataDir = join(tempDir, "data");
+    const finalSiteDir = join(projectRoot, "_site");
 
-    // Remove existing _kanbatte folder
-    removeDirectory(siteDir);
-    console.log("✓ Removed existing _kanbatte folder");
+    // Remove temporary directory if it exists
+    removeDirectory(tempDir);
 
-    // Copy site folder to _kanbatte
-    copyDirectory(templateDir, siteDir);
-    console.log("✓ Copied site files to _kanbatte");
+    // Copy site template to temporary directory
+    copyDirectory(templateDir, tempDir);
+
+    // Generate tasks.yaml data file
+    generateTasksData(tasksDir, destDataDir);
 
     // Process and copy task markdown files
     if (existsSync(tasksDir)) {
       processAllTaskFiles(tasksDir, destTasksDir);
-      console.log("✓ Processed task files with updated frontmatter");
-    } else {
-      console.log("⚠ No tasks directory found, skipping task processing");
     }
 
-    await buildSite({ rootDir: siteDir });
+    // Build the site in temporary directory
+    await buildSite({ rootDir: tempDir });
+
+    // Copy built _site to project root (overwrite existing files)
+    if (existsSync(join(tempDir, "_site"))) {
+      copyDirectoryOverwrite(join(tempDir, "_site"), finalSiteDir);
+    }
+
+    // Clean up temporary directory
+    removeDirectory(tempDir);
 
     console.log("Task site built successfully!");
   });

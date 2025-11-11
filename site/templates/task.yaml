@@ -9,7 +9,7 @@
         - rtgl-view w="f" ah="c":
             - rtgl-view d=h g=xl pb="lg" md-w="100vw" lg-w="768" w="1024" ph=lg:
                 - rtgl-view id="content-container" lg-w="100%" w="624" g=md:
-                    - rtgl-text s=h1 pt=lg mt=lg: '[${upperCaseFirst(status)}] ${title}'
+                    - rtgl-text s=h1 pt=lg mt=lg: '[${status}] ${title}'
                     - rtgl-view d=h g=md:
                         - $if labels:
                             - $for label in labels:
