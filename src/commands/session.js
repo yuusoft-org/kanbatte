@@ -9,12 +9,12 @@ export const addSession = async (deps, payload) => {
     throw new Error("Project ID is required (use -p or --project)");
   }
 
-  const project = await libsqlDao.getProjectById(payload.project);
+  const project = await libsqlDao.getProjectById({ projectId: payload.project });
   if (!project) {
     throw new Error(`Project '${payload.project}' does not exist`);
   }
 
-  const sessionNumber = await libsqlDao.getNextSessionNumber(payload.project);
+  const sessionNumber = await libsqlDao.getNextSessionNumber({ projectId: payload.project });
   const sessionId = `${payload.project}-${sessionNumber}`;
   const now = Date.now();
 
@@ -54,7 +54,7 @@ export const getSession = async (deps, sessionId) => {
     throw new Error("Session ID is required");
   }
 
-  const session = await libsqlDao.getViewBySessionId(sessionId);
+  const session = await libsqlDao.getViewBySessionId({ sessionId });
   if (!session) {
     throw new Error(`Session '${sessionId}' does not exist`);
   }
@@ -121,7 +121,7 @@ export const readSession = async (deps, sessionId, format = "table") => {
     throw new Error("Session ID is required");
   }
 
-  const sessionData = await libsqlDao.getViewBySessionId(sessionId);
+  const sessionData = await libsqlDao.getViewBySessionId({ sessionId });
 
   if (!sessionData) {
     throw new Error(`Session ${sessionId} not found`);
@@ -161,7 +161,7 @@ export const addProject = async (deps, payload) => {
     throw new Error("Project name is required (use -n or --name)");
   }
 
-  const existing = await libsqlDao.getProjectById(payload.projectId);
+  const existing = await libsqlDao.getProjectById({ projectId: payload.projectId });
   if (existing) {
     throw new Error(`Project with ID '${payload.projectId}' already exists`);
   }
@@ -194,7 +194,7 @@ export const updateProject = async (deps, payload) => {
     throw new Error("Project ID is required (use -p or --project-id)");
   }
 
-  const existing = await libsqlDao.getProjectById(payload.projectId);
+  const existing = await libsqlDao.getProjectById({ projectId: payload.projectId });
   if (!existing) {
     throw new Error(`Project '${payload.projectId}' does not exist`);
   }
@@ -225,27 +225,9 @@ export const updateProject = async (deps, payload) => {
 };
 
 export const listProjects = async (deps) => {
-  const { libsqlDaoDeps, deserialize } = deps;
+  const { libsqlDao } = deps;
 
-  const result = await libsqlDaoDeps.db.execute({
-    sql: "SELECT key, data FROM view WHERE key LIKE 'project:%' ORDER BY created_at ASC",
-  });
-
-  if (result.rows.length === 0) {
-    return [];
-  }
-
-  const projects = result.rows.map(row => {
-    const data = deserialize(row.data);
-    return {
-      'project-id': data.projectId,
-      'name': data.name,
-      'repository': data.repository,
-      'description': data.description
-    };
-  });
-
-  return projects;
+  return await libsqlDao.listProjects();
 };
 
 export const appendSessionMessages = async (deps, payload) => {
@@ -303,12 +285,15 @@ export const appendSessionMessages = async (deps, payload) => {
   }
 
   // Check if session exists
-  const session = await libsqlDao.getViewBySessionId(payload.sessionId);
+  const session = await libsqlDao.getViewBySessionId({ sessionId: payload.sessionId });
   if (!session) {
     throw new Error(`Session '${payload.sessionId}' does not exist`);
   }
 
-  await libsqlDao.appendSessionMessages(payload.sessionId, messages);
+  await libsqlDao.appendSessionMessages({
+    sessionId: payload.sessionId,
+    messages
+  });
 
   return { sessionId: payload.sessionId, messagesCount: messages.length };
 };

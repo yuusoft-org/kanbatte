@@ -2,7 +2,7 @@ import { query } from "@anthropic-ai/claude-agent-sdk";
 import { setupWorktree } from "../utils/git.js";
 
 export const agent = async (deps) => {
-  const readySessions = await deps.libsqlDao.getSessionsByStatus(deps.libsqlDaoDeps, "ready");
+  const readySessions = await deps.libsqlDao.getSessionsByStatus({ status: "ready" });
 
   if (readySessions.length === 0) {
     console.log("No sessions with status 'ready' found");
@@ -18,7 +18,7 @@ export const agent = async (deps) => {
 
     try {
       // Get project repository
-      const project = await deps.libsqlDao.getProjectById(deps.libsqlDaoDeps, session.project);
+      const project = await deps.libsqlDao.getProjectById({ projectId: session.project });
       if (!project || !project.repository) {
         throw new Error(`No repository found for project ${session.project}`);
       }
@@ -74,18 +74,24 @@ Please continue working on this session for project "${session.project}". You ca
         }
 
         // Append single message in standard completion API format
-        await deps.libsqlDao.appendSessionMessages(deps.libsqlDaoDeps, session.sessionId, [{
-          role: "assistant",
-          content: assistantContent, // Content array in standard format
-          timestamp: Date.now()
-        }]);
+        await deps.libsqlDao.appendSessionMessages({
+          sessionId: session.sessionId,
+          messages: [{
+            role: "assistant",
+            content: assistantContent, // Content array in standard format
+            timestamp: Date.now()
+          }]
+        });
 
       } catch (error) {
         console.warn(`Error processing session ${session.sessionId}:`, error);
       }
 
       // Always set status to review (both success and error cases)
-      await deps.libsqlDao.updateSessionStatus(deps.libsqlDaoDeps, session.sessionId, "review");
+      await deps.libsqlDao.updateSessionStatus({
+        sessionId: session.sessionId,
+        status: "review"
+      });
 
       console.log(`\nSession ${session.sessionId} moved to review`);
 

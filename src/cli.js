@@ -7,7 +7,7 @@ import { fileURLToPath } from "url";
 import { serialize, deserialize } from "./utils/serialization.js";
 import { generateId } from "./utils/helper.js";
 import { buildSite } from "@rettangoli/sites/cli";
-import * as libsqlDao from "./dao/libsqlDao.js";
+import * as libsqlDaoMethods from "./dao/libsqlDao.js";
 import { createLibSqlUmzug } from "umzug-libsql";
 import { createClient } from "@libsql/client";
 import { createTask, listTasks, locateTask } from "./commands/task.js";
@@ -35,23 +35,15 @@ const packageJson = JSON.parse(
   readFileSync(join(__dirname, "../package.json"), "utf8"),
 );
 
-const getDatabaseClient = () => {
-  // Check if database file exists before creating client
+const getLibsqlDaoDeps = () => {
   if (!existsSync(dbPath)) {
-    return null;
+    throw new Error("Database not found. Please run 'kanbatte db setup' first.");
   }
 
   const config = {
     url: `file:${dbPath}`,
   };
-  return createClient(config);
-}
-
-const getLibsqlDaoDeps = () => {
-  const db = getDatabaseClient();
-  if (!db) {
-    return null;
-  }
+  const db = createClient(config);
 
   return {
     db,
@@ -61,6 +53,16 @@ const getLibsqlDaoDeps = () => {
   };
 }
 
+const createLibsqlDao = () => {
+  const libsqlDaoDeps = getLibsqlDaoDeps();
+
+  return Object.fromEntries(
+    Object.entries(libsqlDaoMethods).map(([methodName, method]) => [
+      methodName,
+      (...args) => method(libsqlDaoDeps, ...args)
+    ])
+  );
+}
 
 const program = new Command();
 
@@ -176,38 +178,13 @@ sessionCmd
   .argument("<message>", "Initial message content")
   .requiredOption("-p, --project <projectId>", "Project ID")
   .action(async (message, options) => {
-    const libsqlDaoDeps = getLibsqlDaoDeps();
-    if (!libsqlDaoDeps) {
-      throw new Error("Database not found. Please run 'kanbatte db setup' first.");
-    }
+    const libsqlDao = createLibsqlDao();
 
     const sessionDeps = {
       serialize,
       deserialize,
       generateId,
-      libsqlDao: {
-        appendEvent: (payload) => {
-          return libsqlDao.appendEvent(libsqlDaoDeps, payload);
-        },
-        computeAndSaveView: (payload) => {
-          return libsqlDao.computeAndSaveView(libsqlDaoDeps, payload);
-        },
-        getViewBySessionId: (sessionId) => {
-          return libsqlDao.getViewBySessionId(libsqlDaoDeps, sessionId);
-        },
-        getViewsByProjectId: (payload) => {
-          return libsqlDao.getViewsByProjectId(libsqlDaoDeps, payload);
-        },
-        getNextSessionNumber: (projectId) => {
-          return libsqlDao.getNextSessionNumber(libsqlDaoDeps, projectId);
-        },
-        getSessionsByStatus: (status) => {
-          return libsqlDao.getSessionsByStatus(libsqlDaoDeps, status);
-        },
-        getProjectById: (projectId) => {
-          return libsqlDao.getProjectById(libsqlDaoDeps, projectId);
-        },
-      },
+      libsqlDao
     };
     const session = await addSession(sessionDeps, { ...options, message });
     console.log("Session created successfully! Session ID:", session.sessionId);
@@ -220,22 +197,12 @@ sessionCmd
   .argument("<sessionId>", "Session ID")
   .requiredOption("-m, --messages <messages>", "Messages in JSON array format")
   .action(async (sessionId, options) => {
-    const libsqlDaoDeps = getLibsqlDaoDeps();
-    if (!libsqlDaoDeps) {
-      throw new Error("Database not found. Please run 'kanbatte db setup' first.");
-    }
+    const libsqlDao = createLibsqlDao();
 
     const sessionDeps = {
       serialize,
       deserialize,
-      libsqlDao: {
-        getViewBySessionId: (sessionId) => {
-          return libsqlDao.getViewBySessionId(libsqlDaoDeps, sessionId);
-        },
-        appendSessionMessages: (sessionId, messages) => {
-          return libsqlDao.appendSessionMessages(libsqlDaoDeps, sessionId, messages);
-        },
-      },
+      libsqlDao
     };
     await appendSessionMessages(sessionDeps, { sessionId, messages: options.messages });
     console.log("Messages appended successfully to session:", sessionId);
@@ -248,25 +215,12 @@ sessionCmd
   .argument("<sessionId>", "Session ID")
   .argument("[status]", "New status (optional)")
   .action(async (sessionId, status) => {
-    const libsqlDaoDeps = getLibsqlDaoDeps();
-    if (!libsqlDaoDeps) {
-      throw new Error("Database not found. Please run 'kanbatte db setup' first.");
-    }
+    const libsqlDao = createLibsqlDao();
 
     const sessionDeps = {
       serialize,
       formatOutput,
-      libsqlDao: {
-        getViewBySessionId: (sessionId) => {
-          return libsqlDao.getViewBySessionId(libsqlDaoDeps, sessionId);
-        },
-        appendEvent: (payload) => {
-          return libsqlDao.appendEvent(libsqlDaoDeps, payload);
-        },
-        computeAndSaveView: (payload) => {
-          return libsqlDao.computeAndSaveView(libsqlDaoDeps, payload);
-        },
-      },
+      libsqlDao
     };
 
     if (status) {
@@ -287,17 +241,10 @@ sessionCmd
   .requiredOption("-p, --project <projectId>", "Project ID")
   .option("-s, --status <status>", "Filter by status")
   .action(async (options) => {
-    const libsqlDaoDeps = getLibsqlDaoDeps();
-    if (!libsqlDaoDeps) {
-      throw new Error("Database not found. Please run 'kanbatte db setup' first.");
-    }
+    const libsqlDao = createLibsqlDao();
 
     const sessionDeps = {
-      libsqlDao: {
-        getViewsByProjectId: (payload) => {
-          return libsqlDao.getViewsByProjectId(libsqlDaoDeps, payload);
-        },
-      },
+      libsqlDao,
       formatOutput,
     };
     const sessions = await listSessions(sessionDeps, options);
@@ -315,17 +262,10 @@ sessionCmd
   .argument("<sessionId>", "Session ID")
   .option("-f, --format <format>", "Output format: table, json, markdown", "markdown")
   .action((sessionId, options) => {
-    const libsqlDaoDeps = getLibsqlDaoDeps();
-    if (!libsqlDaoDeps) {
-      throw new Error("Database not found. Please run 'kanbatte db setup' first.");
-    }
+    const libsqlDao = createLibsqlDao();
 
     const sessionDeps = {
-      libsqlDao: {
-        getViewBySessionId: (sessionId) => {
-          return libsqlDao.getViewBySessionId(libsqlDaoDeps, sessionId);
-        },
-      },
+      libsqlDao,
       formatOutput,
     };
     readSession(sessionDeps, sessionId, options.format);
@@ -343,24 +283,11 @@ sessionProjectCmd
   .requiredOption("-r, --repository <repository>", "Repository URL")
   .option("-d, --description <description>", "Project description")
   .action(async (options) => {
-    const libsqlDaoDeps = getLibsqlDaoDeps();
-    if (!libsqlDaoDeps) {
-      throw new Error("Database not found. Please run 'kanbatte db setup' first.");
-    }
+    const libsqlDao = createLibsqlDao();
 
     const projectDeps = {
       serialize,
-      libsqlDao: {
-        getProjectById: (projectId) => {
-          return libsqlDao.getProjectById(libsqlDaoDeps, projectId);
-        },
-        appendEvent: (payload) => {
-          return libsqlDao.appendEvent(libsqlDaoDeps, payload);
-        },
-        computeAndSaveView: (payload) => {
-          return libsqlDao.computeAndSaveView(libsqlDaoDeps, payload);
-        },
-      },
+      libsqlDao
     };
     const project = await addProject(projectDeps, {
       projectId: options.project,
@@ -380,24 +307,11 @@ sessionProjectCmd
   .option("-r, --repository <repository>", "Repository URL")
   .option("-d, --description <description>", "Project description")
   .action(async (options) => {
-    const libsqlDaoDeps = getLibsqlDaoDeps();
-    if (!libsqlDaoDeps) {
-      throw new Error("Database not found. Please run 'kanbatte db setup' first.");
-    }
+    const libsqlDao = createLibsqlDao();
 
     const projectDeps = {
       serialize,
-      libsqlDao: {
-        getProjectById: (projectId) => {
-          return libsqlDao.getProjectById(libsqlDaoDeps, projectId);
-        },
-        appendEvent: (payload) => {
-          return libsqlDao.appendEvent(libsqlDaoDeps, payload);
-        },
-        computeAndSaveView: (payload) => {
-          return libsqlDao.computeAndSaveView(libsqlDaoDeps, payload);
-        },
-      },
+      libsqlDao
     };
     const updateData = { projectId: options.project };
     if (options.name !== undefined) updateData.name = options.name;
@@ -411,18 +325,9 @@ sessionProjectCmd
 sessionProjectCmd
   .command("list")
   .description("List all projects")
-  .action(async (options) => {
-    const libsqlDaoDeps = getLibsqlDaoDeps();
-    if (!libsqlDaoDeps) {
-      throw new Error("Database not found. Please run 'kanbatte db setup' first.");
-    }
-
-    const projectDeps = {
-      formatOutput,
-      libsqlDaoDeps,
-      deserialize,
-    };
-    const projects = await listProjects(projectDeps);
+  .action(async () => {
+    const libsqlDao = createLibsqlDao();
+    const projects = await listProjects({ libsqlDao });
     if (projects.length > 0) {
       console.log("Projects:");
       console.table(projects);
@@ -438,16 +343,8 @@ agentCmd
   .command("start")
   .description("Start agent to process ready sessions")
   .action(async () => {
-    const libsqlDaoDeps = getLibsqlDaoDeps();
-    if (!libsqlDaoDeps) {
-      throw new Error("Database not found. Please run 'kanbatte db setup' first.");
-    }
-
-    const agentDeps = {
-      libsqlDao,
-      libsqlDaoDeps
-    };
-    await agent(agentDeps);
+    const libsqlDao = createLibsqlDao();
+    await agent({ libsqlDao });
   });
 
 // Parse command line arguments
