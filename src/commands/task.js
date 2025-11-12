@@ -1,4 +1,4 @@
-import { writeFileSync, existsSync } from "fs";
+import { writeFileSync } from "fs";
 import { join } from "path";
 import {
   formatPriority,
@@ -13,7 +13,7 @@ import {
   calculateFolder,
   buildTaskPath,
   taskExists
-} from "./utils/tasks.js";
+} from "../utils/tasks.js";
 
 /**
  * Creates a new task file with proper folder structure and ID generation

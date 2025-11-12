@@ -8,8 +8,9 @@ export const appendEvent = async (deps, payload) => {
   });
 }
 
-export const appendSessionMessages = async (deps, sessionId, messages) => {
+export const appendSessionMessages = async (deps, payload) => {
   const { serialize } = deps;
+  const { sessionId, messages } = payload;
   const messagesWithTimestamps = messages.map(msg => ({
     ...msg,
     timestamp: msg.timestamp || Date.now()
@@ -24,8 +25,9 @@ export const appendSessionMessages = async (deps, sessionId, messages) => {
   await computeAndSaveView(deps, { id: sessionId });
 }
 
-export const updateSessionStatus = async (deps, sessionId, status) => {
+export const updateSessionStatus = async (deps, payload) => {
   const { serialize } = deps;
+  const { sessionId, status } = payload;
   const eventData = serialize({
     type: "session_updated",
     sessionId: sessionId,
@@ -37,8 +39,9 @@ export const updateSessionStatus = async (deps, sessionId, status) => {
   await computeAndSaveView(deps, { id: sessionId });
 }
 
-export const fetchEventsBySessionId = async (deps, sessionId) => {
+export const fetchEventsBySessionId = async (deps, payload) => {
   const { db } = deps;
+  const { sessionId } = payload;
 
   const result = await db.execute({
     sql: "SELECT id, data, created_at FROM event_log WHERE key = ? ORDER BY created_at ASC",
@@ -52,7 +55,7 @@ export const computeAndSaveView = async (deps, payload) => {
   const { db, generateId, deserialize, serialize } = deps;
   const { id } = payload;
 
-  const events = await fetchEventsBySessionId(deps, id);
+  const events = await fetchEventsBySessionId(deps, { sessionId: id });
 
   if (events.length === 0) {
     return null;
@@ -146,8 +149,9 @@ export const computeAndSaveView = async (deps, payload) => {
   return state;
 }
 
-export const getViewBySessionId = async (deps, sessionId) => {
+export const getViewBySessionId = async (deps, payload) => {
   const { db, deserialize } = deps;
+  const { sessionId } = payload;
 
   const result = await db.execute({
     sql: "SELECT data FROM view WHERE key = ?",
@@ -184,8 +188,9 @@ export const getViewsByProjectId = async (deps, payload) => {
   return sessions;
 }
 
-export const getNextSessionNumber = async (deps, projectId) => {
+export const getNextSessionNumber = async (deps, payload) => {
   const { db } = deps;
+  const { projectId } = payload;
 
   const result = await db.execute({
     sql: "SELECT key FROM view WHERE key LIKE ? ORDER BY created_at DESC LIMIT 1",
@@ -206,8 +211,9 @@ export const getNextSessionNumber = async (deps, projectId) => {
   return parseInt(match[2], 10) + 1;
 }
 
-export const getSessionsByStatus = async (deps, status) => {
+export const getSessionsByStatus = async (deps, payload) => {
   const { db, deserialize } = deps;
+  const { status } = payload;
 
   const result = await db.execute({
     sql: "SELECT data FROM view WHERE key LIKE ?",
@@ -225,8 +231,9 @@ export const getSessionsByStatus = async (deps, status) => {
   return sessions;
 }
 
-export const getProjectById = async (deps, projectId) => {
+export const getProjectById = async (deps, payload) => {
   const { db, deserialize } = deps;
+  const { projectId } = payload;
 
   const result = await db.execute({
     sql: "SELECT data FROM view WHERE key = ?",
@@ -238,4 +245,26 @@ export const getProjectById = async (deps, projectId) => {
   }
 
   return deserialize(result.rows[0].data);
+}
+
+export const listProjects = async (deps) => {
+  const { db, deserialize } = deps;
+
+  const result = await db.execute({
+    sql: "SELECT key, data FROM view WHERE key LIKE 'project:%' ORDER BY created_at ASC",
+  });
+
+  if (result.rows.length === 0) {
+    return [];
+  }
+
+  return result.rows.map(row => {
+    const data = deserialize(row.data);
+    return {
+      projectId: data.projectId,
+      name: data.name,
+      repository: data.repository,
+      description: data.description
+    };
+  });
 }
