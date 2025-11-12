@@ -1,14 +1,14 @@
 import { existsSync, rmSync, mkdirSync, readdirSync, copyFileSync, writeFileSync, readFileSync } from "fs";
 import { join, basename } from "path";
-import yaml from "js-yaml";
+import { load, dump } from "js-yaml";
 
-export function removeDirectory(dirPath) {
+export const removeDirectory = (dirPath) => {
   if (existsSync(dirPath)) {
     rmSync(dirPath, { recursive: true, force: true });
   }
 }
 
-export function copyDirectory(src, dest) {
+export const copyDirectory = (src, dest) => {
   if (!existsSync(dest)) {
     mkdirSync(dest, { recursive: true });
   }
@@ -27,7 +27,7 @@ export function copyDirectory(src, dest) {
   }
 }
 
-export function copyDirectoryOverwrite(src, dest) {
+export const copyDirectoryOverwrite = (src, dest) => {
   // Ensure destination exists
   if (!existsSync(dest)) {
     mkdirSync(dest, { recursive: true });
@@ -47,7 +47,7 @@ export function copyDirectoryOverwrite(src, dest) {
   }
 }
 
-export function processTaskFile(srcPath, destPath) {
+export const processTaskFile = (srcPath, destPath) => {
   const content = readFileSync(srcPath, 'utf8');
 
   // Split content into frontmatter and body
@@ -95,13 +95,13 @@ export function processTaskFile(srcPath, destPath) {
   writeFileSync(destPath, updatedContent);
 }
 
-export function processAllTaskFiles(tasksDir, destTasksDir) {
+export const processAllTaskFiles = (tasksDir, destTasksDir) => {
   if (!existsSync(destTasksDir)) {
     mkdirSync(destTasksDir, { recursive: true });
   }
 
   // Recursively find all markdown files in tasks directory
-  function findMarkdownFiles(dir, fileList = []) {
+  const findMarkdownFiles = (dir, fileList = []) => {
     const entries = readdirSync(dir, { withFileTypes: true });
 
     for (const entry of entries) {
@@ -124,26 +124,26 @@ export function processAllTaskFiles(tasksDir, destTasksDir) {
   }
 }
 
-function parseFrontmatter(content) {
+const parseFrontmatter = (content) => {
   const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
   if (!frontmatterMatch) {
     return null;
   }
 
   try {
-    return yaml.load(frontmatterMatch[1]);
+    return load(frontmatterMatch[1]);
   } catch (error) {
     console.warn(`Failed to parse frontmatter: ${error.message}`);
     return null;
   }
 }
 
-function extractTaskId(filePath) {
+const extractTaskId = (filePath) => {
   const fileName = basename(filePath, '.md');
   return fileName; // Get the filename without extension (e.g., TASK-001)
 }
 
-function sortTasks(tasks) {
+const sortTasks = (tasks) => {
   const priorityMap = {
     high: 3,
     medium: 2,
@@ -163,7 +163,7 @@ function sortTasks(tasks) {
 }
 
 
-export function generateTasksData(tasksDir, destDataDir) {
+export const generateTasksData = (tasksDir, destDataDir) => {
   if (!existsSync(tasksDir)) {
     console.log("⚠ No tasks directory found, skipping tasks data generation");
     return;
@@ -174,7 +174,7 @@ export function generateTasksData(tasksDir, destDataDir) {
   }
 
   // Find all markdown files in tasks directory
-  function findMarkdownFiles(dir, fileList = []) {
+  const findMarkdownFiles = (dir, fileList = []) => {
     const entries = readdirSync(dir, { withFileTypes: true });
 
     for (const entry of entries) {
@@ -235,7 +235,7 @@ export function generateTasksData(tasksDir, destDataDir) {
 
   // Write to tasks.yaml
   const tasksYamlPath = join(destDataDir, 'tasks.yaml');
-  const yamlContent = yaml.dump(tasksData, {
+  const yamlContent = dump(tasksData, {
     indent: 2,
     lineWidth: 120,
     noRefs: true

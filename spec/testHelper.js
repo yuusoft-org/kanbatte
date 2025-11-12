@@ -7,10 +7,10 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Helper function to load fixture files recursively
-function loadFixture(fixturePath) {
+const loadFixture = (fixturePath) => {
   const files = {};
 
-  function readDirRecursive(dir, basePath = '') {
+  const readDirRecursive = (dir, basePath = '') => {
     const items = fs.readdirSync(dir, { withFileTypes: true });
 
     items.forEach(item => {
@@ -31,7 +31,7 @@ function loadFixture(fixturePath) {
 }
 
 // Main test runner function
-export async function runTest(fixturePath) {
+export const runTest = async (fixturePath) => {
   const fixtureDir = path.join(__dirname, fixturePath);
 
   // Create in-memory file system
@@ -50,7 +50,7 @@ export async function runTest(fixturePath) {
   const outputs = {};
   const expectedDir = path.join(fixtureDir, 'out');
 
-  function readExpectedFiles(dir, basePath = '') {
+  const readExpectedFiles = (dir, basePath = '') => {
     const items = fs.readdirSync(dir, { withFileTypes: true });
 
     items.forEach(item => {
@@ -72,12 +72,12 @@ export async function runTest(fixturePath) {
 }
 
 // Helper to load expected outputs
-function loadExpectedOutputs(fixturePath) {
+const loadExpectedOutputs = (fixturePath) => {
   const fixtureDir = path.join(__dirname, fixturePath);
   const expectedDir = path.join(fixtureDir, 'out');
   const outputs = {};
 
-  function readFiles(dir, basePath = '') {
+  const readFiles = (dir, basePath = '') => {
     const items = fs.readdirSync(dir, { withFileTypes: true });
 
     items.forEach(item => {

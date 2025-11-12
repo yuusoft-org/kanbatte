@@ -1,7 +1,7 @@
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import { setupWorktree } from "../utils/git.js";
 
-export async function agent(deps) {
+export const agent = async (deps) => {
   const readySessions = await deps.libsqlDao.getSessionsByStatus(deps.libsqlDaoDeps, "ready");
 
   if (readySessions.length === 0) {
@@ -81,7 +81,7 @@ Please continue working on this session for project "${session.project}". You ca
         }]);
 
       } catch (error) {
-        console.error(`Error processing session ${session.sessionId}:`, error);
+        console.warn(`Error processing session ${session.sessionId}:`, error);
       }
 
       // Always set status to review (both success and error cases)
@@ -90,7 +90,7 @@ Please continue working on this session for project "${session.project}". You ca
       console.log(`\nSession ${session.sessionId} moved to review`);
 
     } catch (error) {
-      console.error(`Failed to process session ${session.sessionId}:`, error);
+      console.warn(`Failed to process session ${session.sessionId}:`, error);
       // Continue to next session
     }
   }
