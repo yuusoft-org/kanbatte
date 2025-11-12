@@ -1,21 +1,18 @@
-#!/usr/bin/env bun
-
 import { readdirSync, mkdirSync, writeFileSync, existsSync, readFileSync } from "fs";
 import { join, basename, extname } from "path";
-import * as YAML from "js-yaml";
+import { load } from "js-yaml";
 
 /**
  * Validates and formats priority value
  */
-export function formatPriority(priority) {
+export const formatPriority = (priority) => {
   if (!priority) return "low";
 
   const validPriorities = ["low", "medium", "high"];
   const formatted = priority.toLowerCase();
 
   if (!validPriorities.includes(formatted)) {
-    console.error(`Error: Invalid priority '${priority}'. Must be one of: ${validPriorities.join(", ")}`);
-    return null;
+    throw new Error(`Invalid priority '${priority}'. Must be one of: ${validPriorities.join(", ")}`);
   }
 
   return formatted;
@@ -24,7 +21,7 @@ export function formatPriority(priority) {
 /**
  * Creates the necessary folder structure for a task type
  */
-export function createTaskFolders(basePath, type, folderName) {
+export const createTaskFolders = (basePath, type, folderName) => {
   const taskTypePath = join(basePath, "tasks", type);
   const folderPath = join(taskTypePath, folderName);
 
@@ -42,7 +39,7 @@ export function createTaskFolders(basePath, type, folderName) {
 /**
  * Scans existing task folders and returns the next available ID
  */
-export function getNextTaskId(basePath, type) {
+export const getNextTaskId = (basePath, type) => {
   const taskTypePath = join(basePath, "tasks", type);
 
   // If the task type directory doesn't exist, start with TASK-001
@@ -98,7 +95,7 @@ export function getNextTaskId(basePath, type) {
 /**
  * Generates markdown content for a task file
  */
-export function generateTaskContent(title, description, priority) {
+export const generateTaskContent = (title, description, priority) => {
   const yamlFrontmatter = [
     "---",
     `title: ${title}`,
@@ -118,7 +115,7 @@ export function generateTaskContent(title, description, priority) {
 /**
  * Parses a task file and extracts metadata from YAML frontmatter
  */
-export function parseTaskFile(filePath) {
+export const parseTaskFile = (filePath) => {
   const content = readFileSync(filePath, "utf8");
   const filename = basename(filePath, extname(filePath));
 
@@ -132,7 +129,7 @@ export function parseTaskFile(filePath) {
   }
 
   const frontmatter = frontmatterMatch[1];
-  const metadata = YAML.load(frontmatter);
+  const metadata = load(frontmatter);
 
   return {
     taskId,
@@ -145,7 +142,7 @@ export function parseTaskFile(filePath) {
 /**
  * Scans task directories and returns all tasks
  */
-export function scanTaskFiles(basePath, typeFilter = null) {
+export const scanTaskFiles = (basePath, typeFilter = null) => {
   const tasksPath = join(basePath, "tasks");
   const allTasks = [];
 
@@ -192,7 +189,7 @@ export function scanTaskFiles(basePath, typeFilter = null) {
           allTasks.push(task);
         } catch (error) {
           // Skip files that can't be parsed, but continue processing other files
-          console.error(`Warning: Skipping invalid task file ${filePath}: ${error.message}`);
+          console.warn(`Warning: Skipping invalid task file ${filePath}: ${error.message}`);
         }
       }
     }
@@ -205,7 +202,7 @@ export function scanTaskFiles(basePath, typeFilter = null) {
 /**
  * Filters tasks by status
  */
-export function filterByStatus(tasks, status) {
+export const filterByStatus = (tasks, status) => {
   if (!status) return tasks;
   return tasks.filter(task => task.status === status);
 }
@@ -213,7 +210,7 @@ export function filterByStatus(tasks, status) {
 /**
  * Filters tasks by priority (supports comma-separated values)
  */
-export function filterByPriority(tasks, priorities) {
+export const filterByPriority = (tasks, priorities) => {
   if (!priorities) return tasks;
   const priorityList = priorities.split(",").map(p => p.trim().toLowerCase());
   return tasks.filter(task => priorityList.includes(task.priority));
@@ -222,7 +219,7 @@ export function filterByPriority(tasks, priorities) {
 /**
  * Formats tasks as a table for CLI output
  */
-export function formatTaskTable(tasks) {
+export const formatTaskTable = (tasks) => {
   if (tasks.length === 0) {
     return "No tasks found.";
   }
@@ -265,7 +262,7 @@ export function formatTaskTable(tasks) {
 /**
  * Parses task ID to extract type and number
  */
-export function parseTaskId(taskId) {
+export const parseTaskId = (taskId) => {
   const match = taskId.match(/^([A-Z]+)-(\d+)$/);
   if (!match) {
     throw new Error(`Invalid task ID format: ${taskId}. Expected format: TYPE-123`);
@@ -280,7 +277,7 @@ export function parseTaskId(taskId) {
 /**
  * Calculates which folder a task should be in based on its number
  */
-export function calculateFolder(number) {
+export const calculateFolder = (number) => {
   if (number < 1) {
     throw new Error(`Invalid task number: ${number}. Task numbers must start from 1`);
   }
@@ -297,14 +294,14 @@ export function calculateFolder(number) {
 /**
  * Builds the absolute path to a task file
  */
-export function buildTaskPath(projectRoot, type, folder, taskId) {
+export const buildTaskPath = (projectRoot, type, folder, taskId) => {
   return join(projectRoot, "tasks", type, folder, `${taskId}.md`);
 }
 
 /**
  * Checks if a task file exists
  */
-export function taskExists(filePath) {
+export const taskExists = (filePath) => {
   return existsSync(filePath);
 }
 

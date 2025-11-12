@@ -1,5 +1,3 @@
-#!/usr/bin/env bun
-
 import { writeFileSync, existsSync } from "fs";
 import { join } from "path";
 import {
@@ -20,24 +18,22 @@ import {
 /**
  * Creates a new task file with proper folder structure and ID generation
  */
-export function createTask(projectRoot, options) {
+export const createTask = (projectRoot, options) => {
   const { type, title, description, priority } = options;
 
   // Validate required fields
   if (!type) {
-    console.error("Error: Task type is required");
-    return null;
+    throw new Error("Task type is required");
   }
 
   if (!title) {
-    console.error("Error: Task title is required (use -t or --title)");
-    return null;
+    throw new Error("Task title is required (use -t or --title)");
   }
 
   // Validate and format priority
   const formattedPriority = formatPriority(priority);
   if (formattedPriority === null) {
-    return null;
+    throw new Error("Invalid priority provided");
   }
 
   // Get next available task ID and folder
@@ -59,7 +55,7 @@ export function createTask(projectRoot, options) {
 /**
  * Lists tasks with optional filtering
  */
-export function listTasks(projectRoot, options = {}) {
+export const listTasks = (projectRoot, options = {}) => {
   const { type, status, priority } = options;
 
   // Scan for tasks
@@ -81,7 +77,7 @@ export function listTasks(projectRoot, options = {}) {
 /**
  * Locates a task file and returns its relative path
  */
-export function locateTask(projectRoot, taskId) {
+export const locateTask = (projectRoot, taskId) => {
   const { type, number } = parseTaskId(taskId);
   const folder = calculateFolder(number);
   const filePath = buildTaskPath(projectRoot, type, folder, taskId);

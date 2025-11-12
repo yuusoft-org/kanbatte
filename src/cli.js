@@ -10,10 +10,10 @@ import { buildSite } from "@rettangoli/sites/cli";
 import * as libsqlDao from "./dao/libsqlDao.js";
 import { createLibSqlUmzug } from "umzug-libsql";
 import { createClient } from "@libsql/client";
-import { createTask, listTasks, locateTask } from "./taskCommands.js";
-import { addSession, updateSession, readSession, listSessions, addProject, updateProject, listProjects, getSession, appendSessionMessages } from "./sessionCommands.js";
+import { createTask, listTasks, locateTask } from "./commands/task.js";
+import { addSession, updateSession, readSession, listSessions, addProject, updateProject, listProjects, getSession, appendSessionMessages } from "./commands/session.js";
 import { formatOutput } from "./utils/output.js";
-import { agent } from "./agent/agent.js";
+import { agent } from "./commands/agent.js";
 import { removeDirectory, copyDirectory, copyDirectoryOverwrite, processAllTaskFiles, generateTasksData } from "./utils/buildSite.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -22,7 +22,7 @@ const projectRoot = process.cwd();
 const dbPath = join(projectRoot, "local.db");
 const migrationsPath = join(projectRoot, "db/migrations/*.sql");
 
-async function setupDB() {
+const setupDB = async () => {
   const { umzug } = createLibSqlUmzug({
     url: `file:${dbPath}`,
     glob: migrationsPath,
@@ -35,7 +35,7 @@ const packageJson = JSON.parse(
   readFileSync(join(__dirname, "../package.json"), "utf8"),
 );
 
-function getDatabaseClient() {
+const getDatabaseClient = () => {
   // Check if database file exists before creating client
   if (!existsSync(dbPath)) {
     return null;
@@ -47,7 +47,7 @@ function getDatabaseClient() {
   return createClient(config);
 }
 
-function getLibsqlDaoDeps() {
+const getLibsqlDaoDeps = () => {
   const db = getDatabaseClient();
   if (!db) {
     return null;
@@ -122,13 +122,8 @@ taskCmd
   .description("Locate a task file and return its relative path")
   .argument("<taskId>", "Task ID to locate (e.g., TASK-001, FEAT-002)")
   .action((taskId) => {
-    try {
-      const path = locateTask(projectRoot, taskId);
-      console.log(path);
-    } catch (error) {
-      console.error(error.message);
-      process.exit(1);
-    }
+    const path = locateTask(projectRoot, taskId);
+    console.log(path);
   });
 
 // Build Task site

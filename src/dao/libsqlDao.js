@@ -1,4 +1,4 @@
-export async function appendEvent(deps, payload) {
+export const appendEvent = async (deps, payload) => {
   const { db, generateId } = deps;
   const { entityId, eventData } = payload;
 
@@ -8,7 +8,7 @@ export async function appendEvent(deps, payload) {
   });
 }
 
-export async function appendSessionMessages(deps, sessionId, messages) {
+export const appendSessionMessages = async (deps, sessionId, messages) => {
   const { serialize } = deps;
   const messagesWithTimestamps = messages.map(msg => ({
     ...msg,
@@ -24,7 +24,7 @@ export async function appendSessionMessages(deps, sessionId, messages) {
   await computeAndSaveView(deps, { id: sessionId });
 }
 
-export async function updateSessionStatus(deps, sessionId, status) {
+export const updateSessionStatus = async (deps, sessionId, status) => {
   const { serialize } = deps;
   const eventData = serialize({
     type: "session_updated",
@@ -37,7 +37,7 @@ export async function updateSessionStatus(deps, sessionId, status) {
   await computeAndSaveView(deps, { id: sessionId });
 }
 
-export async function fetchEventsBySessionId(deps, sessionId) {
+export const fetchEventsBySessionId = async (deps, sessionId) => {
   const { db } = deps;
 
   const result = await db.execute({
@@ -48,7 +48,7 @@ export async function fetchEventsBySessionId(deps, sessionId) {
   return result.rows;
 }
 
-export async function computeAndSaveView(deps, payload) {
+export const computeAndSaveView = async (deps, payload) => {
   const { db, generateId, deserialize, serialize } = deps;
   const { id } = payload;
 
@@ -146,7 +146,7 @@ export async function computeAndSaveView(deps, payload) {
   return state;
 }
 
-export async function getViewBySessionId(deps, sessionId) {
+export const getViewBySessionId = async (deps, sessionId) => {
   const { db, deserialize } = deps;
 
   const result = await db.execute({
@@ -161,7 +161,7 @@ export async function getViewBySessionId(deps, sessionId) {
   return deserialize(result.rows[0].data);
 }
 
-export async function getViewsByProjectId(deps, payload) {
+export const getViewsByProjectId = async (deps, payload) => {
   const { db, deserialize } = deps;
   const { projectId, statuses } = payload;
 
@@ -184,7 +184,7 @@ export async function getViewsByProjectId(deps, payload) {
   return sessions;
 }
 
-export async function getNextSessionNumber(deps, projectId) {
+export const getNextSessionNumber = async (deps, projectId) => {
   const { db } = deps;
 
   const result = await db.execute({
@@ -206,7 +206,7 @@ export async function getNextSessionNumber(deps, projectId) {
   return parseInt(match[2], 10) + 1;
 }
 
-export async function getSessionsByStatus(deps, status) {
+export const getSessionsByStatus = async (deps, status) => {
   const { db, deserialize } = deps;
 
   const result = await db.execute({
@@ -225,7 +225,7 @@ export async function getSessionsByStatus(deps, status) {
   return sessions;
 }
 
-export async function getProjectById(deps, projectId) {
+export const getProjectById = async (deps, projectId) => {
   const { db, deserialize } = deps;
 
   const result = await db.execute({
