@@ -11,6 +11,7 @@
         "cli-table3": "^0.6.5",
         "commander": "^14.0.1",
         "crypto": "^1.0.1",
+        "insieme": "^0.0.3",
         "js-yaml": "^4.1.0",
         "umzug-libsql": "^0.0.1",
       },
@@ -196,6 +197,8 @@
     "hasown": ["hasown@2.0.2", "", { "dependencies": { "function-bind": "^1.1.2" } }, "sha512-0hJU9SCPvmMzIBdZFqNPXWa6dqh7WdH0cII9y+CyS8rG3nL48Bclra9HmKhVVUHyPWNH5Y7xDwAB7bfgSjkUMQ=="],
 
     "import-lazy": ["import-lazy@4.0.0", "", {}, "sha512-rKtvo6a868b5Hu3heneU+L4yEQ4jYKLtjpnPeUdK7h0yzXGmyBTypknlkCvHFBqfX9YlorEiMM6Dnq/5atfHkw=="],
+
+    "insieme": ["insieme@0.0.3", "", {}, "sha512-kOfyZ4AzyGcCPFOUdhtVgkoqI2vuWOqhjSDrZbdWgOVyXTfWZyCphTxIdCbXyj7OH1Hhy+zeGrIdnuAt9YteDQ=="],
 
     "is-core-module": ["is-core-module@2.16.1", "", { "dependencies": { "hasown": "^2.0.2" } }, "sha512-UfoeMA6fIJ8wTYFEUjelnaGI67v6+N7qXJEvQuIGa99l4xsCruSYOVSQ0uPANn4dAzm8lkYPaKLrrijLq7x23w=="],
 
