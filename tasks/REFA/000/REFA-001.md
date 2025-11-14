@@ -1,6 +1,6 @@
 ---
 title: Consistent Refactor
-status: todo
+status: done
 priority: high
 ---
 
