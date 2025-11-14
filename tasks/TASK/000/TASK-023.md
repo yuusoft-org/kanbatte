@@ -29,136 +29,48 @@ CLI Commands → session.js/agent.js → libsqlDao.js → libsql client → SQLi
 
 ## Migration Strategy
 
-### Phase 1: Storage Adapter Implementation
+### Phase 1: Insieme Storage Adapter Implementation
 
-#### 1. Create Partitioned Insieme Storage Adapter
-**File**: `src/adapters/partitionedInsiemeAdapter.js` (new)
+#### 1. Create Kanbatte Insieme Storage Adapter
+**File**: `src/adapters/kanbatteInsiemeAdapter.js` (new)
 
 ```javascript
 import { createClient } from "@libsql/client";
 import { decode, encode } from "@msgpack/msgpack";
 
-export const createPartitionedInsiemeAdapter = async (dbPath, deps) => {
+export const createKanbatteInsiemeAdapter = async (dbPath) => {
   const db = createClient({ url: `file:${dbPath}` });
 
-  // Helper function to extract partition from Insieme events
-  const extractPartition = (event) => {
-    if (event.type === 'set' && event.payload?.path) {
-      const path = event.payload.path;
-      if (path.startsWith('sessions.')) {
-        const sessionId = path.split('.')[1];
-        return `session-${sessionId}`;
-      }
-      if (path.startsWith('projects.')) {
-        const projectId = path.split('.')[1];
-        return `project-${projectId}`;
-      }
-    }
-    return 'default';
-  };
-
-  // Incremental update of materialized view for a partition
-  const updateMaterializedView = async (partition) => {
-    // Get current materialized view state
-    const currentView = await db.execute({
-      sql: "SELECT state, last_event_id FROM materialized_views WHERE partition = ?",
-      args: [partition]
-    });
-
-    // Get only new events for this partition
-    const lastEventId = currentView.rows[0]?.last_event_id || 0;
-    const newEvents = await db.execute({
-      sql: "SELECT type, payload FROM events WHERE partition = ? AND id > ? ORDER BY id",
-      args: [partition, lastEventId]
-    });
-
-    if (newEvents.rows.length === 0) return;
-
-    // Apply new events to current state
-    let currentState = currentView.rows[0] ?
-      decode(currentView.rows[0].state) : {};
-
-    for (const eventRow of newEvents.rows) {
-      const event = {
-        type: eventRow.type,
-        payload: decode(eventRow.payload)
-      };
-      currentState = applyInsiemeEventToState(currentState, event);
-    }
-
-    // Update materialized view
-    const finalEventId = newEvents.rows[newEvents.rows.length - 1].id;
-    await db.execute({
-      sql: `INSERT OR REPLACE INTO materialized_views
-            (partition, state, last_event_id, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)`,
-      args: [partition, encode(currentState), finalEventId]
-    });
-  };
-
-  // Apply Insieme event to state (simplified implementation)
-  const applyInsiemeEventToState = (state, event) => {
-    if (event.type === 'set' && event.payload?.path) {
-      const pathParts = event.payload.path.split('.');
-      let current = state;
-
-      // Navigate to parent object
-      for (let i = 0; i < pathParts.length - 1; i++) {
-        if (!current[pathParts[i]]) {
-          current[pathParts[i]] = {};
-        }
-        current = current[pathParts[i]];
-      }
-
-      // Set the value
-      current[pathParts[pathParts.length - 1]] = event.payload.value;
-    }
-    return state;
-  };
-
   return {
-    // Insieme store interface - optimized for partitioning
-    async getEvents() {
-      // Get all current partition states from materialized views
-      const partitionStates = await db.execute(
-        "SELECT partition, state FROM materialized_views"
-      );
+    // Insieme store interface - supports partitioning
+    async getEvents(payload = {}) {
+      const { partition } = payload;
 
-      // Return an init event with all partition states
-      const initialState = {};
-      for (const row of partitionStates.rows) {
-        const partition = row.partition;
-        const state = decode(row.state);
+      if (partition) {
+        // Get events for specific partition
+        const result = await db.execute({
+          sql: "SELECT type, payload FROM events WHERE partition = ? ORDER BY created_at",
+          args: [partition]
+        });
 
-        // Merge partition state into global state
-        if (partition.startsWith('session-')) {
-          const sessionId = partition.replace('session-', '');
-          initialState.sessions = initialState.sessions || {};
-          initialState.sessions[sessionId] = state;
-        } else if (partition.startsWith('project-')) {
-          const projectId = partition.replace('project-', '');
-          initialState.projects = initialState.projects || {};
-          initialState.projects[projectId] = state;
-        }
+        return result.rows.map(row => ({
+          type: row.type,
+          payload: decode(row.payload)
+        }));
+      } else {
+        // No events for full initialization - Insieme will build from partitions
+        return [];
       }
-
-      return [{
-        type: "init",
-        payload: { value: initialState }
-      }];
     },
 
     async appendEvent(event) {
-      const partition = extractPartition(event);
-      const serializedPayload = encode(event.payload);
+      const { partition, type, payload } = event;
+      const serializedPayload = encode(payload);
 
-      // Insert event with partition
       await db.execute({
-        sql: "INSERT INTO events (partition, type, payload) VALUES (?, ?, ?)",
-        args: [partition, event.type, serializedPayload]
+        sql: "INSERT INTO events (partition, type, payload, created_at) VALUES (?, ?, ?, datetime('now'))",
+        args: [partition, type, serializedPayload]
       });
-
-      // Update materialized view for this partition
-      await updateMaterializedView(partition);
     }
   };
 };
@@ -169,7 +81,7 @@ export const createPartitionedInsiemeAdapter = async (dbPath, deps) => {
 
 ```javascript
 import { createRepository } from "insieme";
-import { createPartitionedInsiemeAdapter } from "./adapters/partitionedInsiemeAdapter.js";
+import { createKanbatteInsiemeAdapter } from "./adapters/kanbatteInsiemeAdapter.js";
 import { existsSync } from "fs";
 
 // Replace createLibsqlDao() with createInsiemeRepository()
@@ -184,17 +96,15 @@ const createInsiemeRepository = async () => {
     throw new Error("Database not found. Please run 'kanbatte db setup' first.");
   }
 
-  // Create partitioned storage adapter instead of simple libsql store
-  const store = await createPartitionedInsiemeAdapter(dbPath, {
-    generateId,
-    serialize,
-    deserialize
+  // Create Insieme storage adapter with partitioning support
+  const store = await createKanbatteInsiemeAdapter(dbPath);
+
+  const repository = createRepository({
+    originStore: store,
+    usingCachedEvents: false  // Critical: Use partitioning, disable caching
   });
 
-  const repository = createRepository({ originStore: store });
-
-  // Initialize with flat state structure (no tree needed)
-  // Materialized views will provide the actual state during initialization
+  // Initialize with flat state structure
   await repository.init({
     initialState: {
       sessions: {},
@@ -204,11 +114,6 @@ const createInsiemeRepository = async () => {
 
   return repository;
 };
-
-// Task commands currently don't use dependency injection, but will need it
-// See tasks/TASK/000/TASK-008.md for the planned dependency injection refactor
-// Current: createTask(projectRoot, options)
-// Planned: createTask(deps, projectRoot, options)
 ```
 
 ### Phase 2: Update Database Setup Command
@@ -248,79 +153,7 @@ CREATE INDEX IF NOT EXISTS idx_events_partition ON events(partition);
 CREATE INDEX IF NOT EXISTS idx_events_partition_id ON events(partition, id);
 ```
 
-#### Create Materialized Views Migration
-**File**: `db/migrations/003-create-materialized-views.sql` (new)
-
-```sql
--- Migration for materialized views to store partition states
-CREATE TABLE IF NOT EXISTS materialized_views (
-    partition TEXT PRIMARY KEY,
-    state BLOB,
-    last_event_id INTEGER,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Create index for efficient queries
-CREATE INDEX IF NOT EXISTS idx_materialized_views_updated ON materialized_views(updated_at);
-```
-
-### Phase 3: Command Layer Migration
-
-#### Session Commands Update
-**File**: `src/commands/session.js` (modify)
-
-```javascript
-// Before: libsqlDao operations
-export const addSession = async (deps, payload) => {
-  const { serialize, libsqlDao } = deps;
-  const eventData = serialize({
-    type: "session_created",
-    sessionId: sessionId,
-    data: sessionData,
-    timestamp: Date.now(),
-  });
-  await libsqlDao.appendEvent({ entityId: sessionId, eventData });
-  await libsqlDao.computeAndSaveView({ id: sessionId });
-};
-
-// After: Insieme operations
-export const addSession = async (deps, payload) => {
-  const { repository } = deps;
-  const sessionId = `${payload.project}-${sessionNumber}`;
-
-  await repository.addEvent({
-    type: "set",
-    payload: {
-      path: `sessions.${sessionId}`,
-      value: {
-        messages: [{ role: "user", content: payload.message }],
-        status: "ready",
-        project: payload.project,
-        createdAt: Date.now(),
-        updatedAt: Date.now()
-      }
-    }
-  });
-
-  return repository.state.sessions[sessionId];
-};
-```
-
-#### Query Operations Update
-```javascript
-// Before: SQL queries
-const session = await libsqlDao.getViewBySessionId({ sessionId });
-const sessions = await libsqlDao.getViewsByProjectId({ projectId });
-
-// After: Memory state access
-const session = repository.state.sessions[sessionId];
-const sessions = Object.values(repository.state.sessions)
-  .filter(s => s.project === projectId);
-```
-
-## Critical Implementation Requirement
-
-### Database Creation Policy
+### Phase 3: Command Layer Migration with Insieme Partitions
 
 **IMPORTANT**: Only `kanbatte db setup` should create database files. All other commands must respect this requirement.
 
@@ -364,14 +197,331 @@ taskCmd
 2. **Database existence check only happens inside `createInsiemeRepository()`**
 3. **Task commands work with files only** (no database dependencies)
 4. **CLI entry point remains database-agnostic**
-5. **Task dependency injection will be handled by TASK-008**
 
-This ensures users can use task functionality without any database setup, while session/project commands properly guide them to run `kanbatte db setup` first.
+### Complete CLI Commands Implementation
 
-## Reference Implementation
+#### 1. Session Commands
 
-See `routevn-creator-client` for basic Insieme integration patterns:
-- `src/deps/tauriRepositoryAdapter.js` - Tauri SQL adapter (basic version)
-- `src/deps/repository.js` - Repository factory pattern
+**File**: `src/commands/session.js`
 
-**Kanbatte Implementation**: Enhanced with partitioning and materialized views for enterprise-scale data handling.
+```javascript
+// kanbatte session queue <project> <message>
+export const addSession = async (deps, payload) => {
+  const { repository } = deps;
+  const { project, message } = payload;
+
+  // Generate session ID (existing logic)
+  const sessionNumber = await getNextSessionNumber({ project });
+  const sessionId = `${project}-${sessionNumber}`;
+  const now = Date.now();
+
+  // Create session with Insieme - use set for initial object creation
+  await repository.addEvent({
+    type: "set",
+    partition: `session-${sessionId}`,
+    payload: {
+      target: `sessions.${sessionId}`,
+      value: {
+        sessionId,
+        messages: [], // Start with empty messages array
+        status: "ready",
+        project,
+        createdAt: now,
+        updatedAt: now
+      }
+    }
+  });
+
+  // Add session to metadata partition
+  await repository.addEvent({
+    type: "treePush",
+    partition: 'metadata',
+    payload: {
+      target: `metadata.projects.${project}.sessions`,
+      value: sessionId
+    }
+  });
+
+  // Add initial message using treePush (same format as appendSessionMessages)
+  await repository.addEvent({
+    type: "treePush",
+    partition: `session-${sessionId}`,
+    payload: {
+      target: `sessions.${sessionId}.messages`,
+      value: [{ role: "user", content: message, timestamp: now }]
+    }
+  });
+
+  return { sessionId, project, message };
+};
+
+// kanbatte session append <sessionId> <messages>
+export const appendSessionMessages = async (deps, payload) => {
+  const { repository } = deps;
+  const { sessionId, messages } = payload;
+
+  // Push the entire message list at once using treePush
+  await repository.addEvent({
+    type: "treePush",
+    partition: `session-${sessionId}`,
+    payload: {
+      target: `sessions.${sessionId}.messages`,
+      value: messages.map(msg => ({ ...msg, timestamp: msg.timestamp || Date.now() }))
+    }
+  });
+
+  return { sessionId, messagesCount: messages.length };
+};
+
+// kanbatte session view <sessionId>
+export const getSession = async (deps, sessionId) => {
+  const { repository } = deps;
+  const state = await repository.getState({ partition: `session-${sessionId}` });
+  const sessionData = state?.sessions?.[sessionId] || null;
+
+  if (sessionData && sessionData.messages) {
+    // Flatten nested arrays created by treePush operations
+    sessionData.messages = sessionData.messages.flat();
+  }
+
+  return sessionData;
+};
+
+// kanbatte session list <project>
+export const getProjectSessions = async (deps, projectId) => {
+  const { repository } = deps;
+
+  // Get all sessions for project from metadata partition
+  const metadataState = await repository.getState({ partition: 'metadata' });
+  const projectSessions = metadataState?.metadata?.projects?.[projectId]?.sessions || [];
+
+  const sessions = [];
+  for (const sessionId of projectSessions) {
+    const sessionState = await repository.getState({ partition: `session-${sessionId}` });
+    const sessionData = sessionState?.sessions?.[sessionId];
+    if (sessionData) {
+      // Flatten nested arrays created by treePush operations
+      if (sessionData.messages) {
+        sessionData.messages = sessionData.messages.flat();
+      }
+      sessions.push(sessionData);
+    }
+  }
+
+  return sessions;
+};
+
+```
+
+#### 2. Project Commands
+
+**File**: `src/commands/project.js`
+
+```javascript
+// kanbatte project add <projectId> <name> [repo] [description]
+export const addProject = async (deps, payload) => {
+  const { repository } = deps;
+  const { projectId, name, repository: repo, description } = payload;
+
+  // Create project partition
+  await repository.addEvent({
+    type: "set",
+    partition: `project-${projectId}`,
+    payload: {
+      target: `projects.${projectId}`,
+      value: {
+        projectId,
+        name,
+        repository: repo,
+        description,
+        createdAt: Date.now()
+      }
+    }
+  });
+
+  // Add project to metadata partition
+  await repository.addEvent({
+    type: "set",
+    partition: 'metadata',
+    payload: {
+      target: `metadata.projects.${projectId}`,
+      value: {
+        projectId,
+        name,
+        sessions: []
+      }
+    }
+  });
+
+  return { projectId, name, repository: repo, description };
+};
+
+// kanbatte project view <projectId>
+export const getProject = async (deps, projectId) => {
+  const { repository } = deps;
+  const state = await repository.getState({ partition: `project-${projectId}` });
+  return state?.projects?.[projectId] || null;
+};
+
+// kanbatte project list
+export const getAllProjects = async (deps) => {
+  const { repository } = deps;
+
+  // Get all projects from metadata partition
+  const metadataState = await repository.getState({ partition: 'metadata' });
+  const allProjects = metadataState?.metadata?.projects || {};
+
+  const projects = [];
+  for (const projectId of Object.keys(allProjects)) {
+    const projectState = await repository.getState({ partition: `project-${projectId}` });
+    const projectData = projectState?.projects?.[projectId];
+    if (projectData) {
+      projects.push(projectData);
+    }
+  }
+
+  return projects;
+};
+
+```
+
+#### 3. Agent Commands
+
+**File**: `src/commands/agent.js`
+
+```javascript
+// kanbatte agent process <sessionId>
+export const processAgentTasks = async (deps, sessionId) => {
+  const { repository } = deps;
+
+  // Get session state
+  const sessionState = await repository.getState({ partition: `session-${sessionId}` });
+  const session = sessionState?.sessions?.[sessionId];
+
+  if (!session) {
+    throw new Error(`Session ${sessionId} not found`);
+  }
+
+  // Flatten nested arrays created by treePush operations
+  if (session.messages) {
+    session.messages = session.messages.flat();
+  }
+
+  // Agent processing logic (existing implementation)
+  // ... process tasks and generate responses
+
+  // Add agent response using treePush (same format as other message operations)
+  const agentResponse = { role: "assistant", content: "Agent response", timestamp: Date.now() };
+
+  await repository.addEvent({
+    type: "treePush",
+    partition: `session-${sessionId}`,
+    payload: {
+      target: `sessions.${sessionId}.messages`,
+      value: [agentResponse]
+    }
+  });
+
+  return { sessionId, processed: true };
+};
+```
+
+#### 4. CLI Command Registration
+
+**File**: `src/cli.js` (modify command handlers)
+
+```javascript
+// Session commands
+sessionCmd
+  .command("queue")
+  .argument("<project>", "Project ID")
+  .argument("<message>", "Initial message")
+  .action(async (project, message, options) => {
+    const repository = await createInsiemeRepository();
+    const result = await addSession({ repository }, { project, message });
+    console.log(`Session created: ${result.sessionId}`);
+  });
+
+sessionCmd
+  .command("append")
+  .argument("<sessionId>", "Session ID")
+  .argument("<messages...>", "Messages to append")
+  .action(async (sessionId, messages, options) => {
+  const repository = await createInsiemeRepository();
+    const formattedMessages = messages.map(msg => ({ role: "user", content: msg }));
+    await appendSessionMessages({ repository }, { sessionId, messages: formattedMessages });
+    console.log(`Messages appended to session ${sessionId}`);
+  });
+
+sessionCmd
+  .command("view")
+  .argument("<sessionId>", "Session ID")
+  .option("-f, --format <format>", "Output format: table, json, markdown", "markdown")
+  .action(async (sessionId, options) => {
+    const repository = await createInsiemeRepository();
+    const session = await getSession({ repository }, sessionId);
+    formatOutput(session, options.format, "read");
+  });
+
+sessionCmd
+  .command("list")
+  .argument("<projectId>", "Project ID")
+  .option("-f, --format <format>", "Output format: table, json, markdown", "table")
+  .action(async (projectId, options) => {
+    const repository = await createInsiemeRepository();
+    const sessions = await getProjectSessions({ repository }, projectId);
+    if (sessions && sessions.length > 0) {
+      formatOutput(sessions, options.format, "list");
+    } else {
+      console.log("No sessions found for this project.");
+    }
+  });
+
+// Project commands
+projectCmd
+  .command("add")
+  .argument("<projectId>", "Project ID")
+  .argument("<name>", "Project name")
+  .argument("[repo]", "Repository URL")
+  .argument("[description]", "Project description")
+  .action(async (projectId, name, repo, description, options) => {
+    const repository = await createInsiemeRepository();
+    await addProject({ repository }, { projectId, name, repository: repo, description });
+    console.log(`Project ${projectId} created`);
+  });
+
+projectCmd
+  .command("view")
+  .argument("<projectId>", "Project ID")
+  .option("-f, --format <format>", "Output format: table, json, markdown", "table")
+  .action(async (projectId, options) => {
+    const repository = await createInsiemeRepository();
+    const project = await getProject({ repository }, projectId);
+    formatOutput(project, options.format, "read");
+  });
+
+projectCmd
+  .command("list")
+  .option("-f, --format <format>", "Output format: table, json, markdown", "table")
+  .action(async (options) => {
+    const repository = await createInsiemeRepository();
+    const projects = await getAllProjects({ repository });
+    if (projects.length > 0) {
+      console.log("Projects:");
+      console.table(projects);
+    } else {
+      console.log("No projects found.");
+    }
+  });
+
+// Task commands remain unchanged (no database)
+taskCmd
+  .command("create")
+  .argument("<taskId>", "Task ID")
+  .argument("<title>", "Task title")
+  .action(async (taskId, title, options) => {
+    // Existing file-based implementation, no database calls
+    createTask(projectRoot, { taskId, title });
+    console.log(`Task ${taskId} created`);
+  });
+```
