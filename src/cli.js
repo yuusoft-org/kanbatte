@@ -7,9 +7,9 @@ import { fileURLToPath } from "url";
 import { serialize, deserialize } from "./utils/serialization.js";
 import { generateId } from "./utils/helper.js";
 import { buildSite } from "@rettangoli/sites/cli";
-import * as libsqlDaoMethods from "./dao/libsqlDao.js";
+import * as insiemeDaoMethods from "./dao/insiemeDao.js";
+import { createInsiemeRepository } from './deps/repository.js'
 import { createLibSqlUmzug } from "umzug-libsql";
-import { createClient } from "@libsql/client";
 import { createTask, listTasks, locateTask } from "./commands/task.js";
 import { addSession, updateSession, readSession, listSessions, addProject, updateProject, listProjects, getSession, appendSessionMessages } from "./commands/session.js";
 import { formatOutput } from "./utils/output.js";
@@ -35,31 +35,19 @@ const packageJson = JSON.parse(
   readFileSync(join(__dirname, "../package.json"), "utf8"),
 );
 
-const getLibsqlDaoDeps = () => {
-  if (!existsSync(dbPath)) {
-    throw new Error("Database not found. Please run 'kanbatte db setup' first.");
-  }
-
-  const config = {
-    url: `file:${dbPath}`,
-  };
-  const db = createClient(config);
-
-  return {
-    db,
+const createInsiemeDao = () => {
+  const repository = createInsiemeRepository();
+  const deps = {
+    repository,
     generateId,
     serialize,
     deserialize,
   };
-}
-
-const createLibsqlDao = () => {
-  const libsqlDaoDeps = getLibsqlDaoDeps();
 
   return Object.fromEntries(
-    Object.entries(libsqlDaoMethods).map(([methodName, method]) => [
+    Object.entries(insiemeDaoMethods).map(([methodName, method]) => [
       methodName,
-      (...args) => method(libsqlDaoDeps, ...args)
+      (...args) => method(deps, ...args)
     ])
   );
 }
@@ -178,13 +166,13 @@ sessionCmd
   .argument("<message>", "Initial message content")
   .requiredOption("-p, --project <projectId>", "Project ID")
   .action(async (message, options) => {
-    const libsqlDao = createLibsqlDao();
+    const insiemeDao = createInsiemeDao();
 
     const sessionDeps = {
       serialize,
       deserialize,
       generateId,
-      libsqlDao
+      insiemeDao
     };
     const session = await addSession(sessionDeps, { ...options, message });
     console.log("Session created successfully! Session ID:", session.sessionId);
@@ -197,12 +185,12 @@ sessionCmd
   .argument("<sessionId>", "Session ID")
   .requiredOption("-m, --messages <messages>", "Messages in JSON array format")
   .action(async (sessionId, options) => {
-    const libsqlDao = createLibsqlDao();
+    const insiemeDao = createInsiemeDao();
 
     const sessionDeps = {
       serialize,
       deserialize,
-      libsqlDao
+      insiemeDao
     };
     await appendSessionMessages(sessionDeps, { sessionId, messages: options.messages });
     console.log("Messages appended successfully to session:", sessionId);
@@ -215,12 +203,12 @@ sessionCmd
   .argument("<sessionId>", "Session ID")
   .argument("[status]", "New status (optional)")
   .action(async (sessionId, status) => {
-    const libsqlDao = createLibsqlDao();
+    const insiemeDao = createInsiemeDao();
 
     const sessionDeps = {
       serialize,
       formatOutput,
-      libsqlDao
+      insiemeDao
     };
 
     if (status) {
@@ -241,10 +229,10 @@ sessionCmd
   .requiredOption("-p, --project <projectId>", "Project ID")
   .option("-s, --status <status>", "Filter by status")
   .action(async (options) => {
-    const libsqlDao = createLibsqlDao();
+    const insiemeDao = createInsiemeDao();
 
     const sessionDeps = {
-      libsqlDao,
+      insiemeDao,
       formatOutput,
     };
     const sessions = await listSessions(sessionDeps, options);
@@ -262,10 +250,10 @@ sessionCmd
   .argument("<sessionId>", "Session ID")
   .option("-f, --format <format>", "Output format: table, json, markdown", "markdown")
   .action((sessionId, options) => {
-    const libsqlDao = createLibsqlDao();
+    const insiemeDao = createInsiemeDao();
 
     const sessionDeps = {
-      libsqlDao,
+      insiemeDao,
       formatOutput,
     };
     readSession(sessionDeps, sessionId, options.format);
@@ -283,11 +271,11 @@ sessionProjectCmd
   .requiredOption("-r, --repository <repository>", "Repository URL")
   .option("-d, --description <description>", "Project description")
   .action(async (options) => {
-    const libsqlDao = createLibsqlDao();
+    const insiemeDao = createInsiemeDao();
 
     const projectDeps = {
       serialize,
-      libsqlDao
+      insiemeDao
     };
     const project = await addProject(projectDeps, {
       projectId: options.project,
@@ -307,11 +295,11 @@ sessionProjectCmd
   .option("-r, --repository <repository>", "Repository URL")
   .option("-d, --description <description>", "Project description")
   .action(async (options) => {
-    const libsqlDao = createLibsqlDao();
+    const insiemeDao = createInsiemeDao();
 
     const projectDeps = {
       serialize,
-      libsqlDao
+      insiemeDao
     };
     const updateData = { projectId: options.project };
     if (options.name !== undefined) updateData.name = options.name;
@@ -326,8 +314,8 @@ sessionProjectCmd
   .command("list")
   .description("List all projects")
   .action(async () => {
-    const libsqlDao = createLibsqlDao();
-    const projects = await listProjects({ libsqlDao });
+    const insiemeDao = createInsiemeDao();
+    const projects = await listProjects({ insiemeDao });
     if (projects.length > 0) {
       console.log("Projects:");
       console.table(projects);
@@ -343,8 +331,8 @@ agentCmd
   .command("start")
   .description("Start agent to process ready sessions")
   .action(async () => {
-    const libsqlDao = createLibsqlDao();
-    await agent({ libsqlDao });
+    const insiemeDao = createInsiemeDao();
+    await agent({ insiemeDao });
   });
 
 // Parse command line arguments

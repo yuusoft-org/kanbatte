@@ -22,7 +22,7 @@
     "cli-table3": "^0.6.5",
     "commander": "^14.0.1",
     "crypto": "^1.0.1",
-    "insieme": "^0.0.3",
+    "insieme": "0.0.4",
     "js-yaml": "^4.1.0",
     "umzug-libsql": "^0.0.1"
   },
