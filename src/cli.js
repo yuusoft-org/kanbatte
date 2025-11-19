@@ -37,7 +37,7 @@ const packageJson = JSON.parse(
 );
 
 const createInsiemeDao = async () => {
-  const repository = await createInsiemeRepository();
+  const repository = await createInsiemeRepository({ generateId });
   const db = createClient({ url: `file:${dbPath}` });
   const deps = {
     db,

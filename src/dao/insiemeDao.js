@@ -13,8 +13,9 @@ export const addSession = async (deps, payload) => {
     type: "treePush",
     partition: sessionId,
     payload: {
-      target: `sessions.${sessionId}`,
-      value: { eventData }
+      target: "events",
+      value: { eventData },
+      options: { parent: "_root" }
     }
   });
 
@@ -36,8 +37,9 @@ export const updateSession = async (deps, payload) => {
     type: "treePush",
     partition: sessionId,
     payload: {
-      target: `sessions.${sessionId}`,
-      value: { eventData }
+      target: "events",
+      value: { eventData },
+      options: { parent: "_root" }
     }
   });
 
@@ -55,14 +57,13 @@ export const addProject = async (deps, payload) => {
     timestamp: Date.now(),
   });
 
-  console.log("[DEBUG] Adding project with data:", { projectId, projectData });
-
   await repository.addEvent({
     type: "treePush",
     partition: projectId,
     payload: {
-      target: `projects.${projectId}`,
-      value: { eventData }
+      target: "events",
+      value: { eventData },
+      options: { parent: "_root" }
     }
   });
 
@@ -84,8 +85,9 @@ export const updateProject = async (deps, payload) => {
     type: "treePush",
     partition: projectId,
     payload: {
-      target: `projects.${projectId}`,
-      value: { eventData }
+      target: "events",
+      value: { eventData },
+      options: { parent: "_root" }
     }
   });
   
@@ -112,8 +114,9 @@ export const appendSessionMessages = async (deps, payload) => {
     type: "treePush",
     partition: sessionId,
     payload: {
-      target: `sessions.${sessionId}`,
-      value: { eventData }
+      target: "events",
+      value: { eventData },
+      options: { parent: "_root" }
     }
   });
   await computeAndSaveView(deps, { id: sessionId })
@@ -134,8 +137,9 @@ export const updateSessionStatus = async (deps, payload) => {
     type: "treePush",
     partition: sessionId,
     payload: {
-      target: `sessions.${sessionId}`,
-      value: { eventData }
+      target: "events",
+      value: { eventData },
+      options: { parent: "_root" }
     }
   });
 
@@ -146,9 +150,7 @@ export const fetchEventsByPartition = async (deps, payload) => {
   const { repository } = deps;
   const { partition } = payload;
 
-  const result = await repository.getStateAsync({ partition: [partition] });
-
-  console.log("[DEBUG]Fetched events for sessionId", sessionId, ":", result);
+  const result = await repository.getEventsAsync({ partition: [partition] });
 
   return result;
 }
@@ -158,8 +160,6 @@ export const computeAndSaveView = async (deps, payload) => {
   const { id } = payload;
 
   const events = await fetchEventsByPartition(deps, { partition: id });
-
-  console.log("[DEBUG] Events for ID", id, ":", events);
 
   if (events.length === 0) {
     return null;
