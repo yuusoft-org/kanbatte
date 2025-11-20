@@ -1,5 +1,5 @@
 export const addSession = async (deps, payload) => {
-  const { serialize, libsqlDao } = deps;
+  const { insiemeDao } = deps;
 
   if (!payload.message) {
     throw new Error("Session message is required (provide message as argument)");
@@ -9,12 +9,12 @@ export const addSession = async (deps, payload) => {
     throw new Error("Project ID is required (use -p or --project)");
   }
 
-  const project = await libsqlDao.getProjectById({ projectId: payload.project });
+  const project = await insiemeDao.getProjectById({ projectId: payload.project });
   if (!project) {
     throw new Error(`Project '${payload.project}' does not exist`);
   }
 
-  const sessionNumber = await libsqlDao.getNextSessionNumber({ projectId: payload.project });
+  const sessionNumber = await insiemeDao.getNextSessionNumber({ projectId: payload.project });
   const sessionId = `${payload.project}-${sessionNumber}`;
   const now = Date.now();
 
@@ -32,29 +32,21 @@ export const addSession = async (deps, payload) => {
     updatedAt: now,
   };
 
-  const eventData = serialize({
-    type: "session_created",
-    sessionId: sessionId,
-    data: sessionData,
-    timestamp: Date.now(),
-  });
-
-  const appendPayload = { entityId: sessionId, eventData };
-  await libsqlDao.appendEvent(appendPayload);
-  await libsqlDao.computeAndSaveView({ id: sessionId });
+  await insiemeDao.addSession({ sessionId, sessionData });
 
   return { sessionId, ...sessionData };
 };
 
 
-export const getSession = async (deps, sessionId) => {
-  const { libsqlDao } = deps;
+export const getSession = async (deps, payload) => {
+  const { insiemeDao } = deps;
+  const { sessionId } = payload;
 
   if (!sessionId) {
     throw new Error("Session ID is required");
   }
 
-  const session = await libsqlDao.getViewBySessionId({ sessionId });
+  const session = await insiemeDao.getViewBySessionId({ sessionId });
   if (!session) {
     throw new Error(`Session '${sessionId}' does not exist`);
   }
@@ -63,15 +55,16 @@ export const getSession = async (deps, sessionId) => {
 };
 
 export const updateSession = async (deps, payload) => {
-  const { serialize, libsqlDao, formatOutput } = deps;
+  const { insiemeDao } = deps;
+  const { sessionId } = payload;
 
-  if (!payload.sessionId) {
+  if (!sessionId) {
     throw new Error("Session ID is required (use -i or --session-id)");
   }
 
-  const session = await libsqlDao.getViewBySessionId(payload.sessionId);
+  const session = await insiemeDao.getViewBySessionId(sessionId);
   if (!session) {
-    throw new Error(`Session '${payload.sessionId}' does not exist`);
+    throw new Error(`Session '${sessionId}' does not exist`);
   }
 
   const validUpdates = {};
@@ -96,32 +89,20 @@ export const updateSession = async (deps, payload) => {
     throw new Error("At least one update field is required (-s or --message)");
   }
 
-  const eventData = serialize({
-    type: "session_updated",
-    sessionId: payload.sessionId,
-    data: validUpdates,
-    timestamp: Date.now(),
-  });
+  await insiemeDao.updateSession({ sessionId, validUpdates });
 
-  const appendPayload = {
-    entityId: payload.sessionId,
-    eventData,
-  };
-  await libsqlDao.appendEvent(appendPayload);
-  await libsqlDao.computeAndSaveView({ id: payload.sessionId });
-
-  return { sessionId: payload.sessionId, ...validUpdates };
+  return { sessionId: sessionId, ...validUpdates };
 };
 
 
 export const readSession = async (deps, sessionId, format = "table") => {
-  const { libsqlDao, formatOutput } = deps;
+  const { insiemeDao, formatOutput } = deps;
 
   if (!sessionId) {
     throw new Error("Session ID is required");
   }
 
-  const sessionData = await libsqlDao.getViewBySessionId({ sessionId });
+  const sessionData = await insiemeDao.getViewBySessionId({ sessionId });
 
   if (!sessionData) {
     throw new Error(`Session ${sessionId} not found`);
@@ -132,7 +113,7 @@ export const readSession = async (deps, sessionId, format = "table") => {
 };
 
 export const listSessions = async (deps, payload) => {
-  const { libsqlDao, formatOutput } = deps;
+  const { insiemeDao } = deps;
 
   if (!payload.project) {
     throw new Error("Project ID is required (use -p or --project)");
@@ -142,7 +123,7 @@ export const listSessions = async (deps, payload) => {
     ? payload.status.split(",").map((s) => s.trim())
     : null;
 
-  const sessions = await libsqlDao.getViewsByProjectId({
+  const sessions = await insiemeDao.getViewsByProjectId({
     projectId: payload.project,
     statuses,
   });
@@ -151,9 +132,10 @@ export const listSessions = async (deps, payload) => {
 };
 
 export const addProject = async (deps, payload) => {
-  const { serialize, libsqlDao } = deps;
+  const { insiemeDao } = deps;
+  const { projectId } = payload;
 
-  if (!payload.projectId) {
+  if (!projectId) {
     throw new Error("Project ID is required (use -p or --project-id)");
   }
 
@@ -161,9 +143,9 @@ export const addProject = async (deps, payload) => {
     throw new Error("Project name is required (use -n or --name)");
   }
 
-  const existing = await libsqlDao.getProjectById({ projectId: payload.projectId });
+  const existing = await insiemeDao.getProjectById({ projectId });
   if (existing) {
-    throw new Error(`Project with ID '${payload.projectId}' already exists`);
+    throw new Error(`Project with ID '${projectId}' already exists`);
   }
 
   const projectData = {
@@ -173,30 +155,22 @@ export const addProject = async (deps, payload) => {
     description: payload.description,
   };
 
-  const eventData = serialize({
-    type: "project_created",
-    projectId: payload.projectId,
-    data: projectData,
-    timestamp: Date.now(),
-  });
-
-  const appendPayload = { entityId: payload.projectId, eventData };
-  await libsqlDao.appendEvent(appendPayload);
-  await libsqlDao.computeAndSaveView({ id: payload.projectId });
+  await insiemeDao.addProject({ projectId, projectData });
 
   return projectData;
 };
 
 export const updateProject = async (deps, payload) => {
-  const { serialize, libsqlDao } = deps;
+  const { insiemeDao } = deps;
+  const { projectId } = payload;
 
-  if (!payload.projectId) {
+  if (!projectId) {
     throw new Error("Project ID is required (use -p or --project-id)");
   }
 
-  const existing = await libsqlDao.getProjectById({ projectId: payload.projectId });
+  const existing = await insiemeDao.getProjectById({ projectId: projectId });
   if (!existing) {
-    throw new Error(`Project '${payload.projectId}' does not exist`);
+    throw new Error(`Project '${projectId}' does not exist`);
   }
 
   const validUpdates = {};
@@ -210,28 +184,19 @@ export const updateProject = async (deps, payload) => {
     throw new Error("At least one update field is required (-n, -r, or --description)");
   }
 
-  const eventData = serialize({
-    type: "project_updated",
-    projectId: payload.projectId,
-    data: validUpdates,
-    timestamp: Date.now(),
-  });
+  await insiemeDao.updateProject({ projectId, validUpdates });
 
-  const appendPayload = { entityId: payload.projectId, eventData };
-  await libsqlDao.appendEvent(appendPayload);
-  await libsqlDao.computeAndSaveView({ id: payload.projectId });
-
-  return { projectId: payload.projectId, ...validUpdates };
+  return { projectId, ...validUpdates };
 };
 
 export const listProjects = async (deps) => {
-  const { libsqlDao } = deps;
+  const { insiemeDao } = deps;
 
-  return await libsqlDao.listProjects();
+  return await insiemeDao.listProjects();
 };
 
 export const appendSessionMessages = async (deps, payload) => {
-  const { libsqlDao } = deps;
+  const { insiemeDao } = deps;
 
   if (!payload.sessionId) {
     throw new Error("Session ID is required");
@@ -285,12 +250,12 @@ export const appendSessionMessages = async (deps, payload) => {
   }
 
   // Check if session exists
-  const session = await libsqlDao.getViewBySessionId({ sessionId: payload.sessionId });
+  const session = await insiemeDao.getViewBySessionId({ sessionId: payload.sessionId });
   if (!session) {
     throw new Error(`Session '${payload.sessionId}' does not exist`);
   }
 
-  await libsqlDao.appendSessionMessages({
+  await insiemeDao.appendSessionMessages({
     sessionId: payload.sessionId,
     messages
   });
