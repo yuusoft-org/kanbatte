@@ -1,8 +1,9 @@
 import { createClient } from "@libsql/client";
 import { join, dirname } from "path";
-import { existsSync, readFileSync } from "fs";
+import { existsSync } from "fs";
 import { fileURLToPath } from "url";
 import { generateId } from "../../utils/helper.js";
+import { createLibSqlUmzug } from "umzug-libsql";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -75,18 +76,12 @@ export const setupDiscordDb = async (projectRoot) => {
     throw new Error("Main database not found. Please run 'kanbatte db setup' first.");
   }
 
-  const db = createClient({ url: `file:${dbPath}` });
+  // Run Discord-specific migrations using umzug-libsql
+  const discordMigrationsPath = join(__dirname, "migrations/*.sql");
+  const { umzug } = createLibSqlUmzug({
+    url: `file:${dbPath}`,
+    glob: discordMigrationsPath,
+  });
 
-  // Run Discord-specific migration
-  const migrationPath = join(__dirname, 'migrations/0001-discord-plugin-init.sql');
-  const migrationSql = readFileSync(migrationPath, 'utf-8');
-
-  const statements = migrationSql.split(';').filter(stmt => stmt.trim());
-  for (const statement of statements) {
-    if (statement.trim()) {
-      await db.execute({ sql: statement.trim() });
-    }
-  }
-
-  db.close();
+  await umzug.up();
 };
