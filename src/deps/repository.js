@@ -3,10 +3,10 @@ import { createClient } from "@libsql/client";
 import { decode, encode } from "@msgpack/msgpack";
 import { existsSync } from "fs";
 import { join } from "path";
+import { generateId } from "../utils/helper.js";
 
-const createInsiemeAdapter = async (deps, dbPath) => {
+const createInsiemeAdapter = async ({dbPath, eventLogTableName}) => {
   const db = createClient({ url: `file:${dbPath}` });
-  const { generateId } = deps;
 
   return {
     // Insieme store interface - supports partitioning
@@ -17,7 +17,7 @@ const createInsiemeAdapter = async (deps, dbPath) => {
         // Get events for specific partitions
         const placeholders = partition.map(() => '?').join(',');
         const result = await db.execute({
-          sql: `SELECT id, type, payload FROM event_log WHERE partition IN (${placeholders}) ORDER BY created_at`,
+          sql: `SELECT id, type, payload FROM ${eventLogTableName} WHERE partition IN (${placeholders}) ORDER BY created_at`,
           args: partition
         });
 
@@ -36,20 +36,17 @@ const createInsiemeAdapter = async (deps, dbPath) => {
 
     async appendEvent(event) {
       const { partition, type, payload } = event;
-
-      const usingPartition = partition ? partition : (type === "init" ? "init" : undefined);
-
       const serializedPayload = encode(payload);
 
       await db.execute({
-        sql: "INSERT INTO event_log (id, partition, type, payload, created_at) VALUES (?, ?, ?, ?, datetime('now'))",
-        args: [generateId(), usingPartition, type, serializedPayload]
+        sql: `INSERT INTO ${eventLogTableName} (id, partition, type, payload, created_at) VALUES (?, ?, ?, ?, datetime('now'))`,
+        args: [generateId(), partition, type, serializedPayload]
       });
     }
   };
 };
 
-export const createInsiemeRepository = async (deps) => {
+export const createInsiemeRepository = async (eventLogTableName) => {
   const projectRoot = process.cwd();
   const dbPath = join(projectRoot, "local.db");
 
@@ -57,7 +54,7 @@ export const createInsiemeRepository = async (deps) => {
     throw new Error("Database not found. Please run 'kanbatte db setup' first.");
   }
 
-  const store = await createInsiemeAdapter(deps, dbPath);
+  const store = await createInsiemeAdapter({dbPath, eventLogTableName});
 
   const repository = createRepository({
     originStore: store,
@@ -70,7 +67,8 @@ export const createInsiemeRepository = async (deps) => {
         items: {},
         tree: {}
       }
-    }
+    },
+    partition: "init"
   });
 
   return repository;
