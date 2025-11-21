@@ -4,12 +4,12 @@ import { Command } from "commander";
 import { readFileSync, existsSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
-import { createClient } from "@libsql/client";
 import { serialize, deserialize } from "./utils/serialization.js";
 import { generateId } from "./utils/helper.js";
 import { buildSite } from "@rettangoli/sites/cli";
 import * as insiemeDaoMethods from "./dao/insiemeDao.js";
 import { createInsiemeRepository } from './deps/repository.js'
+import { createInsiemeDao } from "./deps/dao.js";
 import { createLibSqlUmzug } from "umzug-libsql";
 import { createTask, listTasks, locateTask } from "./commands/task.js";
 import { addSession, updateSession, readSession, listSessions, addProject, updateProject, listProjects, getSession, appendSessionMessages } from "./commands/session.js";
@@ -37,23 +37,9 @@ const packageJson = JSON.parse(
   readFileSync(join(__dirname, "../package.json"), "utf8"),
 );
 
-const createInsiemeDao = async () => {
-  const repository = await createInsiemeRepository({ generateId });
-  const db = createClient({ url: `file:${dbPath}` });
-  const deps = {
-    db,
-    repository,
-    generateId,
-    serialize,
-    deserialize,
-  };
-
-  return Object.fromEntries(
-    Object.entries(insiemeDaoMethods).map(([methodName, method]) => [
-      methodName,
-      (...args) => method(deps, ...args)
-    ])
-  );
+const createMainInsiemeDao = async () => {
+  const repository = await createInsiemeRepository();
+  return await createInsiemeDao({ projectRoot, repository, methods: insiemeDaoMethods });
 }
 
 const program = new Command();
@@ -170,7 +156,7 @@ sessionCmd
   .argument("<message>", "Initial message content")
   .requiredOption("-p, --project <projectId>", "Project ID")
   .action(async (message, options) => {
-    const insiemeDao = await createInsiemeDao();
+    const insiemeDao = await createMainInsiemeDao();
 
     const sessionDeps = {
       serialize,
@@ -189,7 +175,7 @@ sessionCmd
   .argument("<sessionId>", "Session ID")
   .requiredOption("-m, --messages <messages>", "Messages in JSON array format")
   .action(async (sessionId, options) => {
-    const insiemeDao = await createInsiemeDao();
+    const insiemeDao = await createMainInsiemeDao();
 
     const sessionDeps = {
       serialize,
@@ -207,7 +193,7 @@ sessionCmd
   .argument("<sessionId>", "Session ID")
   .argument("[status]", "New status (optional)")
   .action(async (sessionId, status) => {
-    const insiemeDao = await createInsiemeDao();
+    const insiemeDao = await createMainInsiemeDao();
 
     const sessionDeps = {
       serialize,
@@ -233,7 +219,7 @@ sessionCmd
   .requiredOption("-p, --project <projectId>", "Project ID")
   .option("-s, --status <status>", "Filter by status")
   .action(async (options) => {
-    const insiemeDao = await createInsiemeDao();
+    const insiemeDao = await createMainInsiemeDao();
 
     const sessionDeps = {
       insiemeDao,
@@ -254,7 +240,7 @@ sessionCmd
   .argument("<sessionId>", "Session ID")
   .option("-f, --format <format>", "Output format: table, json, markdown", "markdown")
   .action(async (sessionId, options) => {
-    const insiemeDao = await createInsiemeDao();
+    const insiemeDao = await createMainInsiemeDao();
 
     const sessionDeps = {
       insiemeDao,
@@ -275,7 +261,7 @@ sessionProjectCmd
   .requiredOption("-r, --repository <repository>", "Repository URL")
   .option("-d, --description <description>", "Project description")
   .action(async (options) => {
-    const insiemeDao = await createInsiemeDao();
+    const insiemeDao = await createMainInsiemeDao();
 
     const projectDeps = {
       serialize,
@@ -299,7 +285,7 @@ sessionProjectCmd
   .option("-r, --repository <repository>", "Repository URL")
   .option("-d, --description <description>", "Project description")
   .action(async (options) => {
-    const insiemeDao = await createInsiemeDao();
+    const insiemeDao = await createMainInsiemeDao();
 
     const projectDeps = {
       serialize,
@@ -318,7 +304,7 @@ sessionProjectCmd
   .command("list")
   .description("List all projects")
   .action(async () => {
-    const insiemeDao = await createInsiemeDao();
+    const insiemeDao = await createMainInsiemeDao();
     const projects = await listProjects({ insiemeDao });
     if (projects.length > 0) {
       console.log("Projects:");
@@ -335,7 +321,7 @@ agentCmd
   .command("start")
   .description("Start agent to process ready sessions")
   .action(async () => {
-    const insiemeDao = await createInsiemeDao();
+    const insiemeDao = await createMainInsiemeDao();
     await agent({ insiemeDao });
   });
 
