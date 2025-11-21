@@ -60,23 +60,23 @@ const channelCmd = program.command("channel").description("Discord channel manag
 channelCmd
   .command("add")
   .requiredOption("-p, --project <projectId>", "Project ID")
-  .requiredOption("-c, --channel <channelId>", "Discord channel ID")
+  .option("-c, --channel <channelId...>", "Discord channel IDs")
   .description("Add Discord channel for project")
   .action(async (options) => {
     const discordInsiemeDao = await createDiscordInsiemeDao();
-    const payload = { channelData: { project: options.project }, channelId: options.channel };
+    const payload = { channelData: { channels: options.channel }, projectId: options.project };
     await discordChannelAdd({ discordInsiemeDao }, payload);
   });
 
 channelCmd
   .command("update")
   .requiredOption("-p, --project <projectId>", "Project ID")
-  .requiredOption("-c, --channel <channelId>", "Discord channel ID")
+  .option("-c, --channel <channelId...>", "Discord channel IDs")
   .description("Update Discord channel for project")
   .action(async (options) => {
     const discordInsiemeDao = await createDiscordInsiemeDao();
     const payload = {
-      validUpdates: { project: options.project }, channelId: options.channel
+      validUpdates: { channels: options.channel }, projectId: options.project
     };
     await discordChannelUpdate({ discordInsiemeDao }, payload);
   });

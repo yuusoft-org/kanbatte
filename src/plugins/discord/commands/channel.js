@@ -2,14 +2,14 @@ export const discordChannelAdd = async (deps, payload) => {
   const { discordInsiemeDao } = deps;
 
   await discordInsiemeDao.addChannel(payload);
-  console.log(`Channel ${payload.channelId} added for project ${payload.channelData.project}`);
+  console.log(`Channels ${payload.channelData.channels} added for project ${payload.projectId}`);
 };
 
 export const discordChannelUpdate = async (deps, payload) => {
   const { discordInsiemeDao } = deps;
 
   await discordInsiemeDao.updateChannel(payload);
-  console.log(`Channel ${payload.channelId} updated for project ${payload.validUpdates.project}`);
+  console.log(`Channels ${payload.validUpdates.channels} updated for project ${payload.projectId}`);
 };
 
 export const discordStart = async (deps, payload) => {

@@ -1,17 +1,17 @@
 export const addChannel = async (deps, payload) => {
   const { repository, serialize } = deps;
-  const { channelId, channelData } = payload;
+  const { projectId, channelData } = payload;
 
   const eventData = serialize({
     type: "channel_created",
-    channelId: channelId,
+    projectId: projectId,
     data: channelData,
     timestamp: Date.now(),
   });
 
   await repository.addEvent({
     type: "treePush",
-    partition: channelId,
+    partition: projectId,
     payload: {
       target: "events",
       value: { eventData },
@@ -19,23 +19,23 @@ export const addChannel = async (deps, payload) => {
     }
   });
 
-  await computeAndSaveView(deps, { id: channelId });
+  await computeAndSaveView(deps, { id: projectId });
 }
 
 export const updateChannel = async (deps, payload) => {
   const { repository, serialize } = deps;
-  const { channelId, validUpdates } = payload;
+  const { projectId, validUpdates } = payload;
 
   const eventData = serialize({
     type: "channel_updated",
-    channelId: channelId,
+    projectId: projectId,
     data: validUpdates,
     timestamp: Date.now(),
   });
 
   await repository.addEvent({
     type: "treePush",
-    partition: channelId,
+    partition: projectId,
     payload: {
       target: "events",
       value: { eventData },
@@ -43,7 +43,7 @@ export const updateChannel = async (deps, payload) => {
     }
   });
 
-  await computeAndSaveView(deps, { id: channelId });
+  await computeAndSaveView(deps, { id: projectId });
 }
 
 export const fetchEventsByPartition = async (deps, payload) => {
@@ -71,10 +71,10 @@ export const computeAndSaveView = async (deps, payload) => {
 
   if (firstEvent.type === "channel_created") {
     state = {
-      channelId: id,
-      project: "",
+      projectId: id,
+      channels: "",
     };
-    viewKey = `channel:${id}`;
+    viewKey = `project:${id}`;
   }
 
   let lastEventId = null;
@@ -85,13 +85,13 @@ export const computeAndSaveView = async (deps, payload) => {
 
     switch (event.type) {
       case "channel_created":
-        state.project = event.data.project || state.project;
+        state.channels = event.data.channels || state.channels;
         state.createdAt = event.data.createdAt || state.createdAt;
         state.updatedAt = event.timestamp;
         break;
 
       case "channel_updated":
-        if (event.data.project !== undefined) state.project = event.data.project;
+        if (event.data.project !== undefined) state.channels = event.data.channels;
         state.updatedAt = event.timestamp;
         break;
 
