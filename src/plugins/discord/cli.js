@@ -1,6 +1,3 @@
-#!/usr/bin/env bun
-
-import { Command } from "commander";
 import { discordChannelAdd, discordChannelUpdate, discordStart } from "./commands/channel.js";
 import { createInsiemeRepository } from "../../deps/repository.js";
 import { existsSync } from "fs";
@@ -10,9 +7,7 @@ import { createInsiemeDao } from "../../deps/dao.js";
 import * as insiemeDaoMethods from "./dao/insiemeDao.js";
 
 // Get project root from main CLI
-const projectRoot = process.env.PROJECT_ROOT || process.cwd();
-
-const program = new Command();
+const projectRoot = process.cwd();
 
 export const setupDiscordDb = async (projectRoot) => {
   const dbPath = join(projectRoot, "local.db");
@@ -24,7 +19,7 @@ export const setupDiscordDb = async (projectRoot) => {
 
   // Run Discord-specific migrations using umzug-libsql
   const discordMigrationsPath = join(__dirname, "db/migrations/*.sql");
-  console.log("Using migrationsPath:", discordMigrationsPath);
+
   const { umzug } = createLibSqlUmzug({
     url: `file:${dbPath}`,
     glob: discordMigrationsPath,
@@ -38,55 +33,50 @@ const createDiscordInsiemeDao = async () => {
   return await createInsiemeDao({ projectRoot, repository, methods: insiemeDaoMethods });
 }
 
-program
-  .name("kanbatte-discord")
-  .description("Kanbatte Discord plugin")
-  .version("1.0.0");
+export const setupDiscordCli = (cmd) => {
+  // Discord db setup command
+  cmd
+    .command("db")
+    .argument("setup")
+    .description("Set up Discord plugin database")
+    .action(async () => {
+      console.log("Setting up Discord plugin database...");
+      await setupDiscordDb(projectRoot);
+      console.log("Discord plugin database setup completed!");
+    });
 
-// Discord db setup command
-program
-  .command("db")
-  .argument("setup")
-  .description("Set up Discord plugin database")
-  .action(async () => {
-    console.log("Setting up Discord plugin database...");
-    await setupDiscordDb(projectRoot);
-    console.log("Discord plugin database setup completed!");
-  });
+  // Discord channel command group
+  const channelCmd = cmd.command("channel").description("Discord channel management");
 
-// Discord channel command group
-const channelCmd = program.command("channel").description("Discord channel management");
+  channelCmd
+    .command("add")
+    .requiredOption("-p, --project <projectId>", "Project ID")
+    .option("-c, --channel <channelId...>", "Discord channel IDs")
+    .description("Add Discord channel for project")
+    .action(async (options) => {
+      const discordInsiemeDao = await createDiscordInsiemeDao();
+      const payload = { channelData: { channels: options.channel }, projectId: options.project };
+      await discordChannelAdd({ discordInsiemeDao }, payload);
+    });
 
-channelCmd
-  .command("add")
-  .requiredOption("-p, --project <projectId>", "Project ID")
-  .option("-c, --channel <channelId...>", "Discord channel IDs")
-  .description("Add Discord channel for project")
-  .action(async (options) => {
-    const discordInsiemeDao = await createDiscordInsiemeDao();
-    const payload = { channelData: { channels: options.channel }, projectId: options.project };
-    await discordChannelAdd({ discordInsiemeDao }, payload);
-  });
+  channelCmd
+    .command("update")
+    .requiredOption("-p, --project <projectId>", "Project ID")
+    .option("-c, --channel <channelId...>", "Discord channel IDs")
+    .description("Update Discord channel for project")
+    .action(async (options) => {
+      const discordInsiemeDao = await createDiscordInsiemeDao();
+      const payload = {
+        validUpdates: { channels: options.channel }, projectId: options.project
+      };
+      await discordChannelUpdate({ discordInsiemeDao }, payload);
+    });
 
-channelCmd
-  .command("update")
-  .requiredOption("-p, --project <projectId>", "Project ID")
-  .option("-c, --channel <channelId...>", "Discord channel IDs")
-  .description("Update Discord channel for project")
-  .action(async (options) => {
-    const discordInsiemeDao = await createDiscordInsiemeDao();
-    const payload = {
-      validUpdates: { channels: options.channel }, projectId: options.project
-    };
-    await discordChannelUpdate({ discordInsiemeDao }, payload);
-  });
-
-// Discord start command
-program
-  .command("start")
-  .description("Start Discord event listener")
-  .action(async () => {
-    const discordInsiemeDao = await createDiscordInsiemeDao();
-  });
-
-program.parse(process.argv);
+  // Discord start command
+  cmd
+    .command("start")
+    .description("Start Discord event listener")
+    .action(async () => {
+      const discordInsiemeDao = await createDiscordInsiemeDao();
+    });
+};

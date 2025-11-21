@@ -16,7 +16,7 @@ import { addSession, updateSession, readSession, listSessions, addProject, updat
 import { formatOutput } from "./utils/output.js";
 import { agent } from "./commands/agent.js";
 import { removeDirectory, copyDirectory, copyDirectoryOverwrite, processAllTaskFiles, generateTasksData } from "./utils/buildSite.js";
-import { spawn } from "child_process";
+import { setupDiscordCli } from "./plugins/discord/cli.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // Use current working directory for task operations (not CLI file location)
@@ -60,8 +60,8 @@ dbCmd
     setupDB();
   });
 
-
-
+const discordCmd = program.command("discord");
+setupDiscordCli(discordCmd);
 
 
 // Task command group
@@ -323,35 +323,6 @@ agentCmd
   .action(async () => {
     const insiemeDao = await createMainInsiemeDao();
     await agent({ insiemeDao });
-  });
-
-// Discord command - forward to plugin if available
-program
-  .command("discord")
-  .allowUnknownOption(true)
-  .allowExcessArguments(true)
-  .description("Discord plugin commands (if installed)")
-  .action(async () => {
-    const discordCliPath = join(__dirname, "plugins/discord/cli.js");
-
-    if (!existsSync(discordCliPath)) {
-      console.error("Discord plugin not found. Install it first.");
-      process.exit(1);
-    }
-
-    // Pass project root via environment variable
-    const args = process.argv.slice(3); // Skip 'kanbatte', main script and 'discord'
-    const discordProcess = spawn(discordCliPath, args, {
-      stdio: "inherit",
-      env: {
-        ...process.env,
-        PROJECT_ROOT: projectRoot
-      }
-    });
-
-    discordProcess.on("exit", (code) => {
-      process.exit(code);
-    });
   });
 
 // Parse command line arguments
