@@ -8,7 +8,7 @@ export const createInsiemeDeps = async (deps) => {
   const dbPath = join(projectRoot, "local.db");
   const db = createClient({ url: `file:${dbPath}` });
 
-  const deps = {
+  const insiemeDeps = {
     db,
     repository,
     generateId,
@@ -16,7 +16,7 @@ export const createInsiemeDeps = async (deps) => {
     deserialize
   };
 
-  return deps;
+  return insiemeDeps;
 }
 
 export const createInsiemeDao = async (deps) => {
