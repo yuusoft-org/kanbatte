@@ -61,7 +61,7 @@ dbCmd
   });
 
 const discordCmd = program.command("discord");
-setupDiscordCli(discordCmd);
+setupDiscordCli({ cmd: discordCmd, createMainInsiemeDao });
 
 
 // Task command group

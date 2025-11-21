@@ -46,6 +46,40 @@ export const updateChannel = async (deps, payload) => {
   await computeAndSaveView(deps, { id: projectId });
 }
 
+export const updateLastOffsetId = async (deps, payload) => {
+  const { repository, serialize } = deps;
+  const { lastOffsetId } = payload;
+
+  const eventData = serialize({
+    type: "last_offset_updated",
+    data: { lastOffsetId },
+    timestamp: Date.now(),
+  });
+  
+  await repository.addEvent({
+    type: "treePush",
+    partition: "last_offset_id",
+    payload: {
+      target: "events",
+      value: { eventData },
+      options: { parent: "_root" }
+    }
+  });
+}
+
+export const getLastOffsetId = async (deps) => {
+  const { repository, deserialize } = deps;
+  
+  const result = await repository.getEventsAsync({ partition: ["last_offset_id"] });
+  if (result.length === 0) {
+    return null;
+  }
+  
+  const lastEvent = result[result.length - 1];
+  const event = deserialize(lastEvent.payload.value.eventData);
+  return event.data.lastOffsetId;
+}
+
 export const fetchEventsByPartition = async (deps, payload) => {
   const { repository } = deps;
   const { partition } = payload;
