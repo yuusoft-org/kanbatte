@@ -2,7 +2,7 @@
 
 import { Command } from "commander";
 import { discordChannelAdd, discordChannelUpdate, discordStart } from "./commands/channel.js";
-import { createDiscordInsiemeRepository } from "./deps/repository.js";
+import { createInsiemeRepository } from "../../deps/repository.js";
 import { existsSync } from "fs";
 import { join } from "path";
 import { createLibSqlUmzug } from "umzug-libsql";
@@ -34,7 +34,7 @@ export const setupDiscordDb = async (projectRoot) => {
 };
 
 const createDiscordInsiemeDao = async () => {
-  const repository = await createDiscordInsiemeRepository();
+  const repository = await createInsiemeRepository("discord_event_log");
   return await createInsiemeDao({ projectRoot, repository, methods: insiemeDaoMethods });
 }
 
