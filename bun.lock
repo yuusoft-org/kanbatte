@@ -12,7 +12,7 @@
         "commander": "^14.0.1",
         "crypto": "^1.0.1",
         "discord.js": "^14.24.2",
-        "insieme": "0.0.5",
+        "insieme": "0.0.6",
         "js-yaml": "^4.1.0",
         "umzug-libsql": "^0.0.1",
       },
@@ -223,7 +223,7 @@
 
     "import-lazy": ["import-lazy@4.0.0", "", {}, "sha512-rKtvo6a868b5Hu3heneU+L4yEQ4jYKLtjpnPeUdK7h0yzXGmyBTypknlkCvHFBqfX9YlorEiMM6Dnq/5atfHkw=="],
 
-    "insieme": ["insieme@0.0.5", "", {}, "sha512-C9yt4rJP+sL6Pznod0/zPWWjy1dMD24sppANOpFxOCssGiaz5Qreo4+WBoA+B4bUZU/vfNs70jxUm3rOWtwyMw=="],
+    "insieme": ["insieme@0.0.6", "", {}, "sha512-WdwCxpxjlw1/0tGWc9N89wh40qAZWzUmRCJjn6hO1kx8CrHuOU5AocXUKDayjpn6l0C0nrUaOy/cv2aRQF5SnA=="],
 
     "is-core-module": ["is-core-module@2.16.1", "", { "dependencies": { "hasown": "^2.0.2" } }, "sha512-UfoeMA6fIJ8wTYFEUjelnaGI67v6+N7qXJEvQuIGa99l4xsCruSYOVSQ0uPANn4dAzm8lkYPaKLrrijLq7x23w=="],
 

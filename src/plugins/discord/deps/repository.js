@@ -37,13 +37,11 @@ const createInsiemeAdapter = async (dbPath) => {
     async appendEvent(event) {
       const { partition, type, payload } = event;
 
-      const usingPartition = partition ? partition : (type === "init" ? "init" : undefined);
-
       const serializedPayload = encode(payload);
 
       await db.execute({
         sql: "INSERT INTO discord_event_log (id, partition, type, payload, created_at) VALUES (?, ?, ?, ?, datetime('now'))",
-        args: [generateId(), usingPartition, type, serializedPayload]
+        args: [generateId(), partition, type, serializedPayload]
       });
     }
   };
@@ -72,7 +70,8 @@ export const createDiscordInsiemeRepository = async () => {
         items: {},
         tree: {}
       }
-    }
+    },
+    partition: "init"
   });
 
   return repository;
