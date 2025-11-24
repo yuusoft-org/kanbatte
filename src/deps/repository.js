@@ -1,9 +1,9 @@
 import { createRepository } from "insieme";
 import { createClient } from "@libsql/client";
-import { decode, encode } from "@msgpack/msgpack";
+import { deserialize, serialize } from "../utils/serialization.js";
 import { existsSync } from "fs";
 import { generateId } from "../utils/helper.js";
-import { deserialize, serialize } from "../utils/serialization.js";
+
 
 export const createInsiemeAdapter = async (deps) => {
   const { dbPath, eventLogTableName, kvStoreTableName } = deps;
@@ -18,48 +18,37 @@ export const createInsiemeAdapter = async (deps) => {
     getEvents: async (payload = {}) => {
       const { partition, lastOffsetId, filterInit } = payload;
 
-      let sql = `SELECT id, type, payload FROM ${eventLogTableName}`;
-      const args = [];
-      const conditions = [];
+      const partitionValues = partition ? partition.map(p => `'${p}'`).join(',') : '';
+      const partitionClause =  partitionValues ? `AND partition IN (${partitionValues})` : '';
+      const filterClause = filterInit ? `AND type != 'init'` : '';
 
-      if (partition) {
-        const placeholders = partition.map(() => '?').join(',');
-        conditions.push(`partition IN (${placeholders})`);
-        args.push(...partition);
-      }
+      const query = `
+        SELECT id, type, payload
+        FROM ${eventLogTableName}
+        WHERE id > ${lastOffsetId ?? 0}
+        ${partitionClause}
+        ${filterClause}
+        ORDER BY id
+      `;
 
-      if (filterInit) {
-        conditions.push(`type != ?`);
-        args.push('init');
-      }
-
-      if (conditions.length > 0) {
-        sql += ` WHERE ` + conditions.join(' AND ');
-      }
-
-      sql += ` ORDER BY created_at`;
-
-      if (lastOffsetId !== undefined && lastOffsetId !== null && lastOffsetId > 0) {
-        sql += ` LIMIT -1 OFFSET ?`;
-        args.push(lastOffsetId);
-      }
-
-      const result = await db.execute({ sql, args });
+      const result = await db.execute({
+        sql: query,
+      });
 
       return result.rows.map(row => ({
         id: row.id,
         type: row.type,
-        payload: decode(row.payload)
+        payload: deserialize(row.payload)
       }));
     },
 
     appendEvent: async (event) => {
       const { partition, type, payload } = event;
-      const serializedPayload = encode(payload);
+      const serializedPayload = serialize(payload);
 
       await db.execute({
-        sql: `INSERT INTO ${eventLogTableName} (id, partition, type, payload, created_at) VALUES (?, ?, ?, ?, datetime('now'))`,
-        args: [generateId(), partition, type, serializedPayload]
+        sql: `INSERT INTO ${eventLogTableName} (partition, type, payload, created_at) VALUES (?, ?, ?, datetime('now'))`,
+        args: [partition, type, serializedPayload]
       });
     },
 

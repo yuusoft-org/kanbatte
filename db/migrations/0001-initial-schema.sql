@@ -1,7 +1,7 @@
 -- Event sourcing architecture with event_log as source of truth
 
 CREATE TABLE IF NOT EXISTS event_log (
-  id TEXT PRIMARY KEY,
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
   partition TEXT NOT NULL,
   type TEXT NOT NULL,
   payload BLOB NOT NULL,
