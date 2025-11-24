@@ -8,7 +8,7 @@ import { serialize, deserialize } from "./utils/serialization.js";
 import { generateId } from "./utils/helper.js";
 import { buildSite } from "@rettangoli/sites/cli";
 import * as insiemeDaoMethods from "./dao/insiemeDao.js";
-import { createInsiemeRepository } from './deps/repository.js'
+import { createInsiemeAdapter, createInsiemeRepository } from './deps/repository.js'
 import { createInsiemeDao } from "./deps/dao.js";
 import { createLibSqlUmzug } from "umzug-libsql";
 import { createTask, listTasks, locateTask } from "./commands/task.js";
@@ -37,9 +37,18 @@ const packageJson = JSON.parse(
   readFileSync(join(__dirname, "../package.json"), "utf8"),
 );
 
+const createMainStore = async () => {
+  return await createInsiemeAdapter({ 
+    dbPath, 
+    eventLogTableName: "event_log",
+    kvStoreTableName: "kv_store",
+  });
+}
+
 const createMainInsiemeDao = async () => {
-  const repository = await createInsiemeRepository({ dbPath, eventLogTableName: "event_log" });
-  return await createInsiemeDao({ projectRoot, repository, methods: insiemeDaoMethods });
+  const store = await createMainStore();
+  const repository = await createInsiemeRepository({ store });
+  return await createInsiemeDao({ dbPath, repository, methods: insiemeDaoMethods });
 }
 
 const program = new Command();

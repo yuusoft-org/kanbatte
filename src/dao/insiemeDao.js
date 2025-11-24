@@ -73,14 +73,14 @@ export const addProject = async (deps, payload) => {
 export const updateProject = async (deps, payload) => {
   const { repository, serialize } = deps;
   const { projectId, validUpdates } = payload;
-  
+
   const eventData = serialize({
     type: "project_updated",
     projectId: projectId,
     data: validUpdates,
     timestamp: Date.now(),
   });
-  
+
   await repository.addEvent({
     type: "treePush",
     partition: projectId,
@@ -90,7 +90,7 @@ export const updateProject = async (deps, payload) => {
       options: { parent: "_root" }
     }
   });
-  
+
   await computeAndSaveView(deps, { id: projectId });
 }
 
@@ -374,37 +374,12 @@ export const listProjects = async (deps) => {
 }
 
 export const fetchRecentSessionEvents = async (deps, payload) => {
-  const { repository, db, deserialize } = deps;
+  const { repository, deserialize } = deps;
   const { lastOffsetId } = payload;
 
-  // Step 1: Get all session IDs from view table
-  const sessionResult = await db.execute({
-    sql: "SELECT key FROM view WHERE key LIKE ?",
-    args: ["session:%"],
-  });
+  const allEvents = await repository.getEventsAsync({ lastOffsetId, filterInit: true });
 
-  if (sessionResult.rows.length === 0) {
-    return [];
-  }
-
-  // Extract sessionIds from view keys (format: "session:sessionId")
-  const sessionIds = sessionResult.rows.map(row => {
-    const match = row.key.match(/^session:(.+)$/);
-    return match ? match[1] : null;
-  }).filter(Boolean);
-
-  // Step 2: Fetch events for all session partitions (already ordered by created_at)
-  const allEvents = await repository.getEventsAsync({
-    partition: sessionIds
-  });
-
-  // Step 3: Apply lastOffsetId as index to skip events
-  const slicedEvents = lastOffsetId && lastOffsetId > 0
-    ? allEvents.slice(lastOffsetId)
-    : allEvents;
-
-  // Step 4: Decode event data
-  return slicedEvents.map(event => ({
+  return allEvents.map(event => ({
     ...event,
     eventData: deserialize(event.payload.value.eventData)
   }));
