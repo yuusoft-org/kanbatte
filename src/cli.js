@@ -38,7 +38,7 @@ const packageJson = JSON.parse(
 );
 
 const createMainInsiemeDao = async () => {
-  const repository = await createInsiemeRepository("event_log");
+  const repository = await createInsiemeRepository({ dbPath, eventLogTableName: "event_log" });
   return await createInsiemeDao({ projectRoot, repository, methods: insiemeDaoMethods });
 }
 

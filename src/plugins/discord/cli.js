@@ -4,15 +4,14 @@ import { existsSync } from "fs";
 import { join } from "path";
 import { createLibSqlUmzug } from "umzug-libsql";
 import { createInsiemeDao } from "../../deps/dao.js";
+import { createKeyValueStore } from "../../deps/keyValueStore.js";
 import * as insiemeDaoMethods from "./dao/insiemeDao.js";
 
 // Get project root from main CLI
 const projectRoot = process.cwd();
+const dbPath = join(projectRoot, "local.db");
 
-export const setupDiscordDb = async (projectRoot) => {
-  const dbPath = join(projectRoot, "local.db");
-  console.log("Main database path:", dbPath);
-
+export const setupDiscordDb = async () => {
   if (!existsSync(dbPath)) {
     throw new Error("Main database not found. Please run 'kanbatte db setup' first.");
   }
@@ -29,8 +28,15 @@ export const setupDiscordDb = async (projectRoot) => {
 };
 
 const createDiscordInsiemeDao = async () => {
-  const repository = await createInsiemeRepository("discord_event_log");
+  const repository = await createInsiemeRepository({ dbPath, eventLogTableName: "discord_event_log" });
   return await createInsiemeDao({ projectRoot, repository, methods: insiemeDaoMethods });
+}
+
+const createDiscordKeyValueStore = () => {
+  return createKeyValueStore({
+    dbPath,
+    tableName: "discord_kv_store",
+  });
 }
 
 export const setupDiscordCli = (deps) => {
@@ -42,7 +48,7 @@ export const setupDiscordCli = (deps) => {
     .description("Set up Discord plugin database")
     .action(async () => {
       console.log("Setting up Discord plugin database...");
-      await setupDiscordDb(projectRoot);
+      await setupDiscordDb();
       console.log("Discord plugin database setup completed!");
     });
 
@@ -79,12 +85,12 @@ export const setupDiscordCli = (deps) => {
     .description("Start Discord event listener")
     .action(async () => {
       const mainInsiemeDao = await createMainInsiemeDao();
-      const discordInsiemeDao = await createDiscordInsiemeDao();
+      const discordKvStore = createDiscordKeyValueStore();
 
       console.log("🚀 Starting Discord event listener...");
 
       // Get initial lastOffsetId
-      let currentOffsetId = await discordInsiemeDao.getLastOffsetId();
+      let currentOffsetId = await discordKvStore.get("lastOffsetId");
       if (currentOffsetId === null) {
         currentOffsetId = 0;
         console.log("📊 Starting from beginning (no previous offset found)");
@@ -101,9 +107,8 @@ export const setupDiscordCli = (deps) => {
           console.log(`🆕 ${recentEvents.length} new session events detected!`);
 
           const newOffsetId = currentOffsetId + recentEvents.length;
-          await discordInsiemeDao.updateLastOffsetId({
-            lastOffsetId: newOffsetId
-          });
+
+          await discordKvStore.set("lastOffsetId", newOffsetId);
 
           // Print new events
           recentEvents.forEach((event, index) => {

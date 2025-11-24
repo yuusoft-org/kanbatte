@@ -2,7 +2,6 @@ import { createRepository } from "insieme";
 import { createClient } from "@libsql/client";
 import { decode, encode } from "@msgpack/msgpack";
 import { existsSync } from "fs";
-import { join } from "path";
 import { generateId } from "../utils/helper.js";
 
 const createInsiemeAdapter = async ({dbPath, eventLogTableName}) => {
@@ -46,10 +45,7 @@ const createInsiemeAdapter = async ({dbPath, eventLogTableName}) => {
   };
 };
 
-export const createInsiemeRepository = async (eventLogTableName) => {
-  const projectRoot = process.cwd();
-  const dbPath = join(projectRoot, "local.db");
-
+export const createInsiemeRepository = async ({dbPath, eventLogTableName}) => {
   if (!existsSync(dbPath)) {
     throw new Error("Database not found. Please run 'kanbatte db setup' first.");
   }
