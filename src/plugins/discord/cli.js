@@ -1,24 +1,21 @@
-import { discordChannelAdd, discordChannelUpdate, discordStart } from "./commands/channel.js";
-import { createInsiemeRepository } from "../../deps/repository.js";
+import { discordChannelAdd, discordChannelUpdate } from "./commands/channel.js";
+import { createInsiemeAdapter, createInsiemeRepository } from "../../deps/repository.js";
 import { existsSync } from "fs";
 import { join } from "path";
 import { createLibSqlUmzug } from "umzug-libsql";
 import { createInsiemeDao } from "../../deps/dao.js";
 import * as insiemeDaoMethods from "./dao/insiemeDao.js";
+import { startDiscordEventListener } from "./commands/start.js";
 
 // Get project root from main CLI
 const projectRoot = process.cwd();
+const dbPath = join(projectRoot, "local.db");
+const discordMigrationsPath = join(__dirname, "db/migrations/*.sql");
 
-export const setupDiscordDb = async (projectRoot) => {
-  const dbPath = join(projectRoot, "local.db");
-  console.log("Main database path:", dbPath);
-
+export const setupDiscordDb = async () => {
   if (!existsSync(dbPath)) {
     throw new Error("Main database not found. Please run 'kanbatte db setup' first.");
   }
-
-  // Run Discord-specific migrations using umzug-libsql
-  const discordMigrationsPath = join(__dirname, "db/migrations/*.sql");
 
   const { umzug } = createLibSqlUmzug({
     url: `file:${dbPath}`,
@@ -28,12 +25,22 @@ export const setupDiscordDb = async (projectRoot) => {
   await umzug.up();
 };
 
-const createDiscordInsiemeDao = async () => {
-  const repository = await createInsiemeRepository("discord_event_log");
-  return await createInsiemeDao({ projectRoot, repository, methods: insiemeDaoMethods });
+const createDiscordStore = async () => {
+  return await createInsiemeAdapter({
+    dbPath,
+    eventLogTableName: "discord_event_log",
+    kvStoreTableName: "discord_kv_store",
+  });
 }
 
-export const setupDiscordCli = (cmd) => {
+const createDiscordInsiemeDao = async () => {
+  const store = await createDiscordStore();
+  const repository = await createInsiemeRepository({ store });
+  return await createInsiemeDao({ dbPath, repository, methods: insiemeDaoMethods });
+}
+
+export const setupDiscordCli = (deps) => {
+  const { cmd, createMainInsiemeDao } = deps;
   // Discord db setup command
   cmd
     .command("db")
@@ -41,7 +48,7 @@ export const setupDiscordCli = (cmd) => {
     .description("Set up Discord plugin database")
     .action(async () => {
       console.log("Setting up Discord plugin database...");
-      await setupDiscordDb(projectRoot);
+      await setupDiscordDb();
       console.log("Discord plugin database setup completed!");
     });
 
@@ -77,6 +84,9 @@ export const setupDiscordCli = (cmd) => {
     .command("start")
     .description("Start Discord event listener")
     .action(async () => {
-      const discordInsiemeDao = await createDiscordInsiemeDao();
+      const mainInsiemeDao = await createMainInsiemeDao();
+      const discordStore = await createDiscordStore();
+
+      await startDiscordEventListener({ mainInsiemeDao, discordStore });
     });
 };

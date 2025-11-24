@@ -1,11 +1,9 @@
 import { createClient } from "@libsql/client";
-import { join } from "path";
 import { serialize, deserialize } from "../utils/serialization.js";
 import { generateId } from "../utils/helper.js";
 
 export const createInsiemeDeps = async (deps) => {
-  const { repository, projectRoot } = deps;
-  const dbPath = join(projectRoot, "local.db");
+  const { repository, dbPath } = deps;
   const db = createClient({ url: `file:${dbPath}` });
 
   const insiemeDeps = {
@@ -20,8 +18,8 @@ export const createInsiemeDeps = async (deps) => {
 }
 
 export const createInsiemeDao = async (deps) => {
-  const { projectRoot, repository, methods } = deps;
-  const insiemeDeps = await createInsiemeDeps({ projectRoot, repository });
+  const { dbPath, repository, methods } = deps;
+  const insiemeDeps = await createInsiemeDeps({ dbPath, repository });
 
   // Create insiemeDao object containing all methods
   const insiemeDao = Object.fromEntries(

@@ -4,7 +4,6 @@ CREATE TABLE IF NOT EXISTS discord_view (
   id TEXT PRIMARY KEY,
   key TEXT NOT NULL,
   data BLOB NOT NULL,
-  last_offset_id TEXT NOT NULL,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );

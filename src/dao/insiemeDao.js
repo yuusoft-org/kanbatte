@@ -73,14 +73,14 @@ export const addProject = async (deps, payload) => {
 export const updateProject = async (deps, payload) => {
   const { repository, serialize } = deps;
   const { projectId, validUpdates } = payload;
-  
+
   const eventData = serialize({
     type: "project_updated",
     projectId: projectId,
     data: validUpdates,
     timestamp: Date.now(),
   });
-  
+
   await repository.addEvent({
     type: "treePush",
     partition: projectId,
@@ -90,7 +90,7 @@ export const updateProject = async (deps, payload) => {
       options: { parent: "_root" }
     }
   });
-  
+
   await computeAndSaveView(deps, { id: projectId });
 }
 
@@ -371,4 +371,16 @@ export const listProjects = async (deps) => {
       description: data.description
     };
   });
+}
+
+export const fetchRecentSessionEvents = async (deps, payload) => {
+  const { repository, deserialize } = deps;
+  const { lastOffsetId } = payload;
+
+  const allEvents = await repository.getEventsAsync({ lastOffsetId, filterInit: true });
+
+  return allEvents.map(event => ({
+    ...event,
+    eventData: deserialize(event.payload.value.eventData)
+  }));
 }
