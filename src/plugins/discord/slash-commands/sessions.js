@@ -44,6 +44,7 @@ const queueSession = {
 
     // Send message to the new thread
     await thread.send(message);
+    await discordInsiemeDao.addSessionThreadRecord({ sessionId: session.sessionId, threadId: thread.id });
 
     const reply = `Session ${session.sessionId} created: <#${thread.id}>`;
     console.log(reply);

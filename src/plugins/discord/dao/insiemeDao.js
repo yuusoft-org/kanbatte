@@ -55,6 +55,31 @@ export const fetchEventsByPartition = async (deps, payload) => {
   return result;
 }
 
+export const addSessionThreadRecord = async (deps, payload) => {
+  const { db } = deps;
+  const { sessionId, threadId } = payload;
+
+  await db.execute({
+    sql: "INSERT INTO discord_session_thread_record (session_id, thread_id) VALUES (?, ?)",
+    args: [sessionId, threadId],
+  });
+}
+
+export const getSessionIdByThread = async (deps, payload) => {
+  const { db } = deps;
+  const { threadId } = payload;
+
+  const result = await db.execute({
+    sql: "SELECT session_id FROM discord_session_thread_record WHERE thread_id = ?",
+    args: [threadId],
+  });
+
+  if (result.rows.length === 0) {
+    return null;
+  }
+  return result.rows[0].session_id;
+}
+
 export const computeAndSaveView = async (deps, payload) => {
   const { db, generateId, deserialize, serialize } = deps;
   const { id } = payload;
@@ -122,7 +147,7 @@ export const computeAndSaveView = async (deps, payload) => {
 
 export const listProjects = async (deps) => {
   const { db, deserialize } = deps;
-  
+
   const result = await db.execute({
     sql: "SELECT key, data FROM discord_view WHERE key LIKE 'project:%' ORDER BY created_at ASC",
   });
@@ -143,7 +168,7 @@ export const listProjects = async (deps) => {
 export const getProjectIdByChannel = async (deps, payload) => {
   const { db, deserialize } = deps;
   const { channelId } = payload;
-  
+
   const result = await db.execute({
     sql: "SELECT key, data FROM discord_view WHERE key LIKE 'project:%'",
   });
@@ -154,6 +179,6 @@ export const getProjectIdByChannel = async (deps, payload) => {
       return data.projectId;
     }
   }
-  
+
   return null;
 }
