@@ -1,7 +1,7 @@
 ---
 title: migrate to use insieme for writing to event store db
 assignee: 738NGX
-status: todo
+status: done
 priority: high
 ---
 

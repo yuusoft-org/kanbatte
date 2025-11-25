@@ -1,7 +1,7 @@
 ---
 title: setup discord plugin
 assignee: 738NGX
-status: medium
+status: done
 priority: medium
 labels: [discord]
 ---
