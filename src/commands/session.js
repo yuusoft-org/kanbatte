@@ -190,9 +190,27 @@ export const updateProject = async (deps, payload) => {
 };
 
 export const listProjects = async (deps) => {
-  const { insiemeDao } = deps;
+  const { insiemeDao, discordInsiemeDao } = deps;
 
-  return await insiemeDao.listProjects();
+  const basicResult = await insiemeDao.listProjects();
+
+  let discordResult = [];
+  if (discordInsiemeDao) {
+    discordResult = await discordInsiemeDao.listProjects();
+  }
+
+  return basicResult.map(basicProject => {
+    const discordProject = discordResult.find(dp => dp.projectId === basicProject.projectId);
+
+    if (discordProject) {
+      return {
+        ...basicProject,
+        ...discordProject,
+      };
+    }
+
+    return basicProject;
+  });
 };
 
 export const appendSessionMessages = async (deps, payload) => {

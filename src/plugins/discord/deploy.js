@@ -1,5 +1,5 @@
 import { REST, Routes } from "discord.js";
-import * as tasksSlashCommands from "./slash-commands/tasks";
+import * as sessionsSlashCommands from "./slash-commands/sessions";
 
 const token = process.env.DISCORD_BOT_TOKEN;
 const clientId = process.env.DISCORD_CLIENT_ID;
@@ -8,7 +8,7 @@ const guildId = process.env.DISCORD_GUILD_ID;
 const rest = new REST().setToken(token);
 
 const commands = {
-  ...tasksSlashCommands,
+  ...sessionsSlashCommands,
 }
 
 const commandsData = Object.values(commands).map(command => command.data.toJSON());

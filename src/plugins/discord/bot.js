@@ -1,6 +1,6 @@
 // minimal-discord-bot.js
 import { Client, Collection, Events, GatewayIntentBits, MessageFlags } from 'discord.js';
-import * as tasksSlashCommands from "./slash-commands/tasks";
+import * as sessionsSlashCommands from "./slash-commands/sessions";
 
 const token = process.env.DISCORD_BOT_TOKEN;
 
@@ -22,10 +22,12 @@ client.once(Events.ClientReady, () => {
 });
 
 const commands = {
-  ...tasksSlashCommands,
+  ...sessionsSlashCommands.default,
 };
 
 client.commands = new Collection(Object.entries(commands));
+
+console.log("Commands loaded:", client.commands.map(cmd => cmd.data.name));
 
 // Simple echo: reply with exactly what the user sent
 // client.on(Events.MessageCreate, async (message) => {
