@@ -26,9 +26,9 @@ do this:
 ```js
 // Not in a thread - create one
 const thread = await interaction.channel.threads.create({
-    name: `${backlogEmoji}${fullTaskId} - ${title}`,
-    autoArchiveDuration: 1440, // 24 hours
-    reason: `Task: ${fullTaskId}`,
+  name: `[${session.status}]${session.id}`,
+  autoArchiveDuration: 1440, // 24 hours
+  reason: `Session: ${session.id}`,
 });
 
 threadId = thread.id;
@@ -41,9 +41,17 @@ await thread.send(messageContent);
 
 // Update the deferred reply
 await interaction.editReply({
-    content: `Task created: <#${thread.id}>`,
-    ephemeral: true
+  content: `Session created: <#${thread.id}>`,
+  ephemeral: true
 });
 
 
 ```
+
+## TODO
+
+- [ ] Update discord channel cli (channels->channel)
+- [ ] add `createSession` slash command to create thread.
+---
+- [ ] save thread id & session id in discord db. (new table. columns: session_id* thread_id)
+- [ ] should @

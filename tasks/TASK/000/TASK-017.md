@@ -1,7 +1,7 @@
 ---
 title: setup discord plugin
 assignee: 738NGX
-status: medium
+status: done
 priority: medium
 labels: [discord]
 ---
@@ -20,8 +20,8 @@ We want to implment the following in Discord:
 kanbatte discord db setup
 
 # add channel. this will be stored in db.
-kanbatte discord channel add -p AA --c channel-id some_channel_id 
-kanbatte discord channel update -p AA --c channel-id some_channel_id 
+kanbatte discord channel add -p AA --c channel-id
+kanbatte discord channel update -p AA --c channel-id
 
 # start
 kanbatte discord start
