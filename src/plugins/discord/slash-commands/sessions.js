@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { SlashCommandBuilder, MessageFlags } from 'discord.js';
 import { createMainInsiemeDao } from '../../../deps/mainDao';
 import { createDiscordInsiemeDao } from '../deps/discordDao';
 import { addSession } from '../../../commands/session';
@@ -20,19 +20,38 @@ const queueSession = {
     .addStringOption((option) => option.setName('message').setDescription('Initial message for the session').setRequired(true)),
 
   async execute(interaction) {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
     const insiemeDao = await createMainInsiemeDao();
     const discordInsiemeDao = await createDiscordInsiemeDao();
     const channelId = interaction.channel.id;
 
     const project = await discordInsiemeDao.getProjectIdByChannel({ channelId });
-    
+
     const message = interaction.options.getString('message');
 
     const session = await addSession({ insiemeDao }, { project, message });
 
-    const reply = `Session created successfully! Session ID: ${session.sessionId}`;
+    // Not in a thread - create one
+    const thread = await interaction.channel.threads.create({
+      name: `[${session.status}]${session.sessionId}`,
+      autoArchiveDuration: 1440, // 24 hours
+      reason: `Session: ${session.sessionId}`,
+    });
+
+    // Add the user who created the task to the thread
+    await thread.members.add(interaction.user.id);
+
+    // Send message to the new thread
+    await thread.send(message);
+
+    const reply = `Session ${session.sessionId} created: <#${thread.id}>`;
     console.log(reply);
-    await interaction.reply(reply);
+
+    // Update the deferred reply
+    await interaction.editReply({
+      content: reply
+    });
   }
 }
 
