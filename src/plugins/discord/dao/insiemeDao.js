@@ -72,26 +72,23 @@ export const computeAndSaveView = async (deps, payload) => {
   if (firstEvent.type === "channel_created") {
     state = {
       projectId: id,
-      channels: "",
+      channel: "",
     };
     viewKey = `project:${id}`;
   }
 
-  let lastEventId = null;
-
   for (const row of events) {
-    lastEventId = row.id;
     const event = deserialize(row.payload.value.eventData);
 
     switch (event.type) {
       case "channel_created":
-        state.channels = event.data.channels || state.channels;
+        state.channel = event.data.channel || state.channel;
         state.createdAt = event.data.createdAt || state.createdAt;
         state.updatedAt = event.timestamp;
         break;
 
       case "channel_updated":
-        if (event.data.project !== undefined) state.channels = event.data.channels;
+        if (event.data.project !== undefined) state.channel = event.data.channel;
         state.updatedAt = event.timestamp;
         break;
 
@@ -104,21 +101,59 @@ export const computeAndSaveView = async (deps, payload) => {
   const now = Date.now();
 
   const existing = await db.execute({
-    sql: "SELECT id FROM view WHERE key = ?",
+    sql: "SELECT id FROM discord_view WHERE key = ?",
     args: [viewKey],
   });
 
   if (existing.rows.length > 0) {
     await db.execute({
-      sql: "UPDATE discord_view SET data = ?, last_offset_id = ?, updated_at = ? WHERE key = ?",
-      args: [viewData, lastEventId, now, viewKey],
+      sql: "UPDATE discord_view SET data = ?, updated_at = ? WHERE key = ?",
+      args: [viewData, now, viewKey],
     });
   } else {
     await db.execute({
-      sql: "INSERT INTO discord_view (id, key, data, last_offset_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
-      args: [generateId(), viewKey, viewData, lastEventId, now, now],
+      sql: "INSERT INTO discord_view (id, key, data, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+      args: [generateId(), viewKey, viewData, now, now],
     });
   }
 
   return state;
 };
+
+export const listProjects = async (deps) => {
+  const { db, deserialize } = deps;
+  
+  const result = await db.execute({
+    sql: "SELECT key, data FROM discord_view WHERE key LIKE 'project:%' ORDER BY created_at ASC",
+  });
+
+  if (result.rows.length === 0) {
+    return [];
+  }
+
+  return result.rows.map(row => {
+    const data = deserialize(row.data);
+    return {
+      projectId: data.projectId,
+      channel: data.channel,
+    };
+  });
+}
+
+export const getProjectIdByChannel = async (deps, payload) => {
+  const { db, deserialize } = deps;
+  const { channelId } = payload;
+  
+  const result = await db.execute({
+    sql: "SELECT key, data FROM discord_view WHERE key LIKE 'project:%'",
+  });
+
+  for (const row of result.rows) {
+    const data = deserialize(row.data);
+    if (data.channel === channelId) {
+      return data.projectId;
+    }
+  }
+  
+  return null;
+}

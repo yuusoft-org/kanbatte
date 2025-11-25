@@ -7,49 +7,20 @@ import { fileURLToPath } from "url";
 import { serialize, deserialize } from "./utils/serialization.js";
 import { generateId } from "./utils/helper.js";
 import { buildSite } from "@rettangoli/sites/cli";
-import * as insiemeDaoMethods from "./dao/insiemeDao.js";
-import { createInsiemeAdapter, createInsiemeRepository } from './deps/repository.js'
-import { createInsiemeDao } from "./deps/dao.js";
-import { createLibSqlUmzug } from "umzug-libsql";
 import { createTask, listTasks, locateTask } from "./commands/task.js";
 import { addSession, updateSession, readSession, listSessions, addProject, updateProject, listProjects, getSession, appendSessionMessages } from "./commands/session.js";
 import { formatOutput } from "./utils/output.js";
 import { agent } from "./commands/agent.js";
 import { removeDirectory, copyDirectory, copyDirectoryOverwrite, processAllTaskFiles, generateTasksData } from "./utils/buildSite.js";
+import { setupDB, createMainInsiemeDao } from "./deps/mainDao.js";
+import { createDiscordInsiemeDao } from "./plugins/discord/deps/discordDao.js";
 import { setupDiscordCli } from "./plugins/discord/cli.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-// Use current working directory for task operations (not CLI file location)
-const projectRoot = process.cwd();
-const dbPath = join(projectRoot, "local.db");
-const migrationsPath = join(projectRoot, "db/migrations/*.sql");
-
-const setupDB = async () => {
-  const { umzug } = createLibSqlUmzug({
-    url: `file:${dbPath}`,
-    glob: migrationsPath,
-  });
-
-  await umzug.up();
-}
 
 const packageJson = JSON.parse(
   readFileSync(join(__dirname, "../package.json"), "utf8"),
 );
-
-const createMainStore = async () => {
-  return await createInsiemeAdapter({ 
-    dbPath, 
-    eventLogTableName: "event_log",
-    kvStoreTableName: "kv_store",
-  });
-}
-
-const createMainInsiemeDao = async () => {
-  const store = await createMainStore();
-  const repository = await createInsiemeRepository({ store });
-  return await createInsiemeDao({ dbPath, repository, methods: insiemeDaoMethods });
-}
 
 const program = new Command();
 
@@ -314,7 +285,8 @@ sessionProjectCmd
   .description("List all projects")
   .action(async () => {
     const insiemeDao = await createMainInsiemeDao();
-    const projects = await listProjects({ insiemeDao });
+    const discordInsiemeDao = await createDiscordInsiemeDao();
+    const projects = await listProjects({ insiemeDao, discordInsiemeDao });
     if (projects.length > 0) {
       console.log("Projects:");
       console.table(projects);
