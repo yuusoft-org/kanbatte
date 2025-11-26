@@ -39,10 +39,10 @@ export const createTaskService = (deps) => {
     }
 
     // Get next available task ID and folder
-    const { taskId, folder } = getNextTaskId(deps, projectRoot, type);
+    const { taskId, folder } = getNextTaskId(projectRoot, type);
 
     // Create folders if they don't exist
-    const folderPath = createTaskFolders(deps, projectRoot, type, folder);
+    const folderPath = createTaskFolders(projectRoot, type, folder);
 
     // Generate file content
     const content = generateTaskContent(title, description, formattedPriority);
@@ -61,7 +61,7 @@ export const createTaskService = (deps) => {
     const { type, status, priority } = options;
 
     // Scan for tasks
-    let tasks = scanTaskFiles(deps, projectRoot, type);
+    let tasks = scanTaskFiles(projectRoot, type);
 
     // Apply filters
     if (status) {
@@ -84,7 +84,7 @@ export const createTaskService = (deps) => {
     const folder = calculateFolder(number);
     const filePath = buildTaskPath(projectRoot, type, folder, taskId);
 
-    if (!taskExists(deps, filePath)) {
+    if (!taskExists(filePath)) {
       throw new Error(`Task file not found: ${taskId}`);
     }
 

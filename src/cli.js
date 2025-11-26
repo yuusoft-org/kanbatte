@@ -8,7 +8,6 @@ import { fileURLToPath } from "url";
 import { serialize, deserialize } from "./utils/serialization.js";
 import { generateId } from "./utils/helper.js";
 import { buildSite } from "@rettangoli/sites/cli";
-import { createTaskUtils } from "./utils/tasks.js";
 import { createTaskService } from "./services/taskService.js";
 import { addSession, updateSession, readSession, listSessions, addProject, updateProject, listProjects, getSession, appendSessionMessages } from "./commands/session.js";
 import { formatOutput } from "./utils/output.js";
