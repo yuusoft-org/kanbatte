@@ -71,6 +71,7 @@ const setStatus = {
         content: 'This command can only be used in a thread channel.',
         flags: MessageFlags.Ephemeral,
       });
+      return;
     }
     const status = interaction.options.getString('status');
     if (['ready', 'in-progress', 'review', 'done'].includes(status) === false) {
@@ -78,6 +79,7 @@ const setStatus = {
         content: `Invalid status '${status}'. Valid statuses are: ready, in-progress, review, done.`,
         flags: MessageFlags.Ephemeral,
       });
+      return;
     }
     const discordInsiemeDao = await createDiscordInsiemeDao();
     const mainInsiemeDao = await createMainInsiemeDao();
@@ -87,6 +89,7 @@ const setStatus = {
         content: `No session found for this thread.`,
         flags: MessageFlags.Ephemeral,
       });
+      return;
     }
     await mainInsiemeDao.updateSessionStatus({ sessionId, status });
     await interaction.reply({
