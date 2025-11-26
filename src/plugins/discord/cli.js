@@ -41,15 +41,4 @@ export const setupDiscordCli = (deps) => {
       };
       await discordChannelUpdate({ discordInsiemeDao }, payload);
     });
-
-  // Discord start command
-  cmd
-    .command("start")
-    .description("Start Discord event listener")
-    .action(async () => {
-      const mainInsiemeDao = await createMainInsiemeDao();
-      const discordStore = await createDiscordStore();
-
-      await startDiscordEventListener({ mainInsiemeDao, discordStore });
-    });
 };

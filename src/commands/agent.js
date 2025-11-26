@@ -17,6 +17,11 @@ export const agent = async (deps) => {
     console.log(`Messages count: ${session.messages.length}`);
 
     try {
+      await deps.insiemeDao.updateSessionStatus({
+        sessionId: session.sessionId,
+        status: "in-progress"
+      });
+
       // Get project repository
       const project = await deps.insiemeDao.getProjectById({ projectId: session.project });
       if (!project || !project.repository) {
@@ -53,35 +58,35 @@ Please continue working on this session for project "${session.project}". You ca
           },
         });
 
-        const assistantContent = [];
+        //const assistantContent = [];
 
         for await (const message of result) {
           // Collect all content from the streaming response
           if (message.message?.content) {
-            assistantContent.push(...message.message.content);
+            //assistantContent.push(...message.message.content);
+            await deps.insiemeDao.appendSessionMessages({
+              sessionId: session.sessionId,
+              messages: [{
+                // Doc: https://platform.claude.com/docs/en/agent-sdk/typescript#message-types
+                role: message.message.role,
+                content: message.message.content, // Content array in standard format
+                timestamp: Date.now()
+              }]
+            });
           }
 
           // Display text content to console
-          if (message.type === "assistant" && message.message?.content) {
-            const textContent = message.message.content
-              .filter(c => c.type === "text")
-              .map(c => c.text)
-              .join("");
-            if (textContent) {
-              console.log(textContent);
-            }
-          }
+          // if (message.type === "assistant" && message.message?.content) {
+          //   const textContent = message.message.content
+          //     .filter(c => c.type === "text")
+          //     .map(c => c.text)
+          //     .join("");
+          //   if (textContent) {
+          //     console.log(textContent);
+          //   }
+          // }
         }
 
-        // Append single message in standard completion API format
-        await deps.insiemeDao.appendSessionMessages({
-          sessionId: session.sessionId,
-          messages: [{
-            role: "assistant",
-            content: assistantContent, // Content array in standard format
-            timestamp: Date.now()
-          }]
-        });
 
       } catch (error) {
         console.warn(`Error processing session ${session.sessionId}:`, error);

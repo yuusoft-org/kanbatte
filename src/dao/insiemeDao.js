@@ -380,7 +380,7 @@ export const fetchRecentSessionEvents = async (deps, payload) => {
   const allEvents = await repository.getEventsAsync({ lastOffsetId, filterInit: true });
 
   return allEvents.map(event => ({
-    ...event,
-    eventData: deserialize(event.payload.value.eventData)
+    id: event.id,
+    ...deserialize(event.payload.value.eventData)
   }));
 }

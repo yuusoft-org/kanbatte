@@ -1,9 +1,11 @@
 // minimal-discord-bot.js
-import { Client, Collection, Events, GatewayIntentBits, MessageFlags, ChannelType } from 'discord.js';
+import { Client, Collection, Events, GatewayIntentBits, MessageFlags } from 'discord.js';
+import { isThreadChannel } from './utils';
 import * as sessionsSlashCommands from "./slash-commands/sessions";
 import { createMainInsiemeDao } from '../../deps/mainDao';
-import { createDiscordInsiemeDao } from './deps/discordDao';
+import { createDiscordInsiemeDao, createDiscordStore } from './deps/discordDao';
 import { appendSessionMessages } from '../../commands/session';
+import { discordStartLoop, initializeOffset } from './commands/start';
 
 const token = process.env.DISCORD_BOT_TOKEN;
 
@@ -20,8 +22,22 @@ const client = new Client({
   ],
 });
 
-client.once(Events.ClientReady, () => {
+client.once(Events.ClientReady, async () => {
   console.log(`Logged in as ${client.user.tag}!`);
+  const discordStore = await createDiscordStore();
+  const mainInsiemeDao = await createMainInsiemeDao();
+  const discordInsiemeDao = await createDiscordInsiemeDao();
+
+  let currentOffsetId = await initializeOffset({ discordStore });
+
+  setInterval(async () => {
+    currentOffsetId = await discordStartLoop({
+      mainInsiemeDao,
+      discordStore,
+      discordInsiemeDao,
+      client
+    }, { currentOffsetId });
+  }, 10000);
 });
 
 const commands = {
@@ -36,9 +52,7 @@ client.on(Events.MessageCreate, async (message) => {
   // Ignore bot messages to avoid loops
   if (message.author.bot) return;
 
-  const isThread = message.channel.type === ChannelType.PublicThread ||
-    message.channel.type === ChannelType.PrivateThread ||
-    message.channel.type === ChannelType.AnnouncementThread;
+  const isThread = isThreadChannel(message.channel);
 
   if (!isThread) return;
 

@@ -8,7 +8,7 @@ const guildId = process.env.DISCORD_GUILD_ID;
 const rest = new REST().setToken(token);
 
 const commands = {
-  ...sessionsSlashCommands,
+  ...sessionsSlashCommands.default,
 }
 
 const commandsData = Object.values(commands).map(command => command.data.toJSON());
