@@ -1,13 +1,15 @@
 #!/usr/bin/env bun
 
 import { Command } from "commander";
+import * as fs from "fs";
 import { readFileSync, existsSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import { serialize, deserialize } from "./utils/serialization.js";
 import { generateId } from "./utils/helper.js";
 import { buildSite } from "@rettangoli/sites/cli";
-import { createTask, listTasks, locateTask } from "./commands/task.js";
+import { createTaskUtils } from "./utils/tasks.js";
+import { createTaskService } from "./services/taskService.js";
 import { addSession, updateSession, readSession, listSessions, addProject, updateProject, listProjects, getSession, appendSessionMessages } from "./commands/session.js";
 import { formatOutput } from "./utils/output.js";
 import { agent } from "./commands/agent.js";
@@ -17,6 +19,7 @@ import { createDiscordInsiemeDao } from "./plugins/discord/deps/discordDao.js";
 import { setupDiscordCli } from "./plugins/discord/cli.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const projectRoot = process.cwd();
 
 const packageJson = JSON.parse(
   readFileSync(join(__dirname, "../package.json"), "utf8"),
@@ -28,6 +31,9 @@ program
   .name("kanbatte")
   .description("Orchestrate your AI agents with Kanban-like boards")
   .version(packageJson.version);
+
+const taskUtils = createTaskUtils({ fs });
+const taskService = createTaskService({ fs, taskUtils });
 
 //Setup db
 const dbCmd = program.command("db").description("Database operations");
@@ -56,7 +62,7 @@ taskCmd
   .option("-d, --description <description>", "Task description")
   .option("-p, --priority <priority>", "Task priority (low, medium, high)")
   .action((type, options) => {
-    const result = createTask(projectRoot, { type, ...options });
+    const result = taskService.createTask(projectRoot, { type, ...options });
     if (result) {
       console.log("Task created successfully!");
       console.log(`Task ID: ${result.taskId}`);
@@ -72,7 +78,7 @@ taskCmd
   .option("-s, --status <status>", "Filter by status (todo, done)")
   .option("-p, --priority <priority>", "Filter by priority (low, medium, high, comma-separated)")
   .action((type, options) => {
-    const result = listTasks(projectRoot, { type, ...options });
+    const result = taskService.listTasks(projectRoot, { type, ...options });
     console.log(result);
   });
 
@@ -82,7 +88,7 @@ taskCmd
   .description("Locate a task file and return its relative path")
   .argument("<taskId>", "Task ID to locate (e.g., TASK-001, FEAT-002)")
   .action((taskId) => {
-    const path = locateTask(projectRoot, taskId);
+    const path = taskService.locateTask(projectRoot, taskId);
     console.log(path);
   });
 
