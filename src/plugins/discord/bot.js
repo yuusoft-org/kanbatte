@@ -1,6 +1,6 @@
 // minimal-discord-bot.js
 import { Client, Collection, Events, GatewayIntentBits, MessageFlags } from 'discord.js';
-import { isThreadChannel } from './utils/thread';
+import { isThreadChannel } from './utils';
 import * as sessionsSlashCommands from "./slash-commands/sessions";
 import { createMainInsiemeDao } from '../../deps/mainDao';
 import { createDiscordInsiemeDao, createDiscordStore } from './deps/discordDao';

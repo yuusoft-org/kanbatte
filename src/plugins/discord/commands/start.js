@@ -1,44 +1,4 @@
-const splitTextForDiscord = (text, maxLength = 1500) => {
-  if (text.length <= maxLength) {
-    return [text];
-  }
-
-  let result = [];
-  let currentText = text;
-
-  while (currentText.length > maxLength) {
-    const doubleNewlineIndex = currentText.lastIndexOf('\n\n', maxLength);
-    if (doubleNewlineIndex > 0 && doubleNewlineIndex < maxLength) {
-      result.push(currentText.substring(0, doubleNewlineIndex).trim());
-      currentText = currentText.substring(doubleNewlineIndex + 2).trim();
-      continue;
-    }
-
-    const punctuationMatch = currentText.substring(0, maxLength).match(/[.!?。！？]/);
-    if (punctuationMatch) {
-      const punctuationIndex = punctuationMatch.index;
-      result.push(currentText.substring(0, punctuationIndex + 1).trim());
-      currentText = currentText.substring(punctuationIndex + 1).trim();
-      continue;
-    }
-
-    const spaceIndex = currentText.lastIndexOf(' ', maxLength);
-    if (spaceIndex > 0) {
-      result.push(currentText.substring(0, spaceIndex).trim());
-      currentText = currentText.substring(spaceIndex + 1).trim();
-      continue;
-    }
-
-    result.push(currentText.substring(0, maxLength));
-    currentText = currentText.substring(maxLength);
-  }
-
-  if (currentText.trim()) {
-    result.push(currentText.trim());
-  }
-
-  return result.filter(text => text.length > 0);
-};
+import { splitTextForDiscord } from "../utils";
 
 const handleSessionEvent = async (deps) => {
   const { event, client, discordInsiemeDao } = deps;
@@ -121,21 +81,10 @@ export const discordStartLoop = async (deps, payload) => {
   if (recentEvents.length > 0) {
     console.log(`🆕 ${recentEvents.length} new session events detected!`);
 
-    // Print new events first
-    if (client && discordInsiemeDao) {
-      for (const event of recentEvents) {
-        await handleSessionEvent({ event, client, discordInsiemeDao });
-      }
-    } else {
-      recentEvents.forEach((event, index) => {
-        console.log(`  ${index + 1}. [${event.type}] Session: ${event.sessionId}`);
-        console.log(`     Timestamp: ${new Date(event.timestamp).toISOString()}`);
-        if (event.data) {
-          console.log(`     Data:`, JSON.stringify(event.data, null, 2));
-        }
-      });
+    for (const event of recentEvents) {
+      await handleSessionEvent({ event, client, discordInsiemeDao });
     }
-
+    
     // Update offset only after successfully processing all events
     const lastEvent = recentEvents[recentEvents.length - 1];
     newOffsetId = lastEvent.id;
@@ -156,30 +105,4 @@ export const initializeOffset = async ({ discordStore }) => {
   }
 
   return currentOffsetId;
-};
-
-export const startDiscordEventListener = async ({ mainInsiemeDao, discordStore }) => {
-  console.log("🚀 Starting Discord event listener...");
-
-  const currentOffsetId = await initializeOffset({ discordStore });
-
-  // Check immediately
-  let latestOffsetId = await discordStartLoop({ mainInsiemeDao, discordStore }, { currentOffsetId });
-
-  // Set up interval to check every 10 seconds
-  const interval = setInterval(async () => {
-    latestOffsetId = await discordStartLoop({ mainInsiemeDao, discordStore }, { currentOffsetId: latestOffsetId });
-  }, 10000);
-
-  console.log("✅ Discord event listener is running. Checking for updates every 10 seconds...");
-  console.log("Press Ctrl+C to stop");
-
-  // Handle graceful shutdown
-  process.on('SIGINT', () => {
-    console.log("\n🛑 Stopping Discord event listener...");
-    clearInterval(interval);
-    process.exit(0);
-  });
-
-  return interval;
 };

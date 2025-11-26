@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, MessageFlags } from 'discord.js';
-import { isThreadChannel } from '../utils/thread';
+import { isThreadChannel } from '../utils';
 import { createMainInsiemeDao } from '../../../deps/mainDao';
 import { createDiscordInsiemeDao } from '../deps/discordDao';
 import { addSession } from '../../../commands/session';
@@ -74,7 +74,7 @@ const setStatus = {
       return;
     }
     const status = interaction.options.getString('status');
-    if (['ready', 'in-progress', 'review', 'done'].includes(status) === false) {
+    if (!['ready', 'in-progress', 'review', 'done'].includes(status)) {
       await interaction.reply({
         content: `Invalid status '${status}'. Valid statuses are: ready, in-progress, review, done.`,
         flags: MessageFlags.Ephemeral,
