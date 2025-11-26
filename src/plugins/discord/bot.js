@@ -1,5 +1,6 @@
 // minimal-discord-bot.js
-import { Client, Collection, Events, GatewayIntentBits, MessageFlags, ChannelType } from 'discord.js';
+import { Client, Collection, Events, GatewayIntentBits, MessageFlags } from 'discord.js';
+import { isThreadChannel } from './utils/thread';
 import * as sessionsSlashCommands from "./slash-commands/sessions";
 import { createMainInsiemeDao } from '../../deps/mainDao';
 import { createDiscordInsiemeDao, createDiscordStore } from './deps/discordDao';
@@ -26,9 +27,9 @@ client.once(Events.ClientReady, async () => {
   const discordStore = await createDiscordStore();
   const mainInsiemeDao = await createMainInsiemeDao();
   const discordInsiemeDao = await createDiscordInsiemeDao();
-  
+
   let currentOffsetId = await initializeOffset({ discordStore });
-  
+
   setInterval(async () => {
     currentOffsetId = await discordStartLoop({
       mainInsiemeDao,
@@ -51,9 +52,7 @@ client.on(Events.MessageCreate, async (message) => {
   // Ignore bot messages to avoid loops
   if (message.author.bot) return;
 
-  const isThread = message.channel.type === ChannelType.PublicThread ||
-    message.channel.type === ChannelType.PrivateThread ||
-    message.channel.type === ChannelType.AnnouncementThread;
+  const isThread = isThreadChannel(message.channel);
 
   if (!isThread) return;
 

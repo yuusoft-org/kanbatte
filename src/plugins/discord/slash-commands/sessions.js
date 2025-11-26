@@ -1,7 +1,9 @@
 import { SlashCommandBuilder, MessageFlags } from 'discord.js';
+import { isThreadChannel } from '../utils/thread';
 import { createMainInsiemeDao } from '../../../deps/mainDao';
 import { createDiscordInsiemeDao } from '../deps/discordDao';
 import { addSession } from '../../../commands/session';
+import { agent } from '../../../commands/agent';
 
 // export const ping = {
 //   data: new SlashCommandBuilder()
@@ -56,6 +58,61 @@ const queueSession = {
   }
 }
 
+const setStatus = {
+  data: new SlashCommandBuilder()
+    .setName('set-status')
+    .setDescription('Set the status of an existing session')
+    .addStringOption((option) => option.setName('status').setDescription('New status for the session').setRequired(true)),
+
+  async execute(interaction) {
+    const isThread = isThreadChannel(interaction.channel);
+    if (!isThread) {
+      await interaction.reply({
+        content: 'This command can only be used in a thread channel.',
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+    const status = interaction.options.getString('status');
+    if (['ready', 'in-progress', 'review', 'done'].includes(status) === false) {
+      await interaction.reply({
+        content: `Invalid status '${status}'. Valid statuses are: ready, in-progress, review, done.`,
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+    const discordInsiemeDao = await createDiscordInsiemeDao();
+    const mainInsiemeDao = await createMainInsiemeDao();
+    const sessionId = await discordInsiemeDao.getSessionIdByThread({ threadId: interaction.channel.id });
+    if (!sessionId) {
+      await interaction.reply({
+        content: `No session found for this thread.`,
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+    await mainInsiemeDao.updateSessionStatus({ sessionId, status });
+    await interaction.reply({
+      content: `🔄 Session ${sessionId} status updated to: ${status}`,
+      flags: MessageFlags.Ephemeral,
+    });
+  }
+}
+
+const startAgent = {
+  data: new SlashCommandBuilder()
+    .setName('start-agent')
+    .setDescription('Start the agent to work on this session'),
+
+  async execute(interaction) {
+    const insiemeDao = await createMainInsiemeDao();
+    await interaction.reply({
+      content: `Starting agent for all ready sessions...`,
+      flags: MessageFlags.Ephemeral,
+    });
+    await agent({ insiemeDao });
+  }
+}
+
 export default {
   'queue-session': queueSession,
+  'set-status': setStatus,
+  'start-agent': startAgent,
 }
