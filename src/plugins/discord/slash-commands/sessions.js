@@ -34,7 +34,7 @@ const queueSession = {
 
     // Not in a thread - create one
     const thread = await interaction.channel.threads.create({
-      name: `[${session.status}]${session.sessionId}`,
+      name: `[${session.status}] ${session.sessionId}`,
       autoArchiveDuration: 1440, // 24 hours
       reason: `Session: ${session.sessionId}`,
     });
@@ -43,7 +43,7 @@ const queueSession = {
     await thread.members.add(interaction.user.id);
 
     // Send message to the new thread
-    await thread.send(message);
+    await thread.send(`🗨️ User: ${message}`);
     await discordInsiemeDao.addSessionThreadRecord({ sessionId: session.sessionId, threadId: thread.id });
 
     const reply = `Session ${session.sessionId} created: <#${thread.id}>`;

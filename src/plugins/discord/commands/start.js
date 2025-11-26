@@ -1,5 +1,65 @@
-const discordStartLoop = async (deps, payload) => {
-  const { discordStore, mainInsiemeDao } = deps;
+const handleSessionEvent = async (deps) => {
+  const { event, client, discordInsiemeDao } = deps;
+  try {
+    const { type, sessionId, data } = event;
+    if (!sessionId) {
+      console.warn('⚠️ Session event missing sessionId:', event);
+      return;
+    }
+
+    const threadId = await discordInsiemeDao.getThreadIdBySession({ sessionId });
+
+    if (!threadId) {
+      console.warn(`⚠️ No thread found for session ${sessionId}`);
+      return;
+    }
+
+    if (threadId) {
+      const thread = await client.channels.fetch(threadId);
+      if (thread) {
+        switch (type) {
+          case 'session_append_messages':
+            for (const msg of data.messages) {
+              let message;
+              if (msg.role === 'user') {
+                message = `🗨️ User: ${msg.content}`
+              } else if (msg.role === 'assistant') {
+                if (typeof msg.content === 'string') {
+                  message = msg.content;
+                } else if (Array.isArray(msg.content)) {
+                  // Extract text from assistant messages with array content
+                  message = msg.content
+                    .filter(c => c.type === 'text')
+                    .map(c => c.text)
+                    .join('\n\n');
+                }
+              } else if (msg.role === 'system') {
+                message = `⚙️ System: ${msg.content}`;
+              } else {
+                message = `ℹ️ ${msg.role}: ${msg.content}`;
+              }
+              console.log(`Sending message to thread ${threadId} for session ${sessionId}: ${message}`);
+              await thread.send(message);
+            }
+            break;
+          case 'session_updated':
+            await thread.setName(`[${data.status}] ${sessionId}`);
+            console.log(`Updating thread name to: ${thread.name}`);
+            await thread.send(`🔄 Session ${sessionId} status updated to: ${data.status}`);
+            break;
+          default:
+            // console.log(`Unhandled session event type: ${type} for session ${sessionId}:`, event);
+            break;
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error handling session event:', error);
+  }
+};
+
+export const discordStartLoop = async (deps, payload) => {
+  const { discordStore, mainInsiemeDao, discordInsiemeDao, client } = deps;
   const { currentOffsetId } = payload;
 
   const recentEvents = await mainInsiemeDao.fetchRecentSessionEvents({
@@ -18,19 +78,25 @@ const discordStartLoop = async (deps, payload) => {
     await discordStore.set("lastOffsetId", newOffsetId);
 
     // Print new events
-    recentEvents.forEach((event, index) => {
-      console.log(`  ${index + 1}. [${event.eventData.type}] Session: ${event.eventData.sessionId}`);
-      console.log(`     Timestamp: ${new Date(event.eventData.timestamp).toISOString()}`);
-      if (event.eventData.data) {
-        console.log(`     Data:`, JSON.stringify(event.eventData.data, null, 2));
+    if (client && discordInsiemeDao) {
+      for (const event of recentEvents) {
+        await handleSessionEvent({ event, client, discordInsiemeDao });
       }
-    });
+    } else {
+      recentEvents.forEach((event, index) => {
+        console.log(`  ${index + 1}. [${event.type}] Session: ${event.sessionId}`);
+        console.log(`     Timestamp: ${new Date(event.timestamp).toISOString()}`);
+        if (event.data) {
+          console.log(`     Data:`, JSON.stringify(event.data, null, 2));
+        }
+      });
+    }
   }
 
   return newOffsetId;
 };
 
-const initializeOffset = async ({ discordStore }) => {
+export const initializeOffset = async ({ discordStore }) => {
   let currentOffsetId = await discordStore.get("lastOffsetId");
 
   if (currentOffsetId === null) {
@@ -46,7 +112,7 @@ const initializeOffset = async ({ discordStore }) => {
 export const startDiscordEventListener = async ({ mainInsiemeDao, discordStore }) => {
   console.log("🚀 Starting Discord event listener...");
 
-  const currentOffsetId = await initializeOffset({discordStore});
+  const currentOffsetId = await initializeOffset({ discordStore });
 
   // Check immediately
   let latestOffsetId = await discordStartLoop({ mainInsiemeDao, discordStore }, { currentOffsetId });

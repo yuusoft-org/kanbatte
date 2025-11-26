@@ -62,7 +62,7 @@ export const updateSession = async (deps, payload) => {
     throw new Error("Session ID is required (use -i or --session-id)");
   }
 
-  const session = await insiemeDao.getViewBySessionId(sessionId);
+  const session = await insiemeDao.getViewBySessionId({ sessionId });
   if (!session) {
     throw new Error(`Session '${sessionId}' does not exist`);
   }

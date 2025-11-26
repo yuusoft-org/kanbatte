@@ -80,6 +80,21 @@ export const getSessionIdByThread = async (deps, payload) => {
   return result.rows[0].session_id;
 }
 
+export const getThreadIdBySession = async (deps, payload) => {
+  const { db } = deps;
+  const { sessionId } = payload;
+
+  const result = await db.execute({
+    sql: "SELECT thread_id FROM discord_session_thread_record WHERE session_id = ?",
+    args: [sessionId],
+  });
+
+  if (result.rows.length === 0) {
+    return null;
+  }
+  return result.rows[0].thread_id;
+}
+
 export const computeAndSaveView = async (deps, payload) => {
   const { db, generateId, deserialize, serialize } = deps;
   const { id } = payload;
