@@ -32,8 +32,7 @@ program
   .description("Orchestrate your AI agents with Kanban-like boards")
   .version(packageJson.version);
 
-const taskUtils = createTaskUtils({ fs });
-const taskService = createTaskService({ fs, taskUtils });
+const taskService = createTaskService({ fs });
 
 //Setup db
 const dbCmd = program.command("db").description("Database operations");
