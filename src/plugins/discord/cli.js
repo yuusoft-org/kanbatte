@@ -1,5 +1,5 @@
 export const setupDiscordCli = (deps) => {
-  const { cmd, discordService, discordLibsqlService } = deps;
+  const { cmd, discordService, discordLibsqlService, discordInsiemeService  } = deps;
 
   // Discord db setup command
   cmd
@@ -9,6 +9,7 @@ export const setupDiscordCli = (deps) => {
     .action(async () => {
       console.log("Setting up Discord plugin database...");
       await discordLibsqlService.init();
+      await discordInsiemeService.init();
       console.log("Discord plugin database setup completed!");
     });
 

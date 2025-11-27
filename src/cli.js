@@ -5,17 +5,19 @@ import * as fs from "fs";
 import { readFileSync, existsSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
-import { serialize, deserialize } from "./utils/serialization.js";
-import { generateId } from "./utils/helper.js";
 import { buildSite } from "@rettangoli/sites/cli";
-import { createTaskService } from "./services/taskService.js";
-import { addSession, updateSession, readSession, listSessions, addProject, updateProject, listProjects, getSession, appendSessionMessages } from "./commands/session.js";
 import { formatOutput } from "./utils/output.js";
-import { agent } from "./commands/agent.js";
 import { removeDirectory, copyDirectory, copyDirectoryOverwrite, processAllTaskFiles, generateTasksData } from "./utils/buildSite.js";
-import { setupDB, createMainInsiemeDao } from "./deps/mainDao.js";
-import { createDiscordInsiemeDao } from "./plugins/discord/deps/discordDao.js";
 import { setupDiscordCli } from "./plugins/discord/cli.js";
+import { createTaskService } from "./services/taskService.js";
+import { createLibsqlService } from "./services/libsqlService.js";
+import { createInsiemeService } from "./services/insiemeService.js";
+import { createSessionService } from "./services/sessionService.js";
+import { createAgentService } from "./services/agentService.js";
+import { createDiscordLibsqlService } from "./plugins/discord/services/discordLibsqlService.js";
+import { createDiscordInsiemeService } from "./plugins/discord/services/discordInsiemeService.js";
+import { createDiscordService } from "./plugins/discord/services/discordService.js";
+import { startDiscordBot } from "./plugins/discord/bot.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = process.cwd();
@@ -31,7 +33,27 @@ program
   .description("Orchestrate your AI agents with Kanban-like boards")
   .version(packageJson.version);
 
+const dbPath = join(projectRoot, "local.db");
+const migrationsPath = join(__dirname, "../db/migrations/*.sql");
+const discordMigrationsPath = join(__dirname, "./plugins/discord/db/migrations/*.sql");
+
 const taskService = createTaskService({ fs });
+const libsqlService = createLibsqlService({ dbPath, migrationsPath });
+const insiemeService = await createInsiemeService({
+  libsqlService,
+  eventLogTableName: "event_log",
+  kvStoreTableName: "kv_store",
+});
+const sessionService = createSessionService({ libsqlService, insiemeService });
+const agentService = createAgentService({ sessionService });
+
+const discordLibsqlService = createDiscordLibsqlService({ dbPath, migrationsPath: discordMigrationsPath });
+const discordInsiemeService = await createDiscordInsiemeService({
+  discordLibsqlService,
+  eventLogTableName: "discord_event_log",
+  kvStoreTableName: "discord_kv_store",
+});
+const discordService = createDiscordService({ discordLibsqlService, discordInsiemeService, sessionService });
 
 //Setup db
 const dbCmd = program.command("db").description("Database operations");
@@ -39,14 +61,22 @@ const dbCmd = program.command("db").description("Database operations");
 dbCmd
   .command("setup")
   .description("Set up database for kanbatte")
-  .action(() => {
+  .action(async () => {
     console.log("Setting up database for kanbatte");
-    setupDB();
+    await libsqlService.init();
+    await insiemeService.init();
+    console.log("Database setup completed!");
   });
 
 const discordCmd = program.command("discord");
-setupDiscordCli({ cmd: discordCmd, createMainInsiemeDao });
+setupDiscordCli({ cmd: discordCmd, discordService, discordLibsqlService, discordInsiemeService });
 
+discordCmd
+  .command("bot")
+  .description("Start the Discord bot")
+  .action(async () => {
+    await startDiscordBot({ sessionService, discordService });
+  });
 
 // Task command group
 const taskCmd = program.command("task");
@@ -102,31 +132,21 @@ taskCmd
     const destDataDir = join(tempDir, "data");
     const finalSiteDir = join(projectRoot, "_site");
 
-    // Remove temporary directory if it exists
     removeDirectory(tempDir);
-
-    // Copy site template to temporary directory
     copyDirectory(templateDir, tempDir);
-
-    // Generate tasks.yaml data file
     generateTasksData(tasksDir, destDataDir);
 
-    // Process and copy task markdown files
     if (existsSync(tasksDir)) {
       processAllTaskFiles(tasksDir, destTasksDir);
     }
 
-    // Build the site in temporary directory
     await buildSite({ rootDir: tempDir });
 
-    // Copy built _site to project root (overwrite existing files)
     if (existsSync(join(tempDir, "_site"))) {
       copyDirectoryOverwrite(join(tempDir, "_site"), finalSiteDir);
     }
 
-    // Clean up temporary directory
     removeDirectory(tempDir);
-
     console.log("Task site built successfully!");
   });
 
@@ -140,16 +160,25 @@ sessionCmd
   .argument("<message>", "Initial message content")
   .requiredOption("-p, --project <projectId>", "Project ID")
   .action(async (message, options) => {
-    const insiemeDao = await createMainInsiemeDao();
+    const project = await sessionService.getProjectById({ projectId: options.project });
+    if (!project) {
+      throw new Error(`Project '${options.project}' does not exist`);
+    }
 
-    const sessionDeps = {
-      serialize,
-      deserialize,
-      generateId,
-      insiemeDao
+    const sessionNumber = await sessionService.getNextSessionNumber({ projectId: options.project });
+    const sessionId = `${options.project}-${sessionNumber}`;
+    const now = Date.now();
+
+    const sessionData = {
+      messages: [{ role: "user", content: message, timestamp: now }],
+      project: options.project,
+      status: "ready",
+      createdAt: now,
+      updatedAt: now,
     };
-    const session = await addSession(sessionDeps, { ...options, message });
-    console.log("Session created successfully! Session ID:", session.sessionId);
+
+    await sessionService.addSession({ sessionId, sessionData });
+    console.log("Session created successfully! Session ID:", sessionId);
   });
 
 // Session append command
@@ -159,14 +188,13 @@ sessionCmd
   .argument("<sessionId>", "Session ID")
   .requiredOption("-m, --messages <messages>", "Messages in JSON array format")
   .action(async (sessionId, options) => {
-    const insiemeDao = await createMainInsiemeDao();
-
-    const sessionDeps = {
-      serialize,
-      deserialize,
-      insiemeDao
-    };
-    await appendSessionMessages(sessionDeps, { sessionId, messages: options.messages });
+    let messages;
+    try {
+      messages = JSON.parse(options.messages);
+    } catch (e) {
+      throw new Error("Invalid JSON in messages argument");
+    }
+    await sessionService.appendSessionMessages({ sessionId, messages });
     console.log("Messages appended successfully to session:", sessionId);
   });
 
@@ -177,21 +205,12 @@ sessionCmd
   .argument("<sessionId>", "Session ID")
   .argument("[status]", "New status (optional)")
   .action(async (sessionId, status) => {
-    const insiemeDao = await createMainInsiemeDao();
-
-    const sessionDeps = {
-      serialize,
-      formatOutput,
-      insiemeDao
-    };
-
     if (status) {
-      // Update status
-      const result = await updateSession(sessionDeps, { sessionId, status });
-      console.log("Session status updated successfully!", { sessionId, status: result.status });
+      await sessionService.updateSessionStatus({ sessionId, status });
+      console.log("Session status updated successfully!", { sessionId, status });
     } else {
-      // Get current status
-      const session = await getSession(sessionDeps, { sessionId });
+      const session = await sessionService.getViewBySessionId({ sessionId });
+      if (!session) throw new Error(`Session '${sessionId}' not found.`);
       console.log(session.status);
     }
   });
@@ -203,15 +222,10 @@ sessionCmd
   .requiredOption("-p, --project <projectId>", "Project ID")
   .option("-s, --status <status>", "Filter by status")
   .action(async (options) => {
-    const insiemeDao = await createMainInsiemeDao();
-
-    const sessionDeps = {
-      insiemeDao,
-      formatOutput,
-    };
-    const sessions = await listSessions(sessionDeps, options);
+    const statuses = options.status ? options.status.split(",").map((s) => s.trim()) : null;
+    const sessions = await sessionService.getViewsByProjectId({ projectId: options.project, statuses });
     if (sessions && sessions.length > 0) {
-      formatOutput(sessions, options.format || "table", "list");
+      formatOutput(sessions, "table", "list");
     } else {
       console.log("No sessions found for this project.");
     }
@@ -224,13 +238,11 @@ sessionCmd
   .argument("<sessionId>", "Session ID")
   .option("-f, --format <format>", "Output format: table, json, markdown", "markdown")
   .action(async (sessionId, options) => {
-    const insiemeDao = await createMainInsiemeDao();
-
-    const sessionDeps = {
-      insiemeDao,
-      formatOutput,
-    };
-    readSession(sessionDeps, sessionId, options.format);
+    const sessionData = await sessionService.getViewBySessionId({ sessionId });
+    if (!sessionData) {
+      throw new Error(`Session ${sessionId} not found`);
+    }
+    formatOutput(sessionData, options.format, "read");
   });
 
 // Session project command group
@@ -245,19 +257,14 @@ sessionProjectCmd
   .requiredOption("-r, --repository <repository>", "Repository URL")
   .option("-d, --description <description>", "Project description")
   .action(async (options) => {
-    const insiemeDao = await createMainInsiemeDao();
-
-    const projectDeps = {
-      serialize,
-      insiemeDao
-    };
-    const project = await addProject(projectDeps, {
+    const projectData = {
       projectId: options.project,
       name: options.name,
       repository: options.repository,
-      description: options.description
-    });
-    console.log("Project created successfully!", { projectId: project.projectId });
+      description: options.description,
+    };
+    await sessionService.addProject({ projectId: options.project, projectData });
+    console.log("Project created successfully!", { projectId: projectData.projectId });
   });
 
 // Session project update command
@@ -269,18 +276,12 @@ sessionProjectCmd
   .option("-r, --repository <repository>", "Repository URL")
   .option("-d, --description <description>", "Project description")
   .action(async (options) => {
-    const insiemeDao = await createMainInsiemeDao();
-
-    const projectDeps = {
-      serialize,
-      insiemeDao
-    };
-    const updateData = { projectId: options.project };
-    if (options.name !== undefined) updateData.name = options.name;
-    if (options.repository !== undefined) updateData.repository = options.repository;
-    if (options.description !== undefined) updateData.description = options.description;
-    const result = await updateProject(projectDeps, updateData);
-    console.log("Project updated successfully!", { projectId: result.projectId });
+    const validUpdates = {};
+    if (options.name !== undefined) validUpdates.name = options.name;
+    if (options.repository !== undefined) validUpdates.repository = options.repository;
+    if (options.description !== undefined) validUpdates.description = options.description;
+    await sessionService.updateProject({ projectId: options.project, validUpdates });
+    console.log("Project updated successfully!", { projectId: options.project });
   });
 
 // Session project list command
@@ -288,9 +289,14 @@ sessionProjectCmd
   .command("list")
   .description("List all projects")
   .action(async () => {
-    const insiemeDao = await createMainInsiemeDao();
-    const discordInsiemeDao = await createDiscordInsiemeDao();
-    const projects = await listProjects({ insiemeDao, discordInsiemeDao });
+    const mainProjects = await sessionService.listProjects();
+    const discordProjects = await discordService.listProjects();
+
+    const projects = mainProjects.map(p => {
+      const discordData = discordProjects.find(dp => dp.projectId === p.projectId);
+      return { ...p, ...discordData };
+    });
+
     if (projects.length > 0) {
       console.log("Projects:");
       console.table(projects);
@@ -306,8 +312,7 @@ agentCmd
   .command("start")
   .description("Start agent to process ready sessions")
   .action(async () => {
-    const insiemeDao = await createMainInsiemeDao();
-    await agent({ insiemeDao });
+    await agentService.start();
   });
 
 // Parse command line arguments
