@@ -168,7 +168,13 @@ export const createTaskService = (deps) => {
     const filePath = join(folderPath, `${taskId}.md`);
     fs.writeFileSync(filePath, content, "utf8");
 
-    return { taskId, filePath };
+    const result = { taskId, filePath };
+
+    console.log("Task created successfully!");
+    console.log(`Task ID: ${result.taskId}`);
+    console.log(`File: ${result.filePath}`);
+
+    return result;
   };
 
   /**

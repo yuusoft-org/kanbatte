@@ -60,12 +60,7 @@ taskCmd
   .option("-d, --description <description>", "Task description")
   .option("-p, --priority <priority>", "Task priority (low, medium, high)")
   .action((type, options) => {
-    const result = taskService.createTask(projectRoot, { type, ...options });
-    if (result) {
-      console.log("Task created successfully!");
-      console.log(`Task ID: ${result.taskId}`);
-      console.log(`File: ${result.filePath}`);
-    }
+      taskService.createTask(projectRoot, { type, ...options });
   });
 
 // Task list command
