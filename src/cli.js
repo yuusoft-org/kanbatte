@@ -9,6 +9,7 @@ import { serialize, deserialize } from "./utils/serialization.js";
 import { generateId } from "./utils/helper.js";
 import { buildSite } from "@rettangoli/sites/cli";
 import { createTaskService } from "./services/taskService.js";
+import { createTaskCommands } from "./commands/task.js";
 import { addSession, updateSession, readSession, listSessions, addProject, updateProject, listProjects, getSession, appendSessionMessages } from "./commands/session.js";
 import { formatOutput } from "./utils/output.js";
 import { agent } from "./commands/agent.js";
@@ -32,6 +33,7 @@ program
   .version(packageJson.version);
 
 const taskService = createTaskService({ fs });
+const taskCommands = createTaskCommands({ taskService });
 
 //Setup db
 const dbCmd = program.command("db").description("Database operations");
@@ -60,7 +62,7 @@ taskCmd
   .option("-d, --description <description>", "Task description")
   .option("-p, --priority <priority>", "Task priority (low, medium, high)")
   .action((type, options) => {
-      taskService.createTask(projectRoot, { type, ...options });
+    taskCommands.createTask(projectRoot, { type, ...options });
   });
 
 // Task list command
@@ -71,8 +73,7 @@ taskCmd
   .option("-s, --status <status>", "Filter by status (todo, done)")
   .option("-p, --priority <priority>", "Filter by priority (low, medium, high, comma-separated)")
   .action((type, options) => {
-    const result = taskService.listTasks(projectRoot, { type, ...options });
-    console.log(result);
+    taskCommands.listTasks(projectRoot, { type, ...options });
   });
 
 // Task locate command
@@ -81,8 +82,7 @@ taskCmd
   .description("Locate a task file and return its relative path")
   .argument("<taskId>", "Task ID to locate (e.g., TASK-001, FEAT-002)")
   .action((taskId) => {
-    const path = taskService.locateTask(projectRoot, taskId);
-    console.log(path);
+    taskCommands.locateTask(projectRoot, taskId);
   });
 
 // Build Task site
