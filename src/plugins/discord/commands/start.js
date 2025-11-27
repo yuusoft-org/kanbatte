@@ -57,8 +57,11 @@ const handleSessionEvents = async (deps, payload) => {
               shouldLockThread = true;
             }
             break;
+          case 'session_created':
+            console.log(`Session ${sessionId} created.`);
+            break;
           default:
-            //console.log(`Unhandled session event type: ${type} for session ${sessionId}:`, event);
+            console.log(`Unhandled session event type: ${type} for session ${sessionId}:`, event);
             break;
         }
       } catch (error) {

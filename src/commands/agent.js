@@ -5,7 +5,7 @@ export const agent = async (deps) => {
   const readySessions = await deps.insiemeDao.getSessionsByStatus({ status: "ready" });
 
   if (readySessions.length === 0) {
-    //console.log("No sessions with status 'ready' found");
+    console.log("No sessions with status 'ready' found");
     return;
   }
 
