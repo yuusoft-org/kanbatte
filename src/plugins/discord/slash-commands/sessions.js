@@ -93,7 +93,7 @@ const setStatus = {
     }
     await mainInsiemeDao.updateSessionStatus({ sessionId, status });
     await interaction.reply({
-      content: `🔄 Session ${sessionId} status updated to: ${status}`,
+      content: `🔄 Session ${sessionId} status updating to: ${status}...`,
       flags: MessageFlags.Ephemeral,
     });
   }
