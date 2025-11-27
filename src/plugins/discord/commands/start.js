@@ -61,6 +61,11 @@ const handleSessionEvent = async (deps) => {
         // TODO: A limit on discord api: https://github.com/discordjs/discord.js/issues/4674
         //thread.setName(`[${data.status}] ${sessionId}`);
         console.log(`Session ${sessionId} status updated to: ${data.status}`);
+         // If status is set to 'done', archive and lock the thread
+        if (data.status === 'done') {
+          await thread.setArchived(true);
+          await thread.setLocked(true);
+        }
         break;
       default:
         //console.log(`Unhandled session event type: ${type} for session ${sessionId}:`, event);
