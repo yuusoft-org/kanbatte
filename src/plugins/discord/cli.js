@@ -1,9 +1,6 @@
-import { createDiscordInsiemeDao, createDiscordStore, setupDiscordDb } from "./deps/discordDao.js";
-import { discordChannelAdd, discordChannelUpdate } from "./commands/channel.js";
-import { startDiscordEventListener } from "./commands/start.js";
-
 export const setupDiscordCli = (deps) => {
-  const { cmd, createMainInsiemeDao } = deps;
+  const { cmd, discordService, discordLibsqlService } = deps;
+
   // Discord db setup command
   cmd
     .command("db")
@@ -11,7 +8,7 @@ export const setupDiscordCli = (deps) => {
     .description("Set up Discord plugin database")
     .action(async () => {
       console.log("Setting up Discord plugin database...");
-      await setupDiscordDb();
+      await discordLibsqlService.init();
       console.log("Discord plugin database setup completed!");
     });
 
@@ -21,25 +18,26 @@ export const setupDiscordCli = (deps) => {
   channelCmd
     .command("add")
     .requiredOption("-p, --project <projectId>", "Project ID")
-    .option("-c, --channel <channelId>", "Discord channel IDs")
+    .option("-c, --channel <channelId>", "Discord channel ID")
     .description("Add Discord channel for project")
     .action(async (options) => {
-      const discordInsiemeDao = await createDiscordInsiemeDao();
       const payload = { channelData: { channel: options.channel }, projectId: options.project };
-      await discordChannelAdd({ discordInsiemeDao }, payload);
+      await discordService.addChannel(payload);
+      console.log(`Channel ${payload.channelData.channel} added for project ${payload.projectId}`);
     });
 
   channelCmd
     .command("update")
     .requiredOption("-p, --project <projectId>", "Project ID")
-    .option("-c, --channel <channelId>", "Discord channel IDs")
+    .option("-c, --channel <channelId>", "Discord channel ID")
     .description("Update Discord channel for project")
     .action(async (options) => {
-      const discordInsiemeDao = await createDiscordInsiemeDao();
       const payload = {
-        validUpdates: { channel: options.channel }, projectId: options.project
+        validUpdates: { channel: options.channel },
+        projectId: options.project,
       };
-      await discordChannelUpdate({ discordInsiemeDao }, payload);
+      await discordService.updateChannel(payload);
+      console.log(`Channel ${payload.validUpdates.channel} updated for project ${payload.projectId}`);
     });
 
   // Discord start command
@@ -47,9 +45,6 @@ export const setupDiscordCli = (deps) => {
     .command("start")
     .description("Start Discord event listener")
     .action(async () => {
-      const mainInsiemeDao = await createMainInsiemeDao();
-      const discordStore = await createDiscordStore();
-
-      await startDiscordEventListener({ mainInsiemeDao, discordStore });
+      await discordService.startEventListener();
     });
 };
