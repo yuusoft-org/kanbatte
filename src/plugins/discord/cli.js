@@ -1,5 +1,8 @@
-import { createDiscordInsiemeDao, createDiscordStore, setupDiscordDb } from "./deps/discordDao.js";
+import { createMainInsiemeDao } from "../../deps/mainDao.js";
+import { createDiscordInsiemeDao, setupDiscordDb } from "./deps/discordDao.js";
 import { discordChannelAdd, discordChannelUpdate } from "./commands/channel.js";
+import { startDiscordBot } from "./bot.js"
+import { agentStart } from "../../commands/agent.js";
 
 export const setupDiscordCli = (deps) => {
   const { cmd } = deps;
@@ -12,6 +15,16 @@ export const setupDiscordCli = (deps) => {
       console.log("Setting up Discord plugin database...");
       await setupDiscordDb();
       console.log("Discord plugin database setup completed!");
+    });
+
+  cmd
+    .command("bot")
+    .argument("start")
+    .description("Start Discord bot")
+    .action(async () => {
+      const insiemeDao = await createMainInsiemeDao();
+      startDiscordBot();
+      agentStart({ insiemeDao });
     });
 
   // Discord channel command group

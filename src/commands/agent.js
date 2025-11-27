@@ -108,3 +108,11 @@ Please continue working on this session for project "${session.project}". You ca
 
   console.log(`\nAll ${readySessions.length} sessions processed`);
 }
+
+export const agentStart = async (deps) => {
+  while (true) {
+    await agent(deps);
+    // Wait 5 seconds before next run
+    await new Promise(resolve => setTimeout(resolve, 5000));
+  }
+}
