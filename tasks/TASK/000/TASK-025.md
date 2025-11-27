@@ -1,6 +1,6 @@
 ---
 title: Convert Discord set-status command to use enum instead of free text
-status: todo
+status: done
 priority: medium
 ---
 
