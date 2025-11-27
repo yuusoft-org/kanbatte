@@ -5,20 +5,21 @@ const handleSessionEvent = async (deps) => {
   try {
     const { type, sessionId, data } = event;
     if (!sessionId) {
-      console.warn('⚠️ Session event missing sessionId:', event);
+      //console.warn('⚠️ Session event missing sessionId:', event);
       return;
     }
 
     const threadId = await discordInsiemeDao.getThreadIdBySession({ sessionId });
 
     if (!threadId) {
-      console.warn(`⚠️ No thread found for session ${sessionId}`);
+      //console.warn(`⚠️ No thread found for session ${sessionId}`);
       return;
     }
 
     const thread = await client.channels.fetch(threadId);
+    
     if (!thread) {
-      console.warn(`⚠️ Unable to fetch thread with ID ${threadId} for session ${sessionId}`);
+      //console.warn(`⚠️ Unable to fetch thread with ID ${threadId} for session ${sessionId}`);
       return;
     }
 
@@ -54,13 +55,10 @@ const handleSessionEvent = async (deps) => {
         }
         break;
       case 'session_updated':
-        console.log(`Session ${sessionId} status updating to: ${data.status}`);
-        await thread.setName(`[${data.status}] ${sessionId}`);
-        await thread.send(`🔄 Session ${sessionId} status updated to: ${data.status}`);
-        console.log(`Session status message sent for ${sessionId}`);
+        //console.log(`Session ${sessionId} status updating to: ${data.status}`);
         break;
       default:
-        console.log(`Unhandled session event type: ${type} for session ${sessionId}:`, event);
+        //console.log(`Unhandled session event type: ${type} for session ${sessionId}:`, event);
         break;
     }
   } catch (error) {
