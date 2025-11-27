@@ -14,85 +14,89 @@ if (!token) {
   process.exit(1);
 }
 
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-  ],
-});
+export const startDiscordBot = () => {
+  const client = new Client({
+    intents: [
+      GatewayIntentBits.Guilds,
+      GatewayIntentBits.GuildMessages,
+      GatewayIntentBits.MessageContent,
+    ],
+  });
 
-client.once(Events.ClientReady, async () => {
-  console.log(`Logged in as ${client.user.tag}!`);
-  const discordStore = await createDiscordStore();
-  const mainInsiemeDao = await createMainInsiemeDao();
-  const discordInsiemeDao = await createDiscordInsiemeDao();
+  client.once(Events.ClientReady, async () => {
+    console.log(`Logged in as ${client.user.tag}!`);
+    const discordStore = await createDiscordStore();
+    const mainInsiemeDao = await createMainInsiemeDao();
+    const discordInsiemeDao = await createDiscordInsiemeDao();
 
-  let currentOffsetId = await initializeOffset({ discordStore });
+    let currentOffsetId = await initializeOffset({ discordStore });
 
-  setInterval(async () => {
-    currentOffsetId = await discordStartLoop({
-      mainInsiemeDao,
-      discordStore,
-      discordInsiemeDao,
-      client
-    }, { currentOffsetId });
-  }, 10000);
-});
+    while (true) {
+      currentOffsetId = await discordStartLoop({
+        mainInsiemeDao,
+        discordStore,
+        discordInsiemeDao,
+        client
+      }, { currentOffsetId });
+      // Wait 5 seconds before next check
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    }
+  });
 
-const commands = {
-  ...sessionsSlashCommands.default,
-};
+  const commands = {
+    ...sessionsSlashCommands.default,
+  };
 
-client.commands = new Collection(Object.entries(commands));
+  client.commands = new Collection(Object.entries(commands));
 
-console.log("Commands loaded:", client.commands.map(cmd => cmd.data.name));
+  console.log("Commands loaded:", client.commands.map(cmd => cmd.data.name));
 
-client.on(Events.MessageCreate, async (message) => {
-  // Ignore bot messages to avoid loops
-  if (message.author.bot) return;
+  client.on(Events.MessageCreate, async (message) => {
+    // Ignore bot messages to avoid loops
+    if (message.author.bot) return;
 
-  const isThread = isThreadChannel(message.channel);
+    const isThread = isThreadChannel(message.channel);
 
-  if (!isThread) return;
+    if (!isThread) return;
 
-  if (message.mentions.has(client.user)) {
+    if (message.mentions.has(client.user)) {
+      try {
+        const insiemeDao = await createMainInsiemeDao();
+        const discordInsiemeDao = await createDiscordInsiemeDao();
+        const sessionId = await discordInsiemeDao.getSessionIdByThread({ threadId: message.channel.id });
+        const messageContent = message.content.replace(/<@!?(\d+)>/, '').trim();
+        await appendSessionMessages({ insiemeDao }, { sessionId, messages: `[{"role": "user","content": "${messageContent}"}]` });
+        await message.reply(`Your message has been appended to session ${sessionId}.`);
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    }
+  });
+
+  client.on(Events.InteractionCreate, async (interaction) => {
+    if (!interaction.isChatInputCommand()) return;
+    const command = interaction.client.commands.get(interaction.commandName);
+    if (!command) {
+      console.error(`No command matching ${interaction.commandName} was found.`);
+      return;
+    }
     try {
-      const insiemeDao = await createMainInsiemeDao();
-      const discordInsiemeDao = await createDiscordInsiemeDao();
-      const sessionId = await discordInsiemeDao.getSessionIdByThread({ threadId: message.channel.id });
-      const messageContent = message.content.replace(/<@!?(\d+)>/, '').trim();
-      await appendSessionMessages({ insiemeDao }, { sessionId, messages: `[{"role": "user","content": "${messageContent}"}]` });
-      await message.reply(`Your message has been appended to session ${sessionId}.`);
+      await command.execute(interaction);
     } catch (error) {
-      console.error('Error:', error);
+      console.error(error);
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp({
+          content: 'There was an error while executing this command!',
+          flags: MessageFlags.Ephemeral,
+        });
+      } else {
+        await interaction.reply({
+          content: 'There was an error while executing this command!',
+          flags: MessageFlags.Ephemeral,
+        });
+      }
     }
-  }
-});
+  });
 
-client.on(Events.InteractionCreate, async (interaction) => {
-  if (!interaction.isChatInputCommand()) return;
-  const command = interaction.client.commands.get(interaction.commandName);
-  if (!command) {
-    console.error(`No command matching ${interaction.commandName} was found.`);
-    return;
-  }
-  try {
-    await command.execute(interaction);
-  } catch (error) {
-    console.error(error);
-    if (interaction.replied || interaction.deferred) {
-      await interaction.followUp({
-        content: 'There was an error while executing this command!',
-        flags: MessageFlags.Ephemeral,
-      });
-    } else {
-      await interaction.reply({
-        content: 'There was an error while executing this command!',
-        flags: MessageFlags.Ephemeral,
-      });
-    }
-  }
-});
-
-client.login(token);
+  client.login(token);
+}

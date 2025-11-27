@@ -26,6 +26,7 @@ const handleSessionEvent = async (deps) => {
 
     switch (type) {
       case 'session_append_messages':
+        // TODO: message send limit on discord api.
         for (const msg of data.messages) {
           if (msg.role === 'user') {
             if (typeof msg.content === 'string') {

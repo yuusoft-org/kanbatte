@@ -3,7 +3,6 @@ import { isThreadChannel } from '../utils';
 import { createMainInsiemeDao } from '../../../deps/mainDao';
 import { createDiscordInsiemeDao } from '../deps/discordDao';
 import { addSession } from '../../../commands/session';
-import { agent } from '../../../commands/agent';
 
 // export const ping = {
 //   data: new SlashCommandBuilder()
@@ -99,23 +98,7 @@ const setStatus = {
   }
 }
 
-const startAgent = {
-  data: new SlashCommandBuilder()
-    .setName('start-agent')
-    .setDescription('Start the agent to work on this session'),
-
-  async execute(interaction) {
-    const insiemeDao = await createMainInsiemeDao();
-    await interaction.reply({
-      content: `Starting agent for all ready sessions...`,
-      flags: MessageFlags.Ephemeral,
-    });
-    await agent({ insiemeDao });
-  }
-}
-
 export default {
   'queue-session': queueSession,
   'set-status': setStatus,
-  'start-agent': startAgent,
 }
