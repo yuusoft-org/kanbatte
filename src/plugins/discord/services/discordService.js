@@ -10,7 +10,7 @@ export const createDiscordService = (deps) => {
   };
 
   const _computeAndSaveView = async (id) => {
-    const db = discordLibsqlService.getClient();
+    const db = await discordLibsqlService.getClient();
     const events = await _fetchEventsByPartition(id);
     if (events.length === 0) return null;
 
@@ -94,7 +94,7 @@ export const createDiscordService = (deps) => {
   };
 
   const addSessionThreadRecord = async (payload) => {
-    const db = discordLibsqlService.getClient();
+    const db = await discordLibsqlService.getClient();
     const { sessionId, threadId } = payload;
     await db.execute({
       sql: "INSERT INTO discord_session_thread_record (session_id, thread_id) VALUES (?, ?)",
@@ -103,7 +103,7 @@ export const createDiscordService = (deps) => {
   };
 
   const getSessionIdByThread = async (payload) => {
-    const db = discordLibsqlService.getClient();
+    const db = await discordLibsqlService.getClient();
     const { threadId } = payload;
     const result = await db.execute({
       sql: "SELECT session_id FROM discord_session_thread_record WHERE thread_id = ?",
@@ -114,7 +114,7 @@ export const createDiscordService = (deps) => {
   };
 
   const listProjects = async () => {
-    const db = discordLibsqlService.getClient();
+    const db = await discordLibsqlService.getClient();
     const result = await db.execute({
       sql: "SELECT key, data FROM discord_view WHERE key LIKE 'project:%' ORDER BY created_at ASC",
     });
@@ -126,7 +126,7 @@ export const createDiscordService = (deps) => {
   };
 
   const getProjectIdByChannel = async (payload) => {
-    const db = discordLibsqlService.getClient();
+    const db = await discordLibsqlService.getClient();
     const { channelId } = payload;
     const result = await db.execute({
       sql: "SELECT key, data FROM discord_view WHERE key LIKE 'project:%'",

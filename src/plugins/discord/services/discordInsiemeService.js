@@ -3,12 +3,23 @@ import { deserialize, serialize } from "../../../utils/serialization.js";
 
 export const createDiscordInsiemeService = async (deps) => {
   const { discordLibsqlService, eventLogTableName, kvStoreTableName } = deps;
-  let isInitialized = false;
+
+  const isInitialized = async () => {
+    try {
+      const db = await discordLibsqlService.getClient();
+      const result = await db.execute({
+        sql: `SELECT id FROM ${eventLogTableName} WHERE partition = 'init' LIMIT 1`,
+      });
+      return result.rows.length > 0;
+    } catch (e) {
+      return false;
+    }
+  };
 
   const createAdapter = async () => {
     return {
       getEvents: async (payload = {}) => {
-        const db = discordLibsqlService.getClient();
+        const db = await discordLibsqlService.getClient();
         const { partition, lastOffsetId, filterInit } = payload;
         const partitionValues = partition ? partition.map((p) => `'${p}'`).join(",") : "";
         const partitionClause = partitionValues ? `AND partition IN (${partitionValues})` : "";
@@ -29,7 +40,7 @@ export const createDiscordInsiemeService = async (deps) => {
         }));
       },
       appendEvent: async (event) => {
-        const db = discordLibsqlService.getClient();
+        const db = await discordLibsqlService.getClient();
         const { partition, type, payload } = event;
         const serializedPayload = serialize(payload);
         await db.execute({
@@ -38,7 +49,7 @@ export const createDiscordInsiemeService = async (deps) => {
         });
       },
       get: async (key) => {
-        const db = discordLibsqlService.getClient();
+        const db = await discordLibsqlService.getClient();
         const result = await db.execute({
           sql: `SELECT value FROM ${kvStoreTableName} WHERE key = ?`,
           args: [key],
@@ -47,7 +58,7 @@ export const createDiscordInsiemeService = async (deps) => {
         return deserialize(result.rows[0].value);
       },
       set: async (key, value) => {
-        const db = discordLibsqlService.getClient();
+        const db = await discordLibsqlService.getClient();
         await db.execute({
           sql: `INSERT INTO ${kvStoreTableName} (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
           args: [key, serialize(value)],
@@ -63,14 +74,14 @@ export const createDiscordInsiemeService = async (deps) => {
   });
 
   const init = async () => {
-    if (isInitialized) {
+    if (await isInitialized()) {
+      console.log("Discord Insieme service already initialized.");
       return;
     }
     await repository.init({
       initialState: { events: { items: {}, tree: {} } },
       partition: "init",
     });
-    isInitialized = true;
   };
 
   return {

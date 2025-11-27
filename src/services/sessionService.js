@@ -11,7 +11,7 @@ export const createSessionService = (deps) => {
   };
 
   const _computeAndSaveView = async (id) => {
-    const db = libsqlService.getClient();
+    const db = await libsqlService.getClient();
     const events = await _fetchEventsByPartition(id);
 
     if (events.length === 0) {
@@ -201,7 +201,7 @@ export const createSessionService = (deps) => {
   };
 
   const getViewBySessionId = async (payload) => {
-    const db = libsqlService.getClient();
+    const db = await libsqlService.getClient();
     const { sessionId } = payload;
     const result = await db.execute({
       sql: "SELECT data FROM view WHERE key = ?",
@@ -212,7 +212,7 @@ export const createSessionService = (deps) => {
   };
 
   const getViewsByProjectId = async (payload) => {
-    const db = libsqlService.getClient();
+    const db = await libsqlService.getClient();
     const { projectId, statuses } = payload;
     const result = await db.execute({
       sql: "SELECT data FROM view WHERE key LIKE ?",
@@ -227,7 +227,7 @@ export const createSessionService = (deps) => {
   };
 
   const getNextSessionNumber = async (payload) => {
-    const db = libsqlService.getClient();
+    const db = await libsqlService.getClient();
     const { projectId } = payload;
     const result = await db.execute({
       sql: "SELECT key FROM view WHERE key LIKE ? ORDER BY created_at DESC LIMIT 1",
@@ -241,7 +241,7 @@ export const createSessionService = (deps) => {
   };
 
   const getSessionsByStatus = async (payload) => {
-    const db = libsqlService.getClient();
+    const db = await libsqlService.getClient();
     const { status } = payload;
     const result = await db.execute({
       sql: "SELECT data FROM view WHERE key LIKE ?",
@@ -253,7 +253,7 @@ export const createSessionService = (deps) => {
   };
 
   const getProjectById = async (payload) => {
-    const db = libsqlService.getClient();
+    const db = await libsqlService.getClient();
     const { projectId } = payload;
     const result = await db.execute({
       sql: "SELECT data FROM view WHERE key = ?",
@@ -264,7 +264,7 @@ export const createSessionService = (deps) => {
   };
 
   const listProjects = async () => {
-    const db = libsqlService.getClient();
+    const db = await libsqlService.getClient();
     const result = await db.execute({
       sql: "SELECT key, data FROM view WHERE key LIKE 'project:%' ORDER BY created_at ASC",
     });

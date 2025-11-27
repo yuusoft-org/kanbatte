@@ -4,7 +4,6 @@ import { createLibSqlUmzug } from "umzug-libsql";
 export const createLibsqlService = (deps) => {
   const { dbPath, migrationsPath } = deps;
 
-  let isInitialized = false;
   const db = createClient({ url: `file:${dbPath}` });
 
   const { umzug } = createLibSqlUmzug({
@@ -12,17 +11,22 @@ export const createLibsqlService = (deps) => {
     glob: migrationsPath,
   });
 
-  const init = async () => {
-    if (isInitialized) {
-      return;
+  const isInitialized = async () => {
+    try {
+      const rs = await db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='event_log'");
+      return rs.rows.length > 0;
+    } catch (e) {
+      return false;
     }
-    await umzug.up();
-    isInitialized = true;
   };
 
-  const getClient = () => {
-    if (!isInitialized) {
-      throw new Error("Database service has not been initialized. Please call init() before using the database.");
+  const init = async () => {
+    await umzug.up();
+  };
+
+  const getClient = async () => {
+    if (!(await isInitialized())) {
+      throw new Error("Database service has not been initialized. Please run 'db setup' first.");
     }
     return db;
   };
