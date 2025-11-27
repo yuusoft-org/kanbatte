@@ -53,7 +53,7 @@ export const startDiscordBot = async (deps) => {
       return;
     }
     try {
-      await command.execute(interaction);
+      await command.execute(interaction, { sessionService, discordService });
     } catch (error) {
       console.error(error);
       const replyOptions = {
