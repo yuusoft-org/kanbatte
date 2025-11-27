@@ -36,7 +36,7 @@ const queueSession = {
 
     // Not in a thread - create one
     const thread = await interaction.channel.threads.create({
-      name: `[${session.status}] ${session.sessionId}`,
+      name: `${session.sessionId}`,
       autoArchiveDuration: 1440, // 24 hours
       reason: `Session: ${session.sessionId}`,
     });
@@ -93,7 +93,7 @@ const setStatus = {
     }
     await mainInsiemeDao.updateSessionStatus({ sessionId, status });
     await interaction.reply({
-      content: `🔄 Session ${sessionId} status updated to: ${status}`,
+      content: `🔄 Session ${sessionId} status updating to: ${status}...`,
       flags: MessageFlags.Ephemeral,
     });
   }

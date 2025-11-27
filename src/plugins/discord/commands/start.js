@@ -5,7 +5,8 @@ const handleSessionEvent = async (deps) => {
   try {
     const { type, sessionId, data } = event;
     if (!sessionId) {
-      console.warn('⚠️ Session event missing sessionId:', event);
+      // for project event, there is no sessionId, maybe happen.
+      //console.warn('⚠️ Session event missing sessionId:', event);
       return;
     }
 
@@ -17,6 +18,7 @@ const handleSessionEvent = async (deps) => {
     }
 
     const thread = await client.channels.fetch(threadId);
+    
     if (!thread) {
       console.warn(`⚠️ Unable to fetch thread with ID ${threadId} for session ${sessionId}`);
       return;
@@ -54,13 +56,13 @@ const handleSessionEvent = async (deps) => {
         }
         break;
       case 'session_updated':
-        console.log(`Session ${sessionId} status updating to: ${data.status}`);
-        await thread.setName(`[${data.status}] ${sessionId}`);
         await thread.send(`🔄 Session ${sessionId} status updated to: ${data.status}`);
-        console.log(`Session status message sent for ${sessionId}`);
+        // TODO: A limit on discord api: https://github.com/discordjs/discord.js/issues/4674
+        //thread.setName(`[${data.status}] ${sessionId}`);
+        console.log(`Session ${sessionId} status updated to: ${data.status}`);
         break;
       default:
-        console.log(`Unhandled session event type: ${type} for session ${sessionId}:`, event);
+        //console.log(`Unhandled session event type: ${type} for session ${sessionId}:`, event);
         break;
     }
   } catch (error) {
