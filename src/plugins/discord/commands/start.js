@@ -1,4 +1,4 @@
-import { splitTextForDiscord, classifyEventsBySession } from "../utils";
+import { splitTextForDiscord, classifyEventsBySession, transformSessionMessageAppend } from "../utils";
 
 const handleSessionEvents = async (deps, payload) => {
   const { client, discordInsiemeDao } = deps;
@@ -24,28 +24,9 @@ const handleSessionEvents = async (deps, payload) => {
         switch (type) {
           case 'session_append_messages':
             for (const msg of data.messages) {
-              if (msg.role === 'user') {
-                if (typeof msg.content === 'string') {
-                  messageQueue.push(`🗨️ User: ${msg.content}`);
-                } else if (Array.isArray(msg.content)) {
-                  // not handling for now.
-                }
-              } else if (msg.role === 'assistant') {
-                if (typeof msg.content === 'string') {
-                  messageQueue.push(`🤖 Assistant: ${msg.content}`);
-                } else if (Array.isArray(msg.content)) {
-                  for (const contentPart of msg.content) {
-                    if (contentPart.type === 'text') {
-                      messageQueue.push(`🤖 Assistant: ${contentPart.text}`);
-                    } else if (contentPart.type === 'tool_use') {
-                      messageQueue.push(`🛠️ Assistant is calling tool: ${contentPart.name}`);
-                    }
-                  }
-                }
-              } else if (msg.role === 'system') {
-                messageQueue.push(`⚙️ System: ${msg.content}`);
-              } else {
-                messageQueue.push(`ℹ️ ${msg.role}: ${msg.content}`);
+              const formattedMessage = transformSessionMessageAppend(msg);
+              if (formattedMessage) {
+                messageQueue.push(formattedMessage);
               }
             }
             break;

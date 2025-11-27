@@ -62,3 +62,92 @@ export const classifyEventsBySession = (events) => {
 
   return eventsBySession;
 };
+
+const generateTodoText = (todos) => {
+  let todoText = "🛠️ Todo List:\n";
+
+  for (const todo of todos) {
+    let statusIcon;
+    
+    switch (todo.status) {
+      case 'pending':
+        statusIcon = '⏳';
+        break;
+      case 'in_progress':
+        statusIcon = '🔄';
+        break;
+      case 'completed':
+        statusIcon = '✅';
+        break;
+      default:
+        statusIcon = '⏳';
+    }
+    
+    todoText += `- ${statusIcon} ${todo.content}\n`;
+  }
+
+  return todoText.trim();
+}
+
+const generateToolUseMessage = (contentPart) => {
+  switch (contentPart.name) {
+    case 'Bash':
+      return `🛠️ Running bash command, ${contentPart.input["description"]} \n\`\`\`sh${contentPart.input["command"]}\`\`\``;
+    case 'Edit':
+      // TODO: handle contentPart.input["old_string"] & contentPart.input["new_string"]
+      return `🛠️ Editing file: ${contentPart.input["file_path"]}`;
+    case 'Grep':
+      const glob = contentPart.input["glob"];
+      const type = contentPart.input["type"];
+      let result = `🛠️ Grep pattern: ${contentPart.input["pattern"]}`;
+      if (glob) {
+        result += ` in ${glob}`;
+      }
+      if (type) {
+        result += ` (${type})`;
+      }
+      return result;
+    case 'Glob':
+      const globPattern = contentPart.input["pattern"];
+      const path = contentPart.input["path"];
+      let globResult = `🛠️ Glob files: ${globPattern}`;
+      if (path) {
+        globResult += ` in ${path}`;
+      }
+      return globResult;
+    case 'TodoWrite':
+      return generateTodoText(contentPart.input["todos"]);
+    case 'Read':
+      return `🛠️ Reading file: ${contentPart.input["file_path"]}`;
+    case 'WebSearch':
+      return `🛠️ Searching the web for: ${contentPart.input["query"]}`;
+    default:
+      return `🛠️ Assistant is calling tool: ${contentPart.name}`;
+  }
+}
+
+export const transformSessionMessageAppend = (message) => {
+  if (message.role === 'user') {
+    if (typeof message.content === 'string') {
+      return `🗨️ User: ${message.content}`;
+    } else if (Array.isArray(message.content)) {
+      // not handling for now.
+    }
+  } else if (message.role === 'assistant') {
+    if (typeof message.content === 'string') {
+      return `🤖 Assistant: ${message.content}`;
+    } else if (Array.isArray(message.content)) {
+      for (const contentPart of message.content) {
+        if (contentPart.type === 'text') {
+          return `🤖 Assistant: ${contentPart.text}`;
+        } else if (contentPart.type === 'tool_use') {
+          return generateToolUseMessage(contentPart);
+        }
+      }
+    }
+  } else if (message.role === 'system') {
+    return `⚙️ System: ${message.content}`;
+  } else {
+    return `ℹ️ ${message.role}: ${message.content}`;
+  }
+}
