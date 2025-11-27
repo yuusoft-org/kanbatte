@@ -74,8 +74,9 @@ const handleSessionEvents = async (deps, payload) => {
       await thread.send(msg);
     }
     if (shouldLockThread) {
-      await thread.setArchived(true);
       await thread.setLocked(true);
+      await thread.setArchived(true);
+      console.log(`Thread ${sessionId} locked and archived`);
     }
   } catch (error) {
     console.error(`Error handling session ${sessionId} events:`, error);
