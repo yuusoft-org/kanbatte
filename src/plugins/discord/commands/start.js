@@ -5,6 +5,7 @@ const handleSessionEvent = async (deps) => {
   try {
     const { type, sessionId, data } = event;
     if (!sessionId) {
+      // for project event, there is no sessionId, maybe happen.
       //console.warn('⚠️ Session event missing sessionId:', event);
       return;
     }
@@ -12,14 +13,14 @@ const handleSessionEvent = async (deps) => {
     const threadId = await discordInsiemeDao.getThreadIdBySession({ sessionId });
 
     if (!threadId) {
-      //console.warn(`⚠️ No thread found for session ${sessionId}`);
+      console.warn(`⚠️ No thread found for session ${sessionId}`);
       return;
     }
 
     const thread = await client.channels.fetch(threadId);
     
     if (!thread) {
-      //console.warn(`⚠️ Unable to fetch thread with ID ${threadId} for session ${sessionId}`);
+      console.warn(`⚠️ Unable to fetch thread with ID ${threadId} for session ${sessionId}`);
       return;
     }
 
@@ -56,6 +57,8 @@ const handleSessionEvent = async (deps) => {
         break;
       case 'session_updated':
         await thread.send(`🔄 Session ${sessionId} status updated to: ${data.status}`);
+        // TODO: A limit on discord api: https://github.com/discordjs/discord.js/issues/4674
+        //thread.setName(`[${data.status}] ${sessionId}`);
         console.log(`Session ${sessionId} status updated to: ${data.status}`);
         break;
       default:
