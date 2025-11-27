@@ -64,10 +64,6 @@ export const classifyEventsBySession = (events) => {
 };
 
 const generateTodoText = (todos) => {
-  if (!todos || todos.length === 0) {
-    return "🛠️ Todo List: No todos";
-  }
-
   let todoText = "🛠️ Todo List:\n";
 
   for (const todo of todos) {
