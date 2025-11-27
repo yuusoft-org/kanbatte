@@ -47,3 +47,18 @@ export const splitTextForDiscord = (text, maxLength = 1500) => {
 
   return result.filter(text => text.length > 0);
 };
+
+export const classifyEventsBySession = (events) => {
+  const eventsBySession = {};
+
+  for (const event of events) {
+    if (event.sessionId) {
+      if (!eventsBySession[event.sessionId]) {
+        eventsBySession[event.sessionId] = [];
+      }
+      eventsBySession[event.sessionId].push(event);
+    }
+  }
+
+  return eventsBySession;
+};
