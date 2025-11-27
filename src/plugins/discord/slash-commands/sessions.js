@@ -92,13 +92,6 @@ const setStatus = {
     }
     await mainInsiemeDao.updateSessionStatus({ sessionId, status });
 
-    // If status is set to 'done', archive and lock the thread
-    if (status === 'done') {
-      const thread = interaction.channel;
-      await thread.setArchived(true);
-      await thread.setLocked(true);
-    }
-
     await interaction.reply({
       content: `🔄 Session ${sessionId} status updating to: ${status}...`,
       flags: MessageFlags.Ephemeral,
