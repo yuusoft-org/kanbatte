@@ -1,6 +1,5 @@
 import { createDiscordInsiemeDao, createDiscordStore, setupDiscordDb } from "./deps/discordDao.js";
 import { discordChannelAdd, discordChannelUpdate } from "./commands/channel.js";
-import { startDiscordEventListener } from "./commands/start.js";
 
 export const setupDiscordCli = (deps) => {
   const { cmd, createMainInsiemeDao } = deps;

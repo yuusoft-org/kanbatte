@@ -17,6 +17,7 @@ import { createDiscordInsiemeDao } from "./plugins/discord/deps/discordDao.js";
 import { setupDiscordCli } from "./plugins/discord/cli.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const projectRoot = process.cwd();
 
 const packageJson = JSON.parse(
   readFileSync(join(__dirname, "../package.json"), "utf8"),
