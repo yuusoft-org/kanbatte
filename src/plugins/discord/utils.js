@@ -65,15 +65,14 @@ export const classifyEventsBySession = (events) => {
 
 const generateTodoText = (todos) => {
   if (!todos || todos.length === 0) {
-    return "📝 Todo List: No todos";
+    return "🛠️ Todo List: No todos";
   }
 
-  let todoText = "📝 Todo List:\n";
+  let todoText = "🛠️ Todo List:\n";
 
-  for (let i = 0; i < todos.length; i++) {
-    const todo = todos[i];
+  for (const todo of todos) {
     let statusIcon;
-
+    
     switch (todo.status) {
       case 'pending':
         statusIcon = '⏳';
@@ -85,10 +84,10 @@ const generateTodoText = (todos) => {
         statusIcon = '✅';
         break;
       default:
-        statusIcon = '❓';
+        statusIcon = '⏳';
     }
-
-    todoText += `${i + 1}. ${statusIcon} ${todo.content}\n`;
+    
+    todoText += `- ${statusIcon} ${todo.content}\n`;
   }
 
   return todoText.trim();
@@ -97,14 +96,14 @@ const generateTodoText = (todos) => {
 const handleToolUseMessage = (contentPart) => {
   switch (contentPart.name) {
     case 'Bash':
-      return `💻 Running bash command, ${contentPart.input["description"]} \n\`\`\`sh${contentPart.input["command"]}\`\`\``;
+      return `🛠️ Running bash command, ${contentPart.input["description"]} \n\`\`\`sh${contentPart.input["command"]}\`\`\``;
     case 'Edit':
       // TODO: handle contentPart.input["old_string"] & contentPart.input["new_string"]
-      return `✏️ Editing file: ${contentPart.input["file_path"]}`;
+      return `🛠️ Editing file: ${contentPart.input["file_path"]}`;
     case 'Grep':
       const glob = contentPart.input["glob"];
       const type = contentPart.input["type"];
-      let result = `🔍 Grep pattern: ${contentPart.input["pattern"]}`;
+      let result = `🛠️ Grep pattern: ${contentPart.input["pattern"]}`;
       if (glob) {
         result += ` in ${glob}`;
       }
@@ -115,7 +114,7 @@ const handleToolUseMessage = (contentPart) => {
     case 'Glob':
       const globPattern = contentPart.input["pattern"];
       const path = contentPart.input["path"];
-      let globResult = `📁 Glob files: ${globPattern}`;
+      let globResult = `🛠️ Glob files: ${globPattern}`;
       if (path) {
         globResult += ` in ${path}`;
       }
@@ -123,9 +122,9 @@ const handleToolUseMessage = (contentPart) => {
     case 'TodoWrite':
       return generateTodoText(contentPart.input["todos"]);
     case 'Read':
-      return `📖 Reading file: ${contentPart.input["file_path"]}`;
+      return `🛠️ Reading file: ${contentPart.input["file_path"]}`;
     case 'WebSearch':
-      return `🌐 Searching the web for: ${contentPart.input["query"]}`;
+      return `🛠️ Searching the web for: ${contentPart.input["query"]}`;
     default:
       return `🛠️ Assistant is calling tool: ${contentPart.name}`;
   }
