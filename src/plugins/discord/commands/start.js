@@ -56,7 +56,7 @@ const handleSessionEvent = async (deps) => {
         break;
       case 'session_updated':
         await thread.send(`🔄 Session ${sessionId} status updated to: ${data.status}`);
-        console.log(`Session ${sessionId} status updating to: ${data.status}`);
+        console.log(`Session ${sessionId} status updated to: ${data.status}`);
         break;
       default:
         //console.log(`Unhandled session event type: ${type} for session ${sessionId}:`, event);
