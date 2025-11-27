@@ -1,78 +1,85 @@
-import { splitTextForDiscord } from "../utils";
+import { splitTextForDiscord, classifyEventsBySession } from "../utils";
 
-const handleSessionEvent = async (deps) => {
-  const { event, client, discordInsiemeDao } = deps;
+const handleSessionEvents = async (deps, payload) => {
+  const { client, discordInsiemeDao } = deps;
+  const { sessionId, events } = payload;
+
   try {
-    const { type, sessionId, data } = event;
-    if (!sessionId) {
-      // for project event, there is no sessionId, maybe happen.
-      //console.warn('⚠️ Session event missing sessionId:', event);
-      return;
-    }
-
     const threadId = await discordInsiemeDao.getThreadIdBySession({ sessionId });
-
     if (!threadId) {
       console.warn(`⚠️ No thread found for session ${sessionId}`);
       return;
     }
-
     const thread = await client.channels.fetch(threadId);
-    
     if (!thread) {
       console.warn(`⚠️ Unable to fetch thread with ID ${threadId} for session ${sessionId}`);
       return;
     }
+    const messageQueue = [];
+    let shouldLockThread = false;
 
-    switch (type) {
-      case 'session_append_messages':
-        // TODO: message send limit on discord api.
-        for (const msg of data.messages) {
-          if (msg.role === 'user') {
-            if (typeof msg.content === 'string') {
-              await thread.send(`🗨️ User: ${msg.content}`)
-            } else if (Array.isArray(msg.content)) {
-              //await thread.send(`🛠️ Using Tools...`)
-            }
-          } else if (msg.role === 'assistant') {
-            if (typeof msg.content === 'string') {
-              await thread.send(`🤖 Assistant: ${msg.content}`);
-            } else if (Array.isArray(msg.content)) {
-              for (const contentPart of msg.content) {
-                if (contentPart.type === 'text') {
-                  const textsList = splitTextForDiscord(contentPart.text);
-                  for (const text of textsList) {
-                    await thread.send(`🤖 Assistant: ${text}`);
-                  }
-                } else if (contentPart.type === 'tool_use') {
-                  await thread.send(`🛠️ Assistant is calling tool: ${contentPart.name}`);
+    for (const event of events) {
+      const { type, data } = event;
+      try {
+        switch (type) {
+          case 'session_append_messages':
+            for (const msg of data.messages) {
+              if (msg.role === 'user') {
+                if (typeof msg.content === 'string') {
+                  messageQueue.push(`🗨️ User: ${msg.content}`);
+                } else if (Array.isArray(msg.content)) {
+                  // not handling for now.
                 }
+              } else if (msg.role === 'assistant') {
+                if (typeof msg.content === 'string') {
+                  messageQueue.push(`🤖 Assistant: ${msg.content}`);
+                } else if (Array.isArray(msg.content)) {
+                  for (const contentPart of msg.content) {
+                    if (contentPart.type === 'text') {
+                      messageQueue.push(`🤖 Assistant: ${contentPart.text}`);
+                    } else if (contentPart.type === 'tool_use') {
+                      messageQueue.push(`🛠️ Assistant is calling tool: ${contentPart.name}`);
+                    }
+                  }
+                }
+              } else if (msg.role === 'system') {
+                messageQueue.push(`⚙️ System: ${msg.content}`);
+              } else {
+                messageQueue.push(`ℹ️ ${msg.role}: ${msg.content}`);
               }
             }
-          } else if (msg.role === 'system') {
-            await thread.send(`⚙️ System: ${msg.content}`);
-          } else {
-            await thread.send(`ℹ️ ${msg.role}: ${msg.content}`);
-          }
+            break;
+          case 'session_updated':
+            messageQueue.push(`🔄 Session ${sessionId} status updated to: ${data.status}`)
+            console.log(`Session ${sessionId} status updated to: ${data.status}`)
+            // If status is set to 'done', archive and lock the thread
+            if (data.status === 'done') {
+              shouldLockThread = true;
+            }
+            break;
+          default:
+            //console.log(`Unhandled session event type: ${type} for session ${sessionId}:`, event);
+            break;
         }
-        break;
-      case 'session_updated':
-        await thread.send(`🔄 Session ${sessionId} status updated to: ${data.status}`);
-        // TODO: A limit on discord api: https://github.com/discordjs/discord.js/issues/4674
-        //thread.setName(`[${data.status}] ${sessionId}`);
-        console.log(`Session ${sessionId} status updated to: ${data.status}`);
-        // If status is set to 'done', archive and lock the thread
-        if (data.status === 'done') {
-          await thread.setArchived(true);
-          await thread.setLocked(true);
-        }
-        break;
-      default:
-        //console.log(`Unhandled session event type: ${type} for session ${sessionId}:`, event);
-        break;
+      } catch (error) {
+        console.error(`Error handling session ${sessionId} event:`, error);
+        await thread.send(`⚠️ Error handling event of type '${type}': ${error.message}`);
+        continue;
+      }
+    }
+    // merge all messages and re-spilt for discord limits
+    const mergedMessage = messageQueue.join('\n\n');
+    const splitMessages = splitTextForDiscord(mergedMessage);
+    for (const msg of splitMessages) {
+      await thread.send(msg);
+    }
+    if (shouldLockThread) {
+      await thread.setArchived(true);
+      await thread.setLocked(true);
     }
   } catch (error) {
-    console.error('Error handling session event:', error);
+    console.error(`Error handling session ${sessionId} events:`, error);
+    return;
   }
 };
 
@@ -89,10 +96,12 @@ export const discordStartLoop = async (deps, payload) => {
   if (recentEvents.length > 0) {
     console.log(`🆕 ${recentEvents.length} new session events detected!`);
 
-    for (const event of recentEvents) {
-      await handleSessionEvent({ event, client, discordInsiemeDao });
+    const eventsBySession = classifyEventsBySession(recentEvents);
+
+    for (const [sessionId, events] of Object.entries(eventsBySession)) {
+      await handleSessionEvents({ discordInsiemeDao, client }, { sessionId, events });
     }
-    
+
     // Update offset only after successfully processing all events
     const lastEvent = recentEvents[recentEvents.length - 1];
     newOffsetId = lastEvent.id;
