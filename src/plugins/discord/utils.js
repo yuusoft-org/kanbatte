@@ -89,7 +89,7 @@ const generateTodoText = (todos) => {
   return todoText.trim();
 }
 
-const handleToolUseMessage = (contentPart) => {
+const generateToolUseMessage = (contentPart) => {
   switch (contentPart.name) {
     case 'Bash':
       return `🛠️ Running bash command, ${contentPart.input["description"]} \n\`\`\`sh${contentPart.input["command"]}\`\`\``;
@@ -126,7 +126,7 @@ const handleToolUseMessage = (contentPart) => {
   }
 }
 
-export const handleSessionMessageAppend = (message) => {
+export const transformSessionMessageAppend = (message) => {
   if (message.role === 'user') {
     if (typeof message.content === 'string') {
       return `🗨️ User: ${message.content}`;
@@ -141,7 +141,7 @@ export const handleSessionMessageAppend = (message) => {
         if (contentPart.type === 'text') {
           return `🤖 Assistant: ${contentPart.text}`;
         } else if (contentPart.type === 'tool_use') {
-          return handleToolUseMessage(contentPart);
+          return generateToolUseMessage(contentPart);
         }
       }
     }

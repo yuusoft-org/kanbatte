@@ -1,4 +1,4 @@
-import { splitTextForDiscord, classifyEventsBySession, handleSessionMessageAppend } from "../utils";
+import { splitTextForDiscord, classifyEventsBySession, transformSessionMessageAppend } from "../utils";
 
 const handleSessionEvents = async (deps, payload) => {
   const { client, discordInsiemeDao } = deps;
@@ -24,7 +24,7 @@ const handleSessionEvents = async (deps, payload) => {
         switch (type) {
           case 'session_append_messages':
             for (const msg of data.messages) {
-              const formattedMessage = handleSessionMessageAppend(msg);
+              const formattedMessage = transformSessionMessageAppend(msg);
               if (formattedMessage) {
                 messageQueue.push(formattedMessage);
               }
