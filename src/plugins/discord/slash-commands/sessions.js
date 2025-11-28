@@ -1,8 +1,8 @@
-import { SlashCommandBuilder, MessageFlags } from 'discord.js';
-import { isThreadChannel } from '../utils';
-import { createMainInsiemeDao } from '../../../deps/mainDao';
-import { createDiscordInsiemeDao } from '../deps/discordDao';
-import { addSession } from '../../../commands/session';
+import { SlashCommandBuilder, MessageFlags } from "discord.js";
+import { isThreadChannel } from "../utils";
+import { createMainInsiemeDao } from "../../../deps/mainDao";
+import { createDiscordInsiemeDao } from "../deps/discordDao";
+import { addSession } from "../../../commands/session";
 
 // export const ping = {
 //   data: new SlashCommandBuilder()
@@ -16,20 +16,37 @@ import { addSession } from '../../../commands/session';
 
 const queueSession = {
   data: new SlashCommandBuilder()
-    .setName('queue-session')
-    .setDescription('Create a new session thread in the current channel')
-    .addStringOption((option) => option.setName('message').setDescription('Initial message for the session').setRequired(true)),
+    .setName("queue-session")
+    .setDescription("Create a new session thread in the current channel")
+    .addStringOption((option) =>
+      option
+        .setName("message")
+        .setDescription("Initial message for the session")
+        .setRequired(true),
+    ),
 
   async execute(interaction) {
+    const isThread = isThreadChannel(interaction.channel);
+    if (isThread) {
+      await interaction.reply({
+        content:
+          "This command cannot be used in a thread channel. Please use it in a regular channel.",
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const insiemeDao = await createMainInsiemeDao();
     const discordInsiemeDao = await createDiscordInsiemeDao();
     const channelId = interaction.channel.id;
 
-    const project = await discordInsiemeDao.getProjectIdByChannel({ channelId });
+    const project = await discordInsiemeDao.getProjectIdByChannel({
+      channelId,
+    });
 
-    const message = interaction.options.getString('message');
+    const message = interaction.options.getString("message");
 
     const session = await addSession({ insiemeDao }, { project, message });
 
@@ -45,35 +62,43 @@ const queueSession = {
 
     // Send message to the new thread
     await thread.send(`🗨️ User: ${message}`);
-    await discordInsiemeDao.addSessionThreadRecord({ sessionId: session.sessionId, threadId: thread.id });
+    await discordInsiemeDao.addSessionThreadRecord({
+      sessionId: session.sessionId,
+      threadId: thread.id,
+    });
 
     const reply = `Session ${session.sessionId} created: <#${thread.id}>`;
     console.log(reply);
 
     // Update the deferred reply
     await interaction.editReply({
-      content: reply
+      content: reply,
     });
-  }
-}
+  },
+};
 
 const setStatus = {
   data: new SlashCommandBuilder()
-    .setName('set-status')
-    .setDescription('Set the status of an existing session')
-    .addStringOption((option) => option.setName('status').setDescription('New status for the session').setRequired(true)),
+    .setName("set-status")
+    .setDescription("Set the status of an existing session")
+    .addStringOption((option) =>
+      option
+        .setName("status")
+        .setDescription("New status for the session")
+        .setRequired(true),
+    ),
 
   async execute(interaction) {
     const isThread = isThreadChannel(interaction.channel);
     if (!isThread) {
       await interaction.reply({
-        content: 'This command can only be used in a thread channel.',
+        content: "This command can only be used in a thread channel.",
         flags: MessageFlags.Ephemeral,
       });
       return;
     }
-    const status = interaction.options.getString('status');
-    if (!['ready', 'in-progress', 'review', 'done'].includes(status)) {
+    const status = interaction.options.getString("status");
+    if (!["ready", "in-progress", "review", "done"].includes(status)) {
       await interaction.reply({
         content: `Invalid status '${status}'. Valid statuses are: ready, in-progress, review, done.`,
         flags: MessageFlags.Ephemeral,
@@ -82,7 +107,9 @@ const setStatus = {
     }
     const discordInsiemeDao = await createDiscordInsiemeDao();
     const mainInsiemeDao = await createMainInsiemeDao();
-    const sessionId = await discordInsiemeDao.getSessionIdByThread({ threadId: interaction.channel.id });
+    const sessionId = await discordInsiemeDao.getSessionIdByThread({
+      threadId: interaction.channel.id,
+    });
     if (!sessionId) {
       await interaction.reply({
         content: `No session found for this thread.`,
@@ -96,10 +123,10 @@ const setStatus = {
       content: `🔄 Session ${sessionId} status updating to: ${status}...`,
       flags: MessageFlags.Ephemeral,
     });
-  }
-}
+  },
+};
 
 export default {
-  'queue-session': queueSession,
-  'set-status': setStatus,
-}
+  "queue-session": queueSession,
+  "set-status": setStatus,
+};
