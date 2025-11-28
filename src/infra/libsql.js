@@ -97,6 +97,27 @@ export const createLibsqlInfra = (deps) => {
     }
   };
 
+  const getView = async (key) => {
+    checkInitialized();
+    const result = await db.execute({
+      sql: "SELECT data FROM view WHERE key = ?",
+      args: [key],
+    });
+    if (result.rows.length === 0) {
+      return null;
+    }
+    return deserialize(result.rows[0].data);
+  };
+
+  const findViewsByPrefix = async (prefix) => {
+    checkInitialized();
+    const result = await db.execute({
+      sql: "SELECT data FROM view WHERE key LIKE ?",
+      args: [`${prefix}%`],
+    });
+    return result.rows.map((row) => deserialize(row.data));
+  };
+
   return {
     init,
     migrateDb,
@@ -105,5 +126,7 @@ export const createLibsqlInfra = (deps) => {
     get,
     set,
     setView,
+    getView,
+    findViewsByPrefix,
   };
 };
