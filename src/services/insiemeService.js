@@ -1,5 +1,5 @@
 import { createRepository } from "insieme";
-import { deserialize } from "../utils/serialization.js";
+import { serialize, deserialize } from "../utils/serialization.js";
 
 export const createInsiemeService = (deps) => {
   const { libsqlInfra } = deps;
@@ -16,7 +16,7 @@ export const createInsiemeService = (deps) => {
   const createAdapter = () => {
     return {
       getEvents: async (payload = {}) => {
-        const { partition, lastOffsetId, filterInit } = payload;
+        const { partition } = payload;
         if (!partition) return [];
 
         let allEvents = [];
@@ -25,27 +25,24 @@ export const createInsiemeService = (deps) => {
           allEvents.push(...eventsForPartition);
         }
 
-        return allEvents
-          .sort((a, b) => a.id - b.id)
-          .filter((event) => {
-            const afterOffset = event.id > (lastOffsetId ?? 0);
-            const notInit = filterInit ? event.type !== "init" : true;
-            return afterOffset && notInit;
-          })
-          .map((event) => ({
-            ...event,
-            payload: deserialize(event.payload),
-          }));
+        return allEvents.map((event) => ({
+          ...event,
+          payload: deserialize(event.payload),
+        }));
       },
       appendEvent: async (event) => {
-        await libsqlInfra.appendEvent(event);
+        const eventWithSerializedPayload = {
+          ...event,
+          payload: serialize(event.payload),
+        };
+        await libsqlInfra.appendEvent(eventWithSerializedPayload);
       },
       get: async (key) => {
         const data = await libsqlInfra.get(key);
         return data ? deserialize(data) : null;
       },
       set: async (key, value) => {
-        await libsqlInfra.set(key, value);
+        await libsqlInfra.set(key, serialize(value));
       },
     };
   };
