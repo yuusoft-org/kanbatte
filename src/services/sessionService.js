@@ -1,54 +1,30 @@
 import { serialize, deserialize } from "../utils/serialization.js";
-import { generateId } from "../utils/helper.js";
 
 export const createSessionService = (deps) => {
-  const { libsqlService, insiemeService } = deps;
+  const { insiemeService, libsqlInfra } = deps;
   const { repository } = insiemeService;
 
-  const _fetchEventsByPartition = async (partition) => {
-    const result = await repository.getEventsAsync({ partition: [partition] });
-    return result;
-  };
-
   const _computeAndSaveView = async (id) => {
-    const db = await libsqlService.getClient();
-    const events = await _fetchEventsByPartition(id);
-
-    if (events.length === 0) {
-      return null;
-    }
+    const events = await repository.getEventsAsync({ partition: [id] });
+    if (events.length === 0) return null;
 
     let state;
     let viewKey;
     let firstEvent = deserialize(events[0].payload.value.eventData);
 
     if (firstEvent.type === "project_created") {
-      state = {
-        projectId: id,
-        name: "",
-        repository: "",
-        description: "",
-      };
+      state = { projectId: id, name: "", repository: "", description: "" };
       viewKey = `project:${id}`;
     } else {
       const now = Date.now();
-      state = {
-        sessionId: id,
-        messages: [],
-        status: "ready",
-        project: "",
-        createdAt: now,
-        updatedAt: now,
-      };
+      state = { sessionId: id, messages: [], status: "ready", project: "", createdAt: now, updatedAt: now };
       viewKey = `session:${id}`;
     }
 
     let lastEventId = null;
-
     for (const row of events) {
       lastEventId = row.id;
       const event = deserialize(row.payload.value.eventData);
-
       switch (event.type) {
         case "project_created":
           state.projectId = event.data.projectId;
@@ -78,37 +54,13 @@ export const createSessionService = (deps) => {
       }
     }
 
-    const viewData = serialize(state);
-    const now = Date.now();
-
-    const existing = await db.execute({
-      sql: "SELECT id FROM view WHERE key = ?",
-      args: [viewKey],
-    });
-
-    if (existing.rows.length > 0) {
-      await db.execute({
-        sql: "UPDATE view SET data = ?, last_offset_id = ?, updated_at = ? WHERE key = ?",
-        args: [viewData, lastEventId, now, viewKey],
-      });
-    } else {
-      await db.execute({
-        sql: "INSERT INTO view (id, key, data, last_offset_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
-        args: [generateId(), viewKey, viewData, lastEventId, now, now],
-      });
-    }
-
+    await libsqlInfra.setView(viewKey, state, lastEventId);
     return state;
   };
 
   const addSession = async (payload) => {
     const { sessionId, sessionData } = payload;
-    const eventData = serialize({
-      type: "session_created",
-      sessionId: sessionId,
-      data: sessionData,
-      timestamp: Date.now(),
-    });
+    const eventData = serialize({ type: "session_created", sessionId, data: sessionData, timestamp: Date.now() });
     await repository.addEvent({
       type: "treePush",
       partition: sessionId,
@@ -119,12 +71,7 @@ export const createSessionService = (deps) => {
 
   const updateSession = async (payload) => {
     const { sessionId, validUpdates } = payload;
-    const eventData = serialize({
-      type: "session_updated",
-      sessionId: sessionId,
-      data: validUpdates,
-      timestamp: Date.now(),
-    });
+    const eventData = serialize({ type: "session_updated", sessionId, data: validUpdates, timestamp: Date.now() });
     await repository.addEvent({
       type: "treePush",
       partition: sessionId,
@@ -135,12 +82,7 @@ export const createSessionService = (deps) => {
 
   const addProject = async (payload) => {
     const { projectId, projectData } = payload;
-    const eventData = serialize({
-      type: "project_created",
-      projectId: payload.projectId,
-      data: projectData,
-      timestamp: Date.now(),
-    });
+    const eventData = serialize({ type: "project_created", projectId, data: projectData, timestamp: Date.now() });
     await repository.addEvent({
       type: "treePush",
       partition: projectId,
@@ -151,12 +93,7 @@ export const createSessionService = (deps) => {
 
   const updateProject = async (payload) => {
     const { projectId, validUpdates } = payload;
-    const eventData = serialize({
-      type: "project_updated",
-      projectId: projectId,
-      data: validUpdates,
-      timestamp: Date.now(),
-    });
+    const eventData = serialize({ type: "project_updated", projectId, data: validUpdates, timestamp: Date.now() });
     await repository.addEvent({
       type: "treePush",
       partition: projectId,
@@ -170,7 +107,7 @@ export const createSessionService = (deps) => {
     const messagesWithTimestamps = messages.map((msg) => ({ ...msg, timestamp: msg.timestamp || Date.now() }));
     const eventData = serialize({
       type: "session_append_messages",
-      sessionId: sessionId,
+      sessionId,
       data: { messages: messagesWithTimestamps, timestamp: Date.now() },
       timestamp: Date.now(),
     });
@@ -188,83 +125,46 @@ export const createSessionService = (deps) => {
   };
 
   const getViewBySessionId = async (payload) => {
-    const db = await libsqlService.getClient();
     const { sessionId } = payload;
-    const result = await db.execute({
-      sql: "SELECT data FROM view WHERE key = ?",
-      args: [`session:${sessionId}`],
-    });
-    if (result.rows.length === 0) return null;
-    return deserialize(result.rows[0].data);
+    return await libsqlInfra.getView(`session:${sessionId}`);
   };
 
   const getViewsByProjectId = async (payload) => {
-    const db = await libsqlService.getClient();
     const { projectId, statuses } = payload;
-    const result = await db.execute({
-      sql: "SELECT data FROM view WHERE key LIKE ?",
-      args: [`session:${projectId}-%`],
-    });
-    if (result.rows.length === 0) return [];
-    const sessions = result.rows.map((row) => deserialize(row.data)).filter((session) => {
-      if (!statuses || statuses.length === 0) return true;
-      return statuses.includes(session.status);
-    });
-    return sessions;
+    const allSessions = await libsqlInfra.findViewsByPrefix(`session:${projectId}-`);
+    if (!statuses || statuses.length === 0) {
+      return allSessions;
+    }
+    return allSessions.filter((session) => statuses.includes(session.status));
   };
 
   const getNextSessionNumber = async (payload) => {
-    const db = await libsqlService.getClient();
     const { projectId } = payload;
-    const result = await db.execute({
-      sql: "SELECT key FROM view WHERE key LIKE ? ORDER BY created_at DESC LIMIT 1",
-      args: [`session:${projectId}-%`],
-    });
-    if (result.rows.length === 0) return 1;
-    const latestKey = result.rows[0].key;
-    const match = latestKey.match(/^session:(.+)-(\d+)$/);
-    if (!match) return 1;
-    return parseInt(match[2], 10) + 1;
+    const allSessions = await libsqlInfra.findViewsByPrefix(`session:${projectId}-`);
+    if (allSessions.length === 0) {
+      return 1;
+    }
+    const maxNumber = allSessions.reduce((max, session) => {
+      const match = session.sessionId.match(/^.+-(\d+)$/);
+      const num = match ? parseInt(match[1], 10) : 0;
+      return num > max ? num : max;
+    }, 0);
+    return maxNumber + 1;
   };
 
   const getSessionsByStatus = async (payload) => {
-    const db = await libsqlService.getClient();
     const { status } = payload;
-    const result = await db.execute({
-      sql: "SELECT data FROM view WHERE key LIKE ?",
-      args: ["session:%"],
-    });
-    if (result.rows.length === 0) return [];
-    const sessions = result.rows.map((row) => deserialize(row.data)).filter((session) => session.status === status);
-    return sessions;
+    const allSessions = await libsqlInfra.findViewsByPrefix("session:");
+    return allSessions.filter((session) => session.status === status);
   };
 
   const getProjectById = async (payload) => {
-    const db = await libsqlService.getClient();
     const { projectId } = payload;
-    const result = await db.execute({
-      sql: "SELECT data FROM view WHERE key = ?",
-      args: [`project:${projectId}`],
-    });
-    if (result.rows.length === 0) return null;
-    return deserialize(result.rows[0].data);
+    return await libsqlInfra.getView(`project:${projectId}`);
   };
 
   const listProjects = async () => {
-    const db = await libsqlService.getClient();
-    const result = await db.execute({
-      sql: "SELECT key, data FROM view WHERE key LIKE 'project:%' ORDER BY created_at ASC",
-    });
-    if (result.rows.length === 0) return [];
-    return result.rows.map((row) => {
-      const data = deserialize(row.data);
-      return {
-        projectId: data.projectId,
-        name: data.name,
-        repository: data.repository,
-        description: data.description,
-      };
-    });
+    return await libsqlInfra.findViewsByPrefix("project:");
   };
 
   const fetchRecentSessionEvents = async (payload) => {
