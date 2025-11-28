@@ -1,6 +1,6 @@
 // minimal-discord-bot.js
 import { Client, Collection, Events, GatewayIntentBits, MessageFlags } from 'discord.js';
-import { isThreadChannel } from './utils';
+import { isThreadChannel, isMemberAllowed } from './utils';
 import * as sessionsSlashCommands from "./slash-commands/sessions";
 import { createMainInsiemeDao } from '../../deps/mainDao';
 import { createDiscordInsiemeDao, createDiscordStore } from './deps/discordDao';
@@ -59,6 +59,14 @@ export const startDiscordBot = () => {
 
     if (!isThread) return;
 
+    // reject if member roles is not cached
+    const discordStore = await createDiscordStore();
+    const roles = await discordStore.get("allowedRoleIds") || [];
+    if (!isMemberAllowed(message.member, roles)) {
+      await message.reply("❌ You don't have permission to interact in this thread.");
+      return;
+    }
+
     if (message.mentions.has(client.user)) {
       try {
         const insiemeDao = await createMainInsiemeDao();
@@ -81,6 +89,16 @@ export const startDiscordBot = () => {
       return;
     }
     try {
+      // reject if member roles is not cached
+      const discordStore = await createDiscordStore();
+      const roles = await discordStore.get("allowedRoleIds") || [];
+      if (!isMemberAllowed(interaction.member, roles)) {
+        await interaction.reply({
+          content: "❌ You don't have permission to use this command.",
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
       await command.execute(interaction);
     } catch (error) {
       console.error(error);
