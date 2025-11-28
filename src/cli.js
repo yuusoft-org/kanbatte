@@ -12,7 +12,7 @@ import { createTaskService } from "./services/taskService.js";
 import { createTaskCommands } from "./commands/task.js";
 import { createSessionCommands } from "./commands/newSession.js";
 import { createLibsqlInfra } from "./infra/libsql.js";
-import { createInsiemeService } from "./services/insiemeService.js";
+import { createInsieme } from "./infra/insieme.js";
 import { createSessionService } from "./services/sessionService.js";
 import { formatOutput } from "./utils/output.js";
 import { agent } from "./commands/agent.js";
@@ -43,7 +43,7 @@ const taskCommands = createTaskCommands({ taskService });
 const dbPath = join(projectRoot, "local.db");
 const migrationsPath = join(__dirname, "../db/migrations/*.sql");
 const libsqlInfra = createLibsqlInfra({ dbPath, migrationsPath });
-const insiemeService = createInsiemeService({
+const insiemeService = createInsieme({
   libsqlInfra,
   eventLogTableName: "event_log",
   kvStoreTableName: "kv_store",
@@ -64,7 +64,7 @@ dbCmd
   .description("Set up database for kanbatte")
   .action(async () => {
     console.log("Setting up database for kanbatte");
-    await libsqlInfra.init();
+    libsqlInfra.init();
     await libsqlInfra.migrateDb();
     await insiemeService.init();
     console.log("Database setup completed!");
@@ -149,7 +149,7 @@ sessionCmd
   .argument("<message>", "Initial message content")
   .requiredOption("-p, --project <projectId>", "Project ID")
   .action(async (message, options) => {
-    await libsqlInfra.init();
+    libsqlInfra.init();
     await sessionCommands.addSession({ ...options, message });
   });
 
@@ -160,7 +160,7 @@ sessionCmd
   .argument("<sessionId>", "Session ID")
   .requiredOption("-m, --messages <messages>", "Messages in JSON array format")
   .action(async (sessionId, options) => {
-    await libsqlInfra.init();
+    libsqlInfra.init();
     await sessionCommands.appendSessionMessages({ sessionId, messages: options.messages });
   });
 
@@ -171,7 +171,7 @@ sessionCmd
   .argument("<sessionId>", "Session ID")
   .argument("[status]", "New status (optional)")
   .action(async (sessionId, status) => {
-    await libsqlInfra.init();
+    libsqlInfra.init();
     if (status) {
       await sessionCommands.updateSession({ sessionId, status });
     } else {
@@ -188,7 +188,7 @@ sessionCmd
   .option("-s, --status <status>", "Filter by status")
   .option("-f, --format <format>", "Output format: table, json, markdown", "table")
   .action(async (options) => {
-    await libsqlInfra.init();
+    libsqlInfra.init();
     await sessionCommands.listSessions(options);
   });
 
@@ -199,7 +199,7 @@ sessionCmd
   .argument("<sessionId>", "Session ID")
   .option("-f, --format <format>", "Output format: table, json, markdown", "markdown")
   .action(async (sessionId, options) => {
-    await libsqlInfra.init();
+    libsqlInfra.init();
     await sessionCommands.readSession(sessionId, options.format);
   });
 
@@ -215,7 +215,7 @@ sessionProjectCmd
   .requiredOption("-r, --repository <repository>", "Repository URL")
   .option("-d, --description <description>", "Project description")
   .action(async (options) => {
-    await libsqlInfra.init();
+    libsqlInfra.init();
     await sessionCommands.addProject({
       projectId: options.project,
       name: options.name,
@@ -233,7 +233,7 @@ sessionProjectCmd
   .option("-r, --repository <repository>", "Repository URL")
   .option("-d, --description <description>", "Project description")
   .action(async (options) => {
-    await libsqlInfra.init();
+    libsqlInfra.init();
     await sessionCommands.updateProject({
       projectId: options.project,
       name: options.name,
@@ -247,7 +247,7 @@ sessionProjectCmd
   .command("list")
   .description("List all projects")
   .action(async () => {
-    await libsqlInfra.init();
+    libsqlInfra.init();
     await sessionCommands.listProjects();
   });
 

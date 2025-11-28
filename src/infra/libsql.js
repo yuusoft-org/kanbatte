@@ -5,21 +5,19 @@ import { generateId } from "../utils/helper.js";
 export const createLibsqlInfra = (deps) => {
   const { dbPath, migrationsPath } = deps;
 
-  let db = null;
-  let isInitialized = false;
+  let db;
 
   const checkInitialized = () => {
-    if (!isInitialized) {
+    if (!db) {
       throw new Error("Database service has not been initialized. Please run 'kanbatte db setup' first.");
     }
   };
 
-  const init = async () => {
-    if (isInitialized) {
+  const init = () => {
+    if (db) {
       return;
     }
     db = createClient({ url: `file:${dbPath}` });
-    isInitialized = true;
   };
 
   const migrateDb = async () => {

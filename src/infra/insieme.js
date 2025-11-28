@@ -1,7 +1,7 @@
 import { createRepository } from "insieme";
 import { serialize, deserialize } from "../utils/serialization.js";
 
-export const createInsiemeService = (deps) => {
+export const createInsieme = (deps) => {
   const { libsqlInfra } = deps;
 
   const isInitialized = async () => {
