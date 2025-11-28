@@ -3,6 +3,7 @@ import { createDiscordInsiemeDao, setupDiscordDb, createDiscordStore } from "./d
 import { discordChannelAdd, discordChannelUpdate } from "./commands/channel.js";
 import { startDiscordBot } from "./bot.js"
 import { agentStart } from "../../commands/agent.js";
+import { setAllowedRoleIds, getAllowedRoleIds } from "./commands/config.js";
 
 export const setupDiscordCli = (deps) => {
   const { cmd } = deps;
@@ -29,14 +30,20 @@ export const setupDiscordCli = (deps) => {
     });
 
   botCmd
-  .command("set")
-  .option("-r, --role <roleId>", "Allowed role ID (can be used multiple times)", (value, previous) => [...previous, value], [])
-  .description("Set bot configuration")
-  .action(async (options) => {
-    const discordStore = await createDiscordStore();
-    await discordStore.set("allowedRoleIds", options.role);
-    console.log(`Allowed roles set to: ${options.role.join(", ")}`);
-  });
+    .command("allowed-roles")
+    .argument("[roles]", "Comma-separated list of allowed Discord role IDs")
+    .description("Set allowed Discord role IDs for bot commands")
+    .action(async (roles) => {
+      const discordStore = await createDiscordStore();
+      if (roles) {
+        const roleIds = roles.split(",").map((roleId) => roleId.trim());
+        await setAllowedRoleIds({ discordStore }, { roleIds });
+        console.log(`Allowed roles set to: ${roleIds.join(", ")}`);
+      } else {
+        const roleIds = await getAllowedRoleIds({ discordStore });
+        console.log(`Allowed roles: ${roleIds.join(", ")}`);
+      }
+    });
 
   // Discord channel command group
   const channelCmd = cmd.command("channel").description("Discord channel management");
