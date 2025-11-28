@@ -24,6 +24,7 @@ export const createInsiemeService = (deps) => {
           const eventsForPartition = await libsqlInfra.getEvents(p);
           allEvents.push(...eventsForPartition);
         }
+
         return allEvents
           .sort((a, b) => a.id - b.id)
           .filter((event) => {
@@ -40,7 +41,8 @@ export const createInsiemeService = (deps) => {
         await libsqlInfra.appendEvent(event);
       },
       get: async (key) => {
-        return await libsqlInfra.get(key);
+        const data = await libsqlInfra.get(key);
+        return data ? deserialize(data) : null;
       },
       set: async (key, value) => {
         await libsqlInfra.set(key, value);
