@@ -1,282 +1,198 @@
-export const addSession = async (deps, payload) => {
-  const { insiemeDao } = deps;
+export const createSessionCommands = (deps) => {
+  const { sessionService, formatOutput, discordInsiemeDao } = deps;
 
-  if (!payload.message) {
-    throw new Error("Session message is required (provide message as argument)");
-  }
+  const addSession = async (payload) => {
+    if (!payload.message) {
+      throw new Error("Session message is required (provide message as argument)");
+    }
+    if (!payload.project) {
+      throw new Error("Project ID is required (use -p or --project)");
+    }
 
-  if (!payload.project) {
-    throw new Error("Project ID is required (use -p or --project)");
-  }
+    const project = await sessionService.getProjectById({ projectId: payload.project });
+    if (!project) {
+      throw new Error(`Project '${payload.project}' does not exist`);
+    }
 
-  const project = await insiemeDao.getProjectById({ projectId: payload.project });
-  if (!project) {
-    throw new Error(`Project '${payload.project}' does not exist`);
-  }
+    const sessionNumber = await sessionService.getNextSessionNumber({ projectId: payload.project });
+    const sessionId = `${payload.project}-${sessionNumber}`;
+    const now = Date.now();
 
-  const sessionNumber = await insiemeDao.getNextSessionNumber({ projectId: payload.project });
-  const sessionId = `${payload.project}-${sessionNumber}`;
-  const now = Date.now();
+    const sessionData = {
+      messages: [{ role: "user", content: payload.message, timestamp: now }],
+      project: payload.project,
+      status: "ready",
+      createdAt: now,
+      updatedAt: now,
+    };
 
-  const sessionData = {
-    messages: [
-      {
-        role: "user",
-        content: payload.message,
-        timestamp: now
-      }
-    ],
-    project: payload.project,
-    status: "ready",
-    createdAt: now,
-    updatedAt: now,
+    const session = await sessionService.addSession({ sessionId, sessionData });
+    console.log("Session created successfully! Session ID:", session.sessionId);
   };
 
-  await insiemeDao.addSession({ sessionId, sessionData });
-
-  return { sessionId, ...sessionData };
-};
-
-
-export const getSession = async (deps, payload) => {
-  const { insiemeDao } = deps;
-  const { sessionId } = payload;
-
-  if (!sessionId) {
-    throw new Error("Session ID is required");
-  }
-
-  const session = await insiemeDao.getViewBySessionId({ sessionId });
-  if (!session) {
-    throw new Error(`Session '${sessionId}' does not exist`);
-  }
-
-  return session;
-};
-
-export const updateSession = async (deps, payload) => {
-  const { insiemeDao } = deps;
-  const { sessionId } = payload;
-
-  if (!sessionId) {
-    throw new Error("Session ID is required (use -i or --session-id)");
-  }
-
-  const session = await insiemeDao.getViewBySessionId({ sessionId });
-  if (!session) {
-    throw new Error(`Session '${sessionId}' does not exist`);
-  }
-
-  const validUpdates = {};
-
-  // Handle message updates
-  if (payload.message !== undefined) {
-    validUpdates.messages = [
-      ...(session.messages || []),
-      {
-        role: "user",
-        content: payload.message,
-        timestamp: Date.now()
-      }
-    ];
-  }
-
-  // Handle other updates
-  if (payload.status !== undefined) validUpdates.status = payload.status;
-  if (payload.project !== undefined) validUpdates.project = payload.project;
-
-  if (Object.keys(validUpdates).length === 0) {
-    throw new Error("At least one update field is required (-s or --message)");
-  }
-
-  await insiemeDao.updateSession({ sessionId, validUpdates });
-
-  return { sessionId: sessionId, ...validUpdates };
-};
-
-
-export const readSession = async (deps, sessionId, format = "table") => {
-  const { insiemeDao, formatOutput } = deps;
-
-  if (!sessionId) {
-    throw new Error("Session ID is required");
-  }
-
-  const sessionData = await insiemeDao.getViewBySessionId({ sessionId });
-
-  if (!sessionData) {
-    throw new Error(`Session ${sessionId} not found`);
-  }
-
-  formatOutput(sessionData, format, "read");
-  return sessionData;
-};
-
-export const listSessions = async (deps, payload) => {
-  const { insiemeDao } = deps;
-
-  if (!payload.project) {
-    throw new Error("Project ID is required (use -p or --project)");
-  }
-
-  const statuses = payload.status
-    ? payload.status.split(",").map((s) => s.trim())
-    : null;
-
-  const sessions = await insiemeDao.getViewsByProjectId({
-    projectId: payload.project,
-    statuses,
-  });
-
-  return sessions;
-};
-
-export const addProject = async (deps, payload) => {
-  const { insiemeDao } = deps;
-  const { projectId } = payload;
-
-  if (!projectId) {
-    throw new Error("Project ID is required (use -p or --project-id)");
-  }
-
-  if (!payload.name) {
-    throw new Error("Project name is required (use -n or --name)");
-  }
-
-  const existing = await insiemeDao.getProjectById({ projectId });
-  if (existing) {
-    throw new Error(`Project with ID '${projectId}' already exists`);
-  }
-
-  const projectData = {
-    projectId: payload.projectId,
-    name: payload.name,
-    repository: payload.repository,
-    description: payload.description,
+  const getSession = async (payload) => {
+    const { sessionId } = payload;
+    if (!sessionId) {
+      throw new Error("Session ID is required");
+    }
+    const session = await sessionService.getViewBySessionId({ sessionId });
+    if (!session) {
+      throw new Error(`Session '${sessionId}' does not exist`);
+    }
+    return session;
   };
 
-  await insiemeDao.addProject({ projectId, projectData });
-
-  return projectData;
-};
-
-export const updateProject = async (deps, payload) => {
-  const { insiemeDao } = deps;
-  const { projectId } = payload;
-
-  if (!projectId) {
-    throw new Error("Project ID is required (use -p or --project-id)");
-  }
-
-  const existing = await insiemeDao.getProjectById({ projectId: projectId });
-  if (!existing) {
-    throw new Error(`Project '${projectId}' does not exist`);
-  }
-
-  const validUpdates = {};
-
-  // Only update fields that are provided
-  if (payload.name !== undefined) validUpdates.name = payload.name;
-  if (payload.repository !== undefined) validUpdates.repository = payload.repository;
-  if (payload.description !== undefined) validUpdates.description = payload.description;
-
-  if (Object.keys(validUpdates).length === 0) {
-    throw new Error("At least one update field is required (-n, -r, or --description)");
-  }
-
-  await insiemeDao.updateProject({ projectId, validUpdates });
-
-  return { projectId, ...validUpdates };
-};
-
-export const listProjects = async (deps) => {
-  const { insiemeDao, discordInsiemeDao } = deps;
-
-  const basicResult = await insiemeDao.listProjects();
-
-  let discordResult = [];
-  if (discordInsiemeDao) {
-    discordResult = await discordInsiemeDao.listProjects();
-  }
-
-  return basicResult.map(basicProject => {
-    const discordProject = discordResult.find(dp => dp.projectId === basicProject.projectId);
-
-    if (discordProject) {
-      return {
-        ...basicProject,
-        ...discordProject,
-      };
+  const updateSession = async (payload) => {
+    const { sessionId } = payload;
+    if (!sessionId) {
+      throw new Error("Session ID is required (use -i or --session-id)");
+    }
+    const session = await sessionService.getViewBySessionId({ sessionId });
+    if (!session) {
+      throw new Error(`Session '${sessionId}' does not exist`);
     }
 
-    return basicProject;
-  });
-};
+    const validUpdates = {};
+    if (payload.status !== undefined) validUpdates.status = payload.status;
+    if (payload.project !== undefined) validUpdates.project = payload.project;
 
-export const appendSessionMessages = async (deps, payload) => {
-  const { insiemeDao } = deps;
-
-  if (!payload.sessionId) {
-    throw new Error("Session ID is required");
-  }
-
-  if (!payload.messages) {
-    throw new Error("Messages are required (provide messages as JSON array)");
-  }
-
-  // Parse JSON input
-  let messages;
-  try {
-    messages = JSON.parse(payload.messages);
-  } catch (error) {
-    throw new Error("Invalid JSON format: " + error.message);
-  }
-
-  // Validate that input is an array
-  if (!Array.isArray(messages)) {
-    throw new Error("Input must be a JSON array of messages");
-  }
-
-  // Validate array is not empty
-  if (messages.length === 0) {
-    throw new Error("Messages array cannot be empty");
-  }
-
-  // Validate each message in the array
-  for (let i = 0; i < messages.length; i++) {
-    const message = messages[i];
-
-    // Check that message is an object
-    if (typeof message !== 'object' || message === null) {
-      throw new Error(`Message at index ${i} must be an object`);
+    if (Object.keys(validUpdates).length === 0) {
+      throw new Error("At least one update field is required (-s)");
     }
 
-    // Check required fields
-    if (!message.role) {
-      throw new Error(`Message at index ${i} missing required field: role`);
+    const result = await sessionService.updateSession({ sessionId, validUpdates });
+    console.log("Session status updated successfully!", { sessionId, status: result.status });
+  };
+
+  const readSession = async (sessionId, format = "markdown") => {
+    if (!sessionId) {
+      throw new Error("Session ID is required");
+    }
+    const sessionData = await sessionService.getViewBySessionId({ sessionId });
+    if (!sessionData) {
+      throw new Error(`Session ${sessionId} not found`);
+    }
+    formatOutput(sessionData, format, "read");
+  };
+
+  const listSessions = async (payload) => {
+    if (!payload.project) {
+      throw new Error("Project ID is required (use -p or --project)");
+    }
+    const statuses = payload.status ? payload.status.split(",").map((s) => s.trim()) : null;
+    const sessions = await sessionService.getViewsByProjectId({
+      projectId: payload.project,
+      statuses,
+    });
+
+    if (sessions && sessions.length > 0) {
+      formatOutput(sessions, payload.format || "table", "list");
+    } else {
+      console.log("No sessions found for this project.");
+    }
+  };
+
+  const addProject = async (payload) => {
+    const { projectId } = payload;
+    if (!projectId) {
+      throw new Error("Project ID is required (use -p or --project-id)");
+    }
+    if (!payload.name) {
+      throw new Error("Project name is required (use -n or --name)");
     }
 
-    if (!message.content) {
-      throw new Error(`Message at index ${i} missing required field: content`);
+    const existing = await sessionService.getProjectById({ projectId });
+    if (existing) {
+      throw new Error(`Project with ID '${projectId}' already exists`);
     }
 
-    // Validate role
-    const validRoles = ['system', 'user', 'assistant'];
-    if (!validRoles.includes(message.role)) {
-      throw new Error(`Message at index ${i} has invalid role: ${message.role}. Valid roles: ${validRoles.join(', ')}`);
+    const projectData = {
+      projectId: payload.projectId,
+      name: payload.name,
+      repository: payload.repository,
+      description: payload.description,
+    };
+
+    const project = await sessionService.addProject({ projectId, projectData });
+    console.log("Project created successfully!", { projectId: project.projectId });
+  };
+
+  const updateProject = async (payload) => {
+    const { projectId } = payload;
+    if (!projectId) {
+      throw new Error("Project ID is required (use -p or --project-id)");
     }
-  }
+    const existing = await sessionService.getProjectById({ projectId: projectId });
+    if (!existing) {
+      throw new Error(`Project '${projectId}' does not exist`);
+    }
 
-  // Check if session exists
-  const session = await insiemeDao.getViewBySessionId({ sessionId: payload.sessionId });
-  if (!session) {
-    throw new Error(`Session '${payload.sessionId}' does not exist`);
-  }
+    const validUpdates = {};
+    if (payload.name !== undefined) validUpdates.name = payload.name;
+    if (payload.repository !== undefined) validUpdates.repository = payload.repository;
+    if (payload.description !== undefined) validUpdates.description = payload.description;
 
-  await insiemeDao.appendSessionMessages({
-    sessionId: payload.sessionId,
-    messages
-  });
+    if (Object.keys(validUpdates).length === 0) {
+      throw new Error("At least one update field is required (-n, -r, or --description)");
+    }
 
-  return { sessionId: payload.sessionId, messagesCount: messages.length };
+    const result = await sessionService.updateProject({ projectId, validUpdates });
+    console.log("Project updated successfully!", { projectId: result.projectId });
+  };
+
+  const listProjects = async () => {
+    const mainProjects = await sessionService.listProjects();
+
+    // TODO: The discordInsiemeDao will be replaced by a discordService in the future.
+    let discordProjects = [];
+    if (discordInsiemeDao) {
+      discordProjects = await discordInsiemeDao.listProjects();
+    }
+
+    const projects = mainProjects.map(p => {
+      const discordData = discordProjects.find(dp => dp.projectId === p.projectId);
+      return { ...p, ...discordData };
+    });
+
+    if (projects.length > 0) {
+      console.log("Projects:");
+      console.table(projects);
+    } else {
+      console.log("No projects found.");
+    }
+  };
+
+  const appendSessionMessages = async (payload) => {
+    if (!payload.sessionId) {
+      throw new Error("Session ID is required");
+    }
+    if (!payload.messages) {
+      throw new Error("Messages are required (provide messages as JSON array)");
+    }
+
+    let messages;
+    try {
+      messages = JSON.parse(payload.messages);
+    } catch (error) {
+      throw new Error("Invalid JSON format for messages: " + error.message);
+    }
+    if (!Array.isArray(messages)) {
+      throw new Error("Input must be a JSON array of messages");
+    }
+
+    await sessionService.appendSessionMessages({ sessionId: payload.sessionId, messages });
+    console.log("Messages appended successfully to session:", payload.sessionId);
+  };
+
+  return {
+    addSession,
+    getSession,
+    updateSession,
+    readSession,
+    listSessions,
+    addProject,
+    updateProject,
+    listProjects,
+    appendSessionMessages,
+  };
 };
