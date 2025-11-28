@@ -85,7 +85,13 @@ const setStatus = {
       option
         .setName("status")
         .setDescription("New status for the session")
-        .setRequired(true),
+        .setRequired(true)
+        .addChoices(
+          { name: "Ready", value: "ready" },
+          { name: "In Progress", value: "in-progress" },
+          { name: "Review", value: "review" },
+          { name: "Done", value: "done" }
+        ),
     ),
 
   async execute(interaction) {
@@ -97,12 +103,6 @@ const setStatus = {
       return;
     }
     const status = interaction.options.getString("status");
-    if (!["ready", "in-progress", "review", "done"].includes(status)) {
-      await interaction.reply({
-        content: `Invalid status '${status}'. Valid statuses are: ready, in-progress, review, done.`,
-      });
-      return;
-    }
     const discordInsiemeDao = await createDiscordInsiemeDao();
     const mainInsiemeDao = await createMainInsiemeDao();
     const sessionId = await discordInsiemeDao.getSessionIdByThread({
