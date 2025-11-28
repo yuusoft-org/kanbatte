@@ -6,6 +6,15 @@ export const isThreadChannel = (channel) => {
     channel.type === ChannelType.AnnouncementThread;
 }
 
+export const isMemberAllowed = (member, allowedRoleIds) => {
+  for (const roleId of allowedRoleIds) {
+    if (member.roles.cache.has(roleId)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export const splitTextForDiscord = (text, maxLength = 1500) => {
   if (text.length <= maxLength) {
     return [text];
@@ -92,7 +101,7 @@ const generateTodoText = (todos) => {
 const generateToolUseMessage = (contentPart) => {
   switch (contentPart.name) {
     case 'Bash':
-      return `🛠️ Running bash command, ${contentPart.input["description"]} \n\`\`\`sh${contentPart.input["command"]}\`\`\``;
+      return `🛠️ Running bash command, ${contentPart.input["description"]} \n\`\`\`sh\n${contentPart.input["command"]}\n\`\`\``;
     case 'Edit':
       // TODO: handle contentPart.input["old_string"] & contentPart.input["new_string"]
       return `🛠️ Editing file: ${contentPart.input["file_path"]}`;

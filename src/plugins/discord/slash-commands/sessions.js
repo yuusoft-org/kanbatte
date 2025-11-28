@@ -92,8 +92,7 @@ const setStatus = {
     const isThread = isThreadChannel(interaction.channel);
     if (!isThread) {
       await interaction.reply({
-        content: "This command can only be used in a thread channel.",
-        flags: MessageFlags.Ephemeral,
+        content: 'This command can only be used in a thread channel.',
       });
       return;
     }
@@ -101,7 +100,6 @@ const setStatus = {
     if (!["ready", "in-progress", "review", "done"].includes(status)) {
       await interaction.reply({
         content: `Invalid status '${status}'. Valid statuses are: ready, in-progress, review, done.`,
-        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -113,7 +111,6 @@ const setStatus = {
     if (!sessionId) {
       await interaction.reply({
         content: `No session found for this thread.`,
-        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -121,7 +118,6 @@ const setStatus = {
 
     await interaction.reply({
       content: `🔄 Session ${sessionId} status updating to: ${status}...`,
-      flags: MessageFlags.Ephemeral,
     });
   },
 };

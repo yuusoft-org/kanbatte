@@ -1,8 +1,9 @@
 import { createMainInsiemeDao } from "../../deps/mainDao.js";
-import { createDiscordInsiemeDao, setupDiscordDb } from "./deps/discordDao.js";
+import { createDiscordInsiemeDao, setupDiscordDb, createDiscordStore } from "./deps/discordDao.js";
 import { discordChannelAdd, discordChannelUpdate } from "./commands/channel.js";
 import { startDiscordBot } from "./bot.js"
 import { agentStart } from "../../commands/agent.js";
+import { setAllowedRoleIds, getAllowedRoleIds } from "./commands/config.js";
 
 export const setupDiscordCli = (deps) => {
   const { cmd } = deps;
@@ -17,14 +18,31 @@ export const setupDiscordCli = (deps) => {
       console.log("Discord plugin database setup completed!");
     });
 
-  cmd
-    .command("bot")
-    .argument("start")
+  const botCmd = cmd.command("bot").description("Discord bot management");
+  
+  botCmd
+    .command("start")
     .description("Start Discord bot")
     .action(async () => {
       const insiemeDao = await createMainInsiemeDao();
       startDiscordBot();
       agentStart({ insiemeDao });
+    });
+
+  botCmd
+    .command("allowed-roles")
+    .argument("[roles]", "Comma-separated list of allowed Discord role IDs")
+    .description("Set allowed Discord role IDs for bot commands")
+    .action(async (roles) => {
+      const discordStore = await createDiscordStore();
+      if (roles) {
+        const roleIds = roles.split(",").map((roleId) => roleId.trim());
+        await setAllowedRoleIds({ discordStore }, { roleIds });
+        console.log(`Allowed roles set to: ${roleIds.join(", ")}`);
+      } else {
+        const roleIds = await getAllowedRoleIds({ discordStore });
+        console.log(`Allowed roles: ${roleIds.join(", ")}`);
+      }
     });
 
   // Discord channel command group
