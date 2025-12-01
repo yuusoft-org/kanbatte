@@ -19,7 +19,7 @@ import { agent } from "./commands/agent.js";
 import { removeDirectory, copyDirectory, copyDirectoryOverwrite, processAllTaskFiles, generateTasksData } from "./utils/buildSite.js";
 import { setupDB, createMainInsiemeDao } from "./deps/mainDao.js";
 import { createDiscordInsiemeDao } from "./plugins/discord/deps/discordDao.js";
-//import { setupDiscordCli } from "./plugins/discord/cli.js";
+import { setupDiscordCli } from "./plugins/discord/cli.js";
 
 //Directly importing without the .env will cause the discord bot token error
 
@@ -52,8 +52,8 @@ const sessionService = createSessionService({ libsqlInfra, insiemeService });
 //TODO : one of the command rely on the discordInsiemeDao, we can't create it yet because
 //It will throw table not initialized error. When we have proper initialization flow we can uncomment this and
 //pass the proper service to the sessionCommands
-//const discordInsiemeDao = await createDiscordInsiemeDao();
-const sessionCommands = createSessionCommands({ sessionService, formatOutput, discordInsiemeDao: undefined });
+const discordInsiemeDao = await createDiscordInsiemeDao();
+const sessionCommands = createSessionCommands({ sessionService, formatOutput, discordInsiemeDao: discordInsiemeDao });
 
 
 //Setup db
@@ -70,8 +70,8 @@ dbCmd
     console.log("Database setup completed!");
   });
 
-//const discordCmd = program.command("discord");
-//setupDiscordCli({ cmd: discordCmd, createMainInsiemeDao });
+const discordCmd = program.command("discord");
+setupDiscordCli({ cmd: discordCmd, createMainInsiemeDao });
 
 
 // Task command group
