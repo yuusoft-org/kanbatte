@@ -10,13 +10,18 @@ import { generateId } from "./utils/helper.js";
 import { buildSite } from "@rettangoli/sites/cli";
 import { createTaskService } from "./services/taskService.js";
 import { createTaskCommands } from "./commands/task.js";
-import { addSession, updateSession, readSession, listSessions, addProject, updateProject, listProjects, getSession, appendSessionMessages } from "./commands/session.js";
+import { createSessionCommands } from "./commands/newSession.js";
+import { createLibsqlInfra } from "./infra/libsql.js";
+import { createInsieme } from "./infra/insieme.js";
+import { createSessionService } from "./services/sessionService.js";
 import { formatOutput } from "./utils/output.js";
 import { agent } from "./commands/agent.js";
 import { removeDirectory, copyDirectory, copyDirectoryOverwrite, processAllTaskFiles, generateTasksData } from "./utils/buildSite.js";
 import { setupDB, createMainInsiemeDao } from "./deps/mainDao.js";
 import { createDiscordInsiemeDao } from "./plugins/discord/deps/discordDao.js";
 import { setupDiscordCli } from "./plugins/discord/cli.js";
+
+//Directly importing without the .env will cause the discord bot token error
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = process.cwd();
@@ -35,15 +40,34 @@ program
 const taskService = createTaskService({ fs });
 const taskCommands = createTaskCommands({ taskService });
 
+const dbPath = join(projectRoot, "local.db");
+const migrationsPath = join(__dirname, "../db/migrations/*.sql");
+const libsqlInfra = createLibsqlInfra({ dbPath, migrationsPath });
+const insieme = createInsieme({
+  libsqlInfra,
+  eventLogTableName: "event_log",
+  kvStoreTableName: "kv_store",
+});
+const sessionService = createSessionService({ libsqlInfra, insieme });
+//TODO : one of the command rely on the discordInsiemeDao, we can't create it yet because
+//It will throw table not initialized error. When we have proper initialization flow we can uncomment this and
+//pass the proper service to the sessionCommands
+const discordInsiemeDao = await createDiscordInsiemeDao();
+const sessionCommands = createSessionCommands({ sessionService, formatOutput, discordInsiemeDao: discordInsiemeDao });
+
+
 //Setup db
 const dbCmd = program.command("db").description("Database operations");
 
 dbCmd
   .command("setup")
   .description("Set up database for kanbatte")
-  .action(() => {
+  .action(async () => {
     console.log("Setting up database for kanbatte");
-    setupDB();
+    libsqlInfra.init();
+    await libsqlInfra.migrateDb();
+    await insieme.init();
+    console.log("Database setup completed!");
   });
 
 const discordCmd = program.command("discord");
@@ -97,31 +121,21 @@ taskCmd
     const destDataDir = join(tempDir, "data");
     const finalSiteDir = join(projectRoot, "_site");
 
-    // Remove temporary directory if it exists
     removeDirectory(tempDir);
-
-    // Copy site template to temporary directory
     copyDirectory(templateDir, tempDir);
-
-    // Generate tasks.yaml data file
     generateTasksData(tasksDir, destDataDir);
 
-    // Process and copy task markdown files
     if (existsSync(tasksDir)) {
       processAllTaskFiles(tasksDir, destTasksDir);
     }
 
-    // Build the site in temporary directory
     await buildSite({ rootDir: tempDir });
 
-    // Copy built _site to project root (overwrite existing files)
     if (existsSync(join(tempDir, "_site"))) {
       copyDirectoryOverwrite(join(tempDir, "_site"), finalSiteDir);
     }
 
-    // Clean up temporary directory
     removeDirectory(tempDir);
-
     console.log("Task site built successfully!");
   });
 
@@ -135,16 +149,8 @@ sessionCmd
   .argument("<message>", "Initial message content")
   .requiredOption("-p, --project <projectId>", "Project ID")
   .action(async (message, options) => {
-    const insiemeDao = await createMainInsiemeDao();
-
-    const sessionDeps = {
-      serialize,
-      deserialize,
-      generateId,
-      insiemeDao
-    };
-    const session = await addSession(sessionDeps, { ...options, message });
-    console.log("Session created successfully! Session ID:", session.sessionId);
+    libsqlInfra.init();
+    await sessionCommands.addSession({ ...options, message });
   });
 
 // Session append command
@@ -154,15 +160,8 @@ sessionCmd
   .argument("<sessionId>", "Session ID")
   .requiredOption("-m, --messages <messages>", "Messages in JSON array format")
   .action(async (sessionId, options) => {
-    const insiemeDao = await createMainInsiemeDao();
-
-    const sessionDeps = {
-      serialize,
-      deserialize,
-      insiemeDao
-    };
-    await appendSessionMessages(sessionDeps, { sessionId, messages: options.messages });
-    console.log("Messages appended successfully to session:", sessionId);
+    libsqlInfra.init();
+    await sessionCommands.appendSessionMessages({ sessionId, messages: options.messages });
   });
 
 // Session status command
@@ -172,21 +171,11 @@ sessionCmd
   .argument("<sessionId>", "Session ID")
   .argument("[status]", "New status (optional)")
   .action(async (sessionId, status) => {
-    const insiemeDao = await createMainInsiemeDao();
-
-    const sessionDeps = {
-      serialize,
-      formatOutput,
-      insiemeDao
-    };
-
+    libsqlInfra.init();
     if (status) {
-      // Update status
-      const result = await updateSession(sessionDeps, { sessionId, status });
-      console.log("Session status updated successfully!", { sessionId, status: result.status });
+      await sessionCommands.updateSession({ sessionId, status });
     } else {
-      // Get current status
-      const session = await getSession(sessionDeps, { sessionId });
+      const session = await sessionCommands.getSession({ sessionId });
       console.log(session.status);
     }
   });
@@ -197,19 +186,10 @@ sessionCmd
   .description("List sessions in a project")
   .requiredOption("-p, --project <projectId>", "Project ID")
   .option("-s, --status <status>", "Filter by status")
+  .option("-f, --format <format>", "Output format: table, json, markdown", "table")
   .action(async (options) => {
-    const insiemeDao = await createMainInsiemeDao();
-
-    const sessionDeps = {
-      insiemeDao,
-      formatOutput,
-    };
-    const sessions = await listSessions(sessionDeps, options);
-    if (sessions && sessions.length > 0) {
-      formatOutput(sessions, options.format || "table", "list");
-    } else {
-      console.log("No sessions found for this project.");
-    }
+    libsqlInfra.init();
+    await sessionCommands.listSessions(options);
   });
 
 // Session view command
@@ -219,13 +199,8 @@ sessionCmd
   .argument("<sessionId>", "Session ID")
   .option("-f, --format <format>", "Output format: table, json, markdown", "markdown")
   .action(async (sessionId, options) => {
-    const insiemeDao = await createMainInsiemeDao();
-
-    const sessionDeps = {
-      insiemeDao,
-      formatOutput,
-    };
-    readSession(sessionDeps, sessionId, options.format);
+    libsqlInfra.init();
+    await sessionCommands.readSession(sessionId, options.format);
   });
 
 // Session project command group
@@ -240,19 +215,13 @@ sessionProjectCmd
   .requiredOption("-r, --repository <repository>", "Repository URL")
   .option("-d, --description <description>", "Project description")
   .action(async (options) => {
-    const insiemeDao = await createMainInsiemeDao();
-
-    const projectDeps = {
-      serialize,
-      insiemeDao
-    };
-    const project = await addProject(projectDeps, {
+    libsqlInfra.init();
+    await sessionCommands.addProject({
       projectId: options.project,
       name: options.name,
       repository: options.repository,
       description: options.description
     });
-    console.log("Project created successfully!", { projectId: project.projectId });
   });
 
 // Session project update command
@@ -264,18 +233,13 @@ sessionProjectCmd
   .option("-r, --repository <repository>", "Repository URL")
   .option("-d, --description <description>", "Project description")
   .action(async (options) => {
-    const insiemeDao = await createMainInsiemeDao();
-
-    const projectDeps = {
-      serialize,
-      insiemeDao
-    };
-    const updateData = { projectId: options.project };
-    if (options.name !== undefined) updateData.name = options.name;
-    if (options.repository !== undefined) updateData.repository = options.repository;
-    if (options.description !== undefined) updateData.description = options.description;
-    const result = await updateProject(projectDeps, updateData);
-    console.log("Project updated successfully!", { projectId: result.projectId });
+    libsqlInfra.init();
+    await sessionCommands.updateProject({
+      projectId: options.project,
+      name: options.name,
+      repository: options.repository,
+      description: options.description,
+    });
   });
 
 // Session project list command
@@ -283,18 +247,10 @@ sessionProjectCmd
   .command("list")
   .description("List all projects")
   .action(async () => {
-    const insiemeDao = await createMainInsiemeDao();
-    const discordInsiemeDao = await createDiscordInsiemeDao();
-    const projects = await listProjects({ insiemeDao, discordInsiemeDao });
-    if (projects.length > 0) {
-      console.log("Projects:");
-      console.table(projects);
-    } else {
-      console.log("No projects found.");
-    }
+    libsqlInfra.init();
+    await sessionCommands.listProjects();
   });
 
-// Agent command group
 const agentCmd = program.command("agent").description("Control AI agents");
 
 agentCmd
