@@ -1,5 +1,4 @@
 import { createRepository } from "insieme";
-import { serialize, deserialize } from "../utils/serialization.js";
 
 export const createInsieme = (deps) => {
   const { libsqlInfra } = deps;
@@ -25,24 +24,16 @@ export const createInsieme = (deps) => {
           allEvents.push(...eventsForPartition);
         }
 
-        return allEvents.map((event) => ({
-          ...event,
-          payload: deserialize(event.payload),
-        }));
+        return allEvents;
       },
       appendEvent: async (event) => {
-        const eventWithSerializedPayload = {
-          ...event,
-          payload: serialize(event.payload),
-        };
-        await libsqlInfra.appendEvent(eventWithSerializedPayload);
+        await libsqlInfra.appendEvent(event);
       },
       get: async (key) => {
-        const data = await libsqlInfra.get(key);
-        return data ? deserialize(data) : null;
+        return await libsqlInfra.get(key);
       },
       set: async (key, value) => {
-        await libsqlInfra.set(key, serialize(value));
+        await libsqlInfra.set(key, value);
       },
     };
   };

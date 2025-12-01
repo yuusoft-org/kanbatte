@@ -54,7 +54,7 @@ export const createSessionService = (deps) => {
       }
     }
 
-    await libsqlInfra.setView(viewKey, serialize(state), lastEventId);
+    await libsqlInfra.setView(viewKey, state, lastEventId);
     return state;
   };
 
@@ -126,18 +126,16 @@ export const createSessionService = (deps) => {
 
   const getViewBySessionId = async (payload) => {
     const { sessionId } = payload;
-    const data = await libsqlInfra.getView(`session:${sessionId}`);
-    return data ? deserialize(data) : null;
+    return await libsqlInfra.getView(`session:${sessionId}`);
   };
 
   const getViewsByProjectId = async (payload) => {
     const { projectId, statuses } = payload;
     const allSessions = await libsqlInfra.findViewsByPrefix(`session:${projectId}-`);
-    const deserializedSessions = allSessions.map(s => deserialize(s));
     if (!statuses || statuses.length === 0) {
-      return deserializedSessions;
+      return allSessions;
     }
-    return deserializedSessions.filter((session) => statuses.includes(session.status));
+    return allSessions.filter((session) => statuses.includes(session.status));
   };
 
   const getNextSessionNumber = async (payload) => {
@@ -146,8 +144,7 @@ export const createSessionService = (deps) => {
     if (allSessions.length === 0) {
       return 1;
     }
-    const deserializedSessions = allSessions.map(s => deserialize(s));
-    const maxNumber = deserializedSessions.reduce((max, session) => {
+    const maxNumber = allSessions.reduce((max, session) => {
       const match = session.sessionId.match(/^.+-(\d+)$/);
       const num = match ? parseInt(match[1], 10) : 0;
       return num > max ? num : max;
@@ -158,19 +155,16 @@ export const createSessionService = (deps) => {
   const getSessionsByStatus = async (payload) => {
     const { status } = payload;
     const allSessions = await libsqlInfra.findViewsByPrefix("session:");
-    const deserializedSessions = allSessions.map(s => deserialize(s));
-    return deserializedSessions.filter((session) => session.status === status);
+    return allSessions.filter((session) => session.status === status);
   };
 
   const getProjectById = async (payload) => {
     const { projectId } = payload;
-    const data = await libsqlInfra.getView(`project:${projectId}`);
-    return data ? deserialize(data) : null;
+    return await libsqlInfra.getView(`project:${projectId}`);
   };
 
   const listProjects = async () => {
-    const projects = await libsqlInfra.findViewsByPrefix("project:");
-    return projects.map(p => deserialize(p));
+    return await libsqlInfra.findViewsByPrefix("project:");
   };
 
   const fetchRecentSessionEvents = async (payload) => {
