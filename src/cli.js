@@ -41,12 +41,19 @@ const taskService = createTaskService({ fs });
 const taskCommands = createTaskCommands({ taskService });
 
 const dbPath = join(projectRoot, "local.db");
-const migrationsPath = join(__dirname, "../db/migrations/*.sql");
-const libsqlInfra = createLibsqlInfra({ dbPath, migrationsPath });
+const mainMigrationsPath = join(__dirname, "../db/migrations/*.sql");
+const libsqlInfra = createLibsqlInfra({
+  dbPath,
+  migrationsPath: mainMigrationsPath,
+  tableNames: {
+    eventLog: "event_log",
+    view: "view",
+    kvStore: "kv_store",
+  },
+});
+
 const insieme = createInsieme({
   libsqlInfra,
-  eventLogTableName: "event_log",
-  kvStoreTableName: "kv_store",
 });
 const sessionService = createSessionService({ libsqlInfra, insieme });
 //TODO : one of the command rely on the discordInsiemeDao, we can't create it yet because
