@@ -1,8 +1,8 @@
 import { serialize, deserialize } from "../utils/serialization.js";
 
 export const createSessionService = (deps) => {
-  const { insiemeService, libsqlInfra } = deps;
-  const { repository } = insiemeService;
+  const { insieme, libsqlInfra } = deps;
+  const { repository } = insieme;
 
   const _computeAndSaveView = async (id) => {
     const events = await repository.getEventsAsync({ partition: [id] });

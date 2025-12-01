@@ -43,12 +43,12 @@ const taskCommands = createTaskCommands({ taskService });
 const dbPath = join(projectRoot, "local.db");
 const migrationsPath = join(__dirname, "../db/migrations/*.sql");
 const libsqlInfra = createLibsqlInfra({ dbPath, migrationsPath });
-const insiemeService = createInsieme({
+const insieme = createInsieme({
   libsqlInfra,
   eventLogTableName: "event_log",
   kvStoreTableName: "kv_store",
 });
-const sessionService = createSessionService({ libsqlInfra, insiemeService });
+const sessionService = createSessionService({ libsqlInfra, insieme });
 //TODO : one of the command rely on the discordInsiemeDao, we can't create it yet because
 //It will throw table not initialized error. When we have proper initialization flow we can uncomment this and
 //pass the proper service to the sessionCommands
@@ -66,7 +66,7 @@ dbCmd
     console.log("Setting up database for kanbatte");
     libsqlInfra.init();
     await libsqlInfra.migrateDb();
-    await insiemeService.init();
+    await insieme.init();
     console.log("Database setup completed!");
   });
 
