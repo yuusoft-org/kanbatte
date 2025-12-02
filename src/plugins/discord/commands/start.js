@@ -55,7 +55,9 @@ const handleSessionEvents = async (deps, payload) => {
     const mergedMessage = messageQueue.join('\n\n');
     const splitMessages = splitTextForDiscord(mergedMessage);
     for (const msg of splitMessages) {
-      await thread.send(msg);
+      // Replace sequences of 3 or more consecutive newlines with exactly 2 newlines
+      const normalizedMsg = msg.replace(/\n{3,}/g, '\n\n');
+      await thread.send(normalizedMsg);
     }
     if (shouldLockThread) {
       await thread.setLocked(true);
