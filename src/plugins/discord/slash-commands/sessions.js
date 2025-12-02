@@ -28,12 +28,12 @@ const queueSession = {
     const channelId = interaction.channel.id;
     const project = await discordService.getProjectIdByChannel({ channelId });
 
-    // if (!project) {
-    //   await interaction.editReply({
-    //     content: `This channel is not configured for a project. Use the \`discord channel add\` command.`,
-    //   });
-    //   return;
-    // }
+    if (!project) {
+      await interaction.editReply({
+        content: `This channel is not configured for a project. Use the \`discord channel add\` command.`,
+      });
+      return;
+    }
 
     const message = interaction.options.getString("message");
     const sessionNumber = await sessionService.getNextSessionNumber({ projectId: project });
