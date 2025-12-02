@@ -8,7 +8,7 @@ import { fileURLToPath } from "url";
 import { buildSite } from "@rettangoli/sites/cli";
 import { createTaskService } from "./services/taskService.js";
 import { createTaskCommands } from "./commands/task.js";
-import { createSessionCommands } from "./commands/newSession.js";
+import { createSessionCommands } from "./commands/session.js";
 import { createLibsqlInfra } from "./infra/libsql.js";
 import { createInsieme } from "./infra/insieme.js";
 import { createSessionService } from "./services/sessionService.js";
