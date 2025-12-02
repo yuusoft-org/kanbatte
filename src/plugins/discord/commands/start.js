@@ -57,7 +57,9 @@ const handleSessionEvents = async (deps, payload) => {
     for (const msg of splitMessages) {
       // Replace sequences of 3 or more consecutive newlines with exactly 2 newlines
       const normalizedMsg = msg.replace(/\n{3,}/g, '\n\n');
-      await thread.send(normalizedMsg);
+      if (normalizedMsg && normalizedMsg.trim().length > 0) {
+        await thread.send(normalizedMsg);
+      }
     }
     if (shouldLockThread) {
       await thread.setLocked(true);

@@ -16,6 +16,9 @@ export const isMemberAllowed = (member, allowedRoleIds) => {
 }
 
 export const splitTextForDiscord = (text, maxLength = 1500) => {
+  if (!text || text.trim().length === 0) {
+    return [];
+  }
   if (text.length <= maxLength) {
     return [text];
   }
