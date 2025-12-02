@@ -83,7 +83,6 @@ export const startDiscordBot = (services) => {
       if (!isMemberAllowed(interaction.member, roles)) {
         await interaction.reply({
           content: "❌ You don't have permission to use this command.",
-          ephemeral: true,
         });
         return;
       }
@@ -93,12 +92,10 @@ export const startDiscordBot = (services) => {
       if (interaction.replied || interaction.deferred) {
         await interaction.followUp({
           content: 'There was an error while executing this command!',
-          ephemeral: true,
         });
       } else {
         await interaction.reply({
-          content: 'There was an error while executing this command!',
-          ephemeral: true,
+          content: 'There was an error while executing this command!'
         });
       }
     }

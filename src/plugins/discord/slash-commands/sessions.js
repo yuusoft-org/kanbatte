@@ -87,8 +87,7 @@ const setStatus = {
 
     if (!isThreadChannel(interaction.channel)) {
       await interaction.reply({
-        content: 'This command can only be used in a thread channel.',
-        ephemeral: true,
+        content: 'This command can only be used in a thread channel.'
       });
       return;
     }
@@ -100,8 +99,7 @@ const setStatus = {
 
     if (!sessionId) {
       await interaction.reply({
-        content: `No session found for this thread.`,
-        ephemeral: true,
+        content: `No session found for this thread.`
       });
       return;
     }
