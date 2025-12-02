@@ -2,7 +2,6 @@ import { Client, Collection, Events, GatewayIntentBits } from 'discord.js';
 import { isThreadChannel, isMemberAllowed } from './utils';
 import * as sessionsSlashCommands from "./slash-commands/sessions";
 import { createStartCommands } from './commands/start.js';
-import { createSessionService } from '../../services/sessionService.js';
 
 const token = process.env.DISCORD_BOT_TOKEN;
 

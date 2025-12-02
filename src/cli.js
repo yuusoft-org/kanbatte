@@ -87,6 +87,7 @@ dbCmd
 const discordCmd = program.command("discord");
 setupDiscordCli({
   cmd: discordCmd,
+  libsqlInfra,
   discordLibsqlInfra,
   sessionService,
 });

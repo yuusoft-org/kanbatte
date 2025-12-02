@@ -5,7 +5,7 @@ import { createStartCommands } from "./commands/start.js";
 import { startDiscordBot } from "./bot.js";
 
 export const setupDiscordCli = (deps) => {
-  const { cmd, discordLibsqlInfra, sessionService } = deps;
+   const { cmd, discordLibsqlInfra, sessionService, libsqlInfra } = deps;
 
   const getDiscordServices = () => {
     discordLibsqlInfra.init();
@@ -36,6 +36,7 @@ export const setupDiscordCli = (deps) => {
     .command("start")
     .description("Start Discord bot")
     .action(async () => {
+      libsqlInfra.init();
       const { discordService } = getDiscordServices();
       
       startDiscordBot({
