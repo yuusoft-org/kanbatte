@@ -80,6 +80,34 @@ export const getSessionIdByThread = async (deps, payload) => {
   return result.rows[0].session_id;
 }
 
+export const addUserEmailRecord = async (deps, payload) => {
+  const { db } = deps;
+  const { userId, userName, email } = payload;
+
+  await db.execute({
+    sql: "INSERT OR REPLACE INTO discord_user_email_record (user_id, user_name, email) VALUES (?, ?, ?)",
+    args: [userId, userName, email],
+  });
+}
+
+export const getInfoByUserId = async (deps, payload) => {
+  const { db } = deps;
+  const { userId } = payload;
+  
+  const result = await db.execute({
+    sql: "SELECT user_name, email FROM discord_user_email_record WHERE user_id = ?",
+    args: [userId],
+  });
+
+  if (result.rows.length === 0) {
+    return null;
+  }
+  return {
+    userName: result.rows[0].user_name,
+    email: result.rows[0].email,
+  };
+}
+
 export const getThreadIdBySession = async (deps, payload) => {
   const { db } = deps;
   const { sessionId } = payload;

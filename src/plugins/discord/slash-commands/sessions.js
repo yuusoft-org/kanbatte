@@ -2,7 +2,7 @@ import { SlashCommandBuilder, MessageFlags } from "discord.js";
 import { isThreadChannel } from "../utils";
 import { createMainInsiemeDao } from "../../../deps/mainDao";
 import { createDiscordInsiemeDao } from "../deps/discordDao";
-import { addSession } from "../../../commands/session";
+import { addSession, appendSessionMessages } from "../../../commands/session";
 
 // export const ping = {
 //   data: new SlashCommandBuilder()
@@ -122,7 +122,82 @@ const setStatus = {
   },
 };
 
+const requestCommit = {
+  data: new SlashCommandBuilder()
+    .setName("request-commit")
+    .setDescription("Append request message to submit a commit for the current session thread")
+    .addStringOption((option) =>
+      option
+        .setName("message")
+        .setDescription("Commit message")
+        .setRequired(false),
+    )
+    .addUserOption((option) =>
+      option
+        .setName("author")
+        .setDescription("Git author (overrides bound user)")
+        .setRequired(false),
+    ),
+
+  async execute(interaction) {
+    const isThread = isThreadChannel(interaction.channel);
+    if (!isThread) {
+      await interaction.reply({
+        content: 'This command can only be used in a thread channel.',
+      });
+      return;
+    }
+
+    const discordInsiemeDao = await createDiscordInsiemeDao();
+    const insiemeDao = await createMainInsiemeDao();
+    const sessionId = await discordInsiemeDao.getSessionIdByThread({ threadId: interaction.channel.id });
+    
+    const message = interaction.options.getString("message");
+    const messagePrompt = message ? `Commit message is: "${message}".` : ``;
+
+    const author = interaction.options.getUser("author");
+    const authorInfo = author ? await discordInsiemeDao.getInfoByUserId({ userId: author.id }) : await discordInsiemeDao.getInfoByUserId({ userId: interaction.user.id });
+    if(!authorInfo) {
+      await interaction.reply(`Could not find author info for the specified user.`);
+      return;
+    }
+    const authorPrompt = `Author is: ${authorInfo.userName} <${authorInfo.email}>.`;
+
+    const prompt = `Save all changes, check new branch if current branch is main, submit a commit. ${messagePrompt} ${authorPrompt} Do not push for now.`.trim();
+    await appendSessionMessages({ insiemeDao }, { sessionId, messages: `[{"role": "user","content": "${prompt}"}]` });
+
+    await interaction.reply(`Your commit request has been added to session ${sessionId}.`);
+  }
+};
+
+const requestNewPR = {
+  data: new SlashCommandBuilder()
+    .setName("request-new-pr")
+    .setDescription("Append request message to create a new pull request for the current session thread"),
+  async execute(interaction) {
+    const isThread = isThreadChannel(interaction.channel);
+    if (!isThread) {
+      await interaction.reply({
+        content: 'This command can only be used in a thread channel.',
+      });
+      return;
+    }
+
+    const discordInsiemeDao = await createDiscordInsiemeDao();
+    const insiemeDao = await createMainInsiemeDao();
+    const sessionId = await discordInsiemeDao.getSessionIdByThread({ threadId: interaction.channel.id });
+    
+    const prompt = `Create PR. don't add any coauthors and dont mention claude or any AI. keep both commit message and PR content minimal and simple.`.trim();
+    await appendSessionMessages({ insiemeDao }, { sessionId, messages: `[{"role": "user","content": "${prompt}"}]` });
+
+    await interaction.reply(`Your PR request has been added to session ${sessionId}.`);
+  }
+};
+
+
 export default {
   "queue-session": queueSession,
   "set-status": setStatus,
+  "request-commit": requestCommit,
+  "request-new-pr": requestNewPR,
 };
