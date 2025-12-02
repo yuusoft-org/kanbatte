@@ -1,5 +1,5 @@
 export const createSessionCommands = (deps) => {
-  const { sessionService, formatOutput, discordInsiemeDao } = deps;
+  const { sessionService, formatOutput, discordLibsql } = deps;
 
   const addSession = async (payload) => {
     if (!payload.message) {
@@ -140,10 +140,8 @@ export const createSessionCommands = (deps) => {
     console.log("Project updated successfully!", { projectId: result.projectId });
   };
 
-   const listProjects = async (deps) => {
-    const { discordLibsql } = deps;
+  const listProjects = async () => {
     const mainProjects = await sessionService.listProjects();
-
     const discordProjects = await discordLibsql.findViewsByPrefix("project:");
     const discordProjectMap = new Map(discordProjects.map(p => [p.projectId, p]));
 
@@ -153,7 +151,8 @@ export const createSessionCommands = (deps) => {
     });
 
     if (projects.length > 0) {
-      const displayProjects = projects.map(({ name, repository, description, channel }) => ({
+      const displayProjects = projects.map(({ projectId, name, repository, description, channel }) => ({
+        projectId,
         name,
         repository,
         description,

@@ -52,7 +52,6 @@ const insieme = createInsieme({
   libsqlInfra,
 });
 const sessionService = createSessionService({ libsqlInfra, insieme });
-const sessionCommands = createSessionCommands({ sessionService, formatOutput });
 
 const discordMigrationsPath = join(__dirname, "plugins/discord/db/migrations/*.sql");
 const discordLibsqlInfra = createLibsqlInfra({
@@ -64,6 +63,12 @@ const discordLibsqlInfra = createLibsqlInfra({
     kvStore: "discord_kv_store",
     sessionThreadRecord: "discord_session_thread_record",
   },
+});
+
+const sessionCommands = createSessionCommands({
+  sessionService,
+  formatOutput,
+  discordLibsql: discordLibsqlInfra,
 });
 
 const dbCmd = program.command("db").description("Database operations");
@@ -82,7 +87,6 @@ dbCmd
 const discordCmd = program.command("discord");
 setupDiscordCli({
   cmd: discordCmd,
-  libsqlInfra,
   discordLibsqlInfra,
   sessionService,
 });
@@ -263,7 +267,7 @@ sessionProjectCmd
   .action(async () => {
     libsqlInfra.init();
     discordLibsqlInfra.init();
-    await sessionCommands.listProjects({ discordLibsql: discordLibsqlInfra });
+    await sessionCommands.listProjects();
   });
 
 const agentCmd = program.command("agent").description("Control AI agents");
