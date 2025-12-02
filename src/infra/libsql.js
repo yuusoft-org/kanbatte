@@ -119,18 +119,22 @@ export const createLibsqlInfra = (config) => {
     }
   };
   
-  const getAllEventsSince = async (lastOffsetId) => {
+   const getAllEventsSince = async (lastOffsetId) => {
     checkInitialized();
     const result = await db.execute({
       sql: `SELECT id, payload FROM ${eventLog} WHERE id > ? ORDER BY id`,
       args: [lastOffsetId],
     });
-    return result.rows.map((row) => {
+    return result.rows.flatMap((row) => {
       const outerPayload = deserialize(row.payload);
-      return {
+      if (!outerPayload?.value?.eventData) {
+        return [];
+      }
+
+      return [{
         id: row.id,
         ...deserialize(outerPayload.value.eventData),
-      };
+      }];
     });
   };
 
