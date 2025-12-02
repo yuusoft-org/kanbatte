@@ -163,7 +163,8 @@ const requestCommit = {
     }
     const authorPrompt = `Author is: ${authorInfo.userName} <${authorInfo.email}>.`;
 
-    const prompt = `Save all changes, check new branch if current branch is main, submit a commit. ${messagePrompt} ${authorPrompt} Do not push for now.`.trim();
+    const prompt = `Save all changes, check new branch if current branch is main, submit a commit. ${messagePrompt} ${authorPrompt} Do not change git config. Do not push for now. Don't add any coauthors and dont mention claude or any AI. Keep commit message minimal and simple.
+`.trim();
     await appendSessionMessages({ insiemeDao }, { sessionId, messages: `[{"role": "user","content": "${prompt}"}]` });
 
     await interaction.reply(`Your commit request has been added to session ${sessionId}.`);
@@ -187,7 +188,7 @@ const requestNewPR = {
     const insiemeDao = await createMainInsiemeDao();
     const sessionId = await discordInsiemeDao.getSessionIdByThread({ threadId: interaction.channel.id });
     
-    const prompt = `Create PR. don't add any coauthors and dont mention claude or any AI. keep both commit message and PR content minimal and simple.`.trim();
+    const prompt = `Create PR. don't add any coauthors and dont mention claude or any AI. keep PR content minimal and simple.`.trim();
     await appendSessionMessages({ insiemeDao }, { sessionId, messages: `[{"role": "user","content": "${prompt}"}]` });
 
     await interaction.reply(`Your PR request has been added to session ${sessionId}.`);
