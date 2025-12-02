@@ -5,8 +5,6 @@ import * as fs from "fs";
 import { readFileSync, existsSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
-import { serialize, deserialize } from "./utils/serialization.js";
-import { generateId } from "./utils/helper.js";
 import { buildSite } from "@rettangoli/sites/cli";
 import { createTaskService } from "./services/taskService.js";
 import { createTaskCommands } from "./commands/task.js";
@@ -17,11 +15,8 @@ import { createSessionService } from "./services/sessionService.js";
 import { formatOutput } from "./utils/output.js";
 import { agent } from "./commands/agent.js";
 import { removeDirectory, copyDirectory, copyDirectoryOverwrite, processAllTaskFiles, generateTasksData } from "./utils/buildSite.js";
-import { setupDB, createMainInsiemeDao } from "./deps/mainDao.js";
-import { createDiscordInsiemeDao } from "./plugins/discord/deps/discordDao.js";
+import { createMainInsiemeDao } from "./deps/mainDao.js";
 import { setupDiscordCli } from "./plugins/discord/cli.js";
-
-//Directly importing without the .env will cause the discord bot token error
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = process.cwd();
@@ -41,6 +36,8 @@ const taskService = createTaskService({ fs });
 const taskCommands = createTaskCommands({ taskService });
 
 const dbPath = join(projectRoot, "local.db");
+
+// Main App Infrastructure
 const mainMigrationsPath = join(__dirname, "../db/migrations/*.sql");
 const libsqlInfra = createLibsqlInfra({
   dbPath,
@@ -51,19 +48,24 @@ const libsqlInfra = createLibsqlInfra({
     kvStore: "kv_store",
   },
 });
-
 const insieme = createInsieme({
   libsqlInfra,
 });
 const sessionService = createSessionService({ libsqlInfra, insieme });
-//TODO : one of the command rely on the discordInsiemeDao, we can't create it yet because
-//It will throw table not initialized error. When we have proper initialization flow we can uncomment this and
-//pass the proper service to the sessionCommands
-const discordInsiemeDao = await createDiscordInsiemeDao();
-const sessionCommands = createSessionCommands({ sessionService, formatOutput, discordInsiemeDao: discordInsiemeDao });
+const sessionCommands = createSessionCommands({ sessionService, formatOutput });
 
+const discordMigrationsPath = join(__dirname, "plugins/discord/db/migrations/*.sql");
+const discordLibsqlInfra = createLibsqlInfra({
+  dbPath,
+  migrationsPath: discordMigrationsPath,
+  tableNames: {
+    eventLog: "discord_event_log",
+    view: "discord_view",
+    kvStore: "discord_kv_store",
+    sessionThreadRecord: "discord_session_thread_record",
+  },
+});
 
-//Setup db
 const dbCmd = program.command("db").description("Database operations");
 
 dbCmd
@@ -78,7 +80,12 @@ dbCmd
   });
 
 const discordCmd = program.command("discord");
-setupDiscordCli({ cmd: discordCmd, createMainInsiemeDao });
+setupDiscordCli({
+  cmd: discordCmd,
+  libsqlInfra,
+  discordLibsqlInfra,
+  sessionService,
+});
 
 
 // Task command group
@@ -255,7 +262,8 @@ sessionProjectCmd
   .description("List all projects")
   .action(async () => {
     libsqlInfra.init();
-    await sessionCommands.listProjects();
+    discordLibsqlInfra.init();
+    await sessionCommands.listProjects({ discordLibsql: discordLibsqlInfra });
   });
 
 const agentCmd = program.command("agent").description("Control AI agents");

@@ -84,6 +84,15 @@ export const createDiscordService = (deps) => {
     return await discordLibsql.getThreadIdBySession(payload);
   };
 
+  const setAllowedRoleIds = async (payload) => {
+    const { roleIds } = payload;
+    await discordLibsql.set("allowedRoleIds", roleIds);
+  };
+
+  const getAllowedRoleIds = async () => {
+    return (await discordLibsql.get("allowedRoleIds")) || [];
+  };
+
   return {
     addChannel,
     updateChannel,
@@ -92,5 +101,7 @@ export const createDiscordService = (deps) => {
     addSessionThreadRecord,
     getSessionIdByThread,
     getThreadIdBySession,
+    setAllowedRoleIds,
+    getAllowedRoleIds,
   };
 };

@@ -140,23 +140,27 @@ export const createSessionCommands = (deps) => {
     console.log("Project updated successfully!", { projectId: result.projectId });
   };
 
-  const listProjects = async () => {
+   const listProjects = async (deps) => {
+    const { discordLibsql } = deps;
     const mainProjects = await sessionService.listProjects();
 
-    // TODO: The discordInsiemeDao will be replaced by a discordService in the future.
-    let discordProjects = [];
-    if (discordInsiemeDao) {
-      discordProjects = await discordInsiemeDao.listProjects();
-    }
+    const discordProjects = await discordLibsql.findViewsByPrefix("project:");
+    const discordProjectMap = new Map(discordProjects.map(p => [p.projectId, p]));
 
     const projects = mainProjects.map(p => {
-      const discordData = discordProjects.find(dp => dp.projectId === p.projectId);
-      return { ...p, ...discordData };
+      const discordData = discordProjectMap.get(p.projectId);
+      return { ...p, channel: discordData ? discordData.channel : undefined };
     });
 
     if (projects.length > 0) {
+      const displayProjects = projects.map(({ name, repository, description, channel }) => ({
+        name,
+        repository,
+        description,
+        channel,
+      }));
       console.log("Projects:");
-      console.table(projects);
+      console.table(displayProjects);
     } else {
       console.log("No projects found.");
     }
