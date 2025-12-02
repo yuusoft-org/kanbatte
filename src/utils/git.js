@@ -37,6 +37,8 @@ const ensureRepo = async (gitUrl, repoPath) => {
     await access(join(repoPath, ".git"));
     console.log(`Repo exists, fetching latest...`);
     await execAsync("git fetch origin", { cwd: repoPath });
+    console.log(`Updating main branch from origin...`);
+    await execAsync("git fetch origin main:main", { cwd: repoPath });
   } catch {
     console.log(`Cloning ${gitUrl}...`);
     const parent = dirname(repoPath);
