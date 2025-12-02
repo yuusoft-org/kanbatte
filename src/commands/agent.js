@@ -2,7 +2,8 @@ import { query } from "@anthropic-ai/claude-agent-sdk";
 import { setupWorktree } from "../utils/git.js";
 
 export const agent = async (deps) => {
-  const readySessions = await deps.insiemeDao.getSessionsByStatus({ status: "ready" });
+  const { sessionService } = deps;
+  const readySessions = await sessionService.getSessionsByStatus({ status: "ready" });
 
   if (readySessions.length === 0) {
     console.log("No sessions with status 'ready' found");
@@ -17,13 +18,13 @@ export const agent = async (deps) => {
     console.log(`Messages count: ${session.messages.length}`);
 
     try {
-      await deps.insiemeDao.updateSessionStatus({
+      await sessionService.updateSessionStatus({
         sessionId: session.sessionId,
         status: "in-progress"
       });
 
       // Get project repository
-      const project = await deps.insiemeDao.getProjectById({ projectId: session.project });
+      const project = await sessionService.getProjectById({ projectId: session.project });
       if (!project || !project.repository) {
         throw new Error(`No repository found for project ${session.project}`);
       }
@@ -63,37 +64,24 @@ Please continue working on this session for project "${session.project}". You ca
         for await (const message of result) {
           // Collect all content from the streaming response
           if (message.message?.content) {
-            //assistantContent.push(...message.message.content);
-            await deps.insiemeDao.appendSessionMessages({
+            await sessionService.appendSessionMessages({
               sessionId: session.sessionId,
               messages: [{
                 // Doc: https://platform.claude.com/docs/en/agent-sdk/typescript#message-types
                 role: message.message.role,
-                content: message.message.content, // Content array in standard format
+                content: message.message.content,
                 timestamp: Date.now()
               }]
             });
           }
-
-          // Display text content to console
-          // if (message.type === "assistant" && message.message?.content) {
-          //   const textContent = message.message.content
-          //     .filter(c => c.type === "text")
-          //     .map(c => c.text)
-          //     .join("");
-          //   if (textContent) {
-          //     console.log(textContent);
-          //   }
-          // }
         }
-
 
       } catch (error) {
         console.warn(`Error processing session ${session.sessionId}:`, error);
       }
 
       // Always set status to review (both success and error cases)
-      await deps.insiemeDao.updateSessionStatus({
+      await sessionService.updateSessionStatus({
         sessionId: session.sessionId,
         status: "review"
       });

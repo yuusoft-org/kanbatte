@@ -277,8 +277,8 @@ agentCmd
   .command("start")
   .description("Start agent to process ready sessions")
   .action(async () => {
-    const insiemeDao = await createMainInsiemeDao();
-    await agent({ insiemeDao });
+    libsqlInfra.init();
+    await agent({ sessionService });
   });
 
 // Parse command line arguments

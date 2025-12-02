@@ -1,11 +1,11 @@
 import { createDiscordInsieme } from "./infra/discordInsieme.js";
 import { createDiscordService } from "./services/discordService.js";
 import { createChannelCommands } from "./commands/channel.js";
-import { createStartCommands } from "./commands/start.js";
 import { startDiscordBot } from "./bot.js";
+import { agentStart } from "../../commands/agent.js";
 
 export const setupDiscordCli = (deps) => {
-   const { cmd, discordLibsqlInfra, sessionService, libsqlInfra } = deps;
+  const { cmd, discordLibsqlInfra, sessionService, libsqlInfra } = deps;
 
   const getDiscordServices = () => {
     discordLibsqlInfra.init();
@@ -44,6 +44,7 @@ export const setupDiscordCli = (deps) => {
         discordService,
         discordLibsql: discordLibsqlInfra,
       });
+      agentStart({ sessionService });
     });
 
   botCmd
