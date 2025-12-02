@@ -122,9 +122,9 @@ const setStatus = {
   },
 };
 
-const requestNewPR = {
+const requestPR = {
   data: new SlashCommandBuilder()
-    .setName("request-new-pr")
+    .setName("request-pr")
     .setDescription("Append request message to commit changes and create a new pull request")
     .addStringOption((option) =>
       option
@@ -152,18 +152,14 @@ const requestNewPR = {
     const insiemeDao = await createMainInsiemeDao();
     const sessionId = await discordInsiemeDao.getSessionIdByThread({ threadId: interaction.channel.id });
     
-    const message = interaction.options.getString("message");
-    const messagePrompt = message ? `Commit message is: "${message}".` : ``;
-
-    const author = interaction.options.getUser("author");
-    const authorInfo = author ? await discordInsiemeDao.getInfoByUserId({ userId: author.id }) : await discordInsiemeDao.getInfoByUserId({ userId: interaction.user.id });
+    const authorInfo = await discordInsiemeDao.getInfoByUserId({ userId: interaction.user.id });
     if(!authorInfo) {
       await interaction.reply(`Could not find author info for the specified user.`);
       return;
     }
     const authorPrompt = `Author is: ${authorInfo.name} <${authorInfo.email}>.`;
 
-    const prompt = `Save all changes, submit a commit, then create a PR. ${messagePrompt} ${authorPrompt} Do not change git config. Don't add any coauthors and dont mention claude or any AI. Keep commit message and PR content minimal and simple.`.trim();
+    const prompt = `Save all changes, submit a commit, then create a PR. ${authorPrompt} Do not change git config. Don't add any coauthors and dont mention claude or any AI. Keep commit message and PR content minimal and simple.`.trim();
     await appendSessionMessages({ insiemeDao }, { sessionId, messages: `[{"role": "user","content": "${prompt}"}]` });
 
     await interaction.reply(`Your commit and PR request has been added to session ${sessionId}.`);
@@ -174,5 +170,5 @@ const requestNewPR = {
 export default {
   "queue-session": queueSession,
   "set-status": setStatus,
-  "request-new-pr": requestNewPR,
+  "request-pr": requestPR,
 };

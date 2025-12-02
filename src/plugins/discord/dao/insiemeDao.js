@@ -108,6 +108,20 @@ export const getInfoByUserId = async (deps, payload) => {
   };
 }
 
+export const listUserEmailRecords = async (deps) => {
+  const { db } = deps;
+  
+  const result = await db.execute({
+    sql: "SELECT user_id, name, email FROM discord_user_email_record",
+  });
+
+  return result.rows.map(row => ({
+    userId: row.user_id,
+    name: row.name,
+    email: row.email,
+  }));
+}
+
 export const getThreadIdBySession = async (deps, payload) => {
   const { db } = deps;
   const { sessionId } = payload;

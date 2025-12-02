@@ -45,8 +45,10 @@ export const setupDiscordCli = (deps) => {
       }
     });
 
-  botCmd
-    .command("bind-user")
+  const userCmd = cmd.command("user").description("Discord user management");
+
+  userCmd
+    .command("add")
     .requiredOption("-u, --user-id <userId>", "Discord User ID")
     .requiredOption("-n, --name <name>", "Git name")
     .requiredOption("-e, --email <email>", "Git email")
@@ -60,6 +62,22 @@ export const setupDiscordCli = (deps) => {
       };
       await discordInsiemeDao.addUserEmailRecord(payload);
       console.log(`Bound Discord user ID ${options.userId} to Git user ${options.name} <${options.email}>`);
+    });
+
+  userCmd
+    .command("list")
+    .description("List Discord user bindings")
+    .action(async () => {
+      const discordInsiemeDao = await createDiscordInsiemeDao();
+      const records = await discordInsiemeDao.listUserEmailRecords();
+      if (records.length === 0) {
+        console.log("No Discord user bindings found.");
+        return;
+      }
+      console.log("Discord User ID Bindings:");
+      for (const record of records) {
+        console.log(`- ${record.userId}: ${record.name} <${record.email}>`);
+      }
     });
 
   // Discord channel command group
