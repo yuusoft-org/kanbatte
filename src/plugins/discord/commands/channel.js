@@ -1,17 +1,30 @@
-export const discordChannelAdd = async (deps, payload) => {
-  const { discordInsiemeDao } = deps;
+export const createChannelCommands = (deps) => {
+  const { discordService } = deps;
 
-  await discordInsiemeDao.addChannel(payload);
-  console.log(`Channel ${payload.channelData.channel} added for project ${payload.projectId}`);
-};
+  const addChannel = async (payload) => {
+    const { projectId, channelId } = payload;
 
-export const discordChannelUpdate = async (deps, payload) => {
-  const { discordInsiemeDao } = deps;
+    await discordService.addChannel({
+      projectId,
+      channelData: { channel: channelId },
+    });
 
-  await discordInsiemeDao.updateChannel(payload);
-  console.log(`Channel ${payload.validUpdates.channel} updated for project ${payload.projectId}`);
-};
+    console.log(`Channel ${channelId} added for project ${projectId}`);
+  };
 
-export const discordStart = async (deps, payload) => {
-  console.log("Starting Discord event listener...");
+  const updateChannel = async (payload) => {
+    const { projectId, channelId } = payload;
+
+    await discordService.updateChannel({
+      projectId,
+      validUpdates: { channel: channelId },
+    });
+
+    console.log(`Channel ${channelId} updated for project ${projectId}`);
+  };
+
+  return {
+    addChannel,
+    updateChannel,
+  };
 };
