@@ -118,6 +118,19 @@ export const createLibsqlInfra = (config) => {
       });
     }
   };
+  
+  const getAllEventsSince = async (lastOffsetId) => {
+    checkInitialized();
+    const result = await db.execute({
+      sql: `SELECT id, payload FROM ${eventLog} WHERE id > ? ORDER BY id`,
+      args: [lastOffsetId],
+    });
+    return result.rows.map((row) => ({
+      id: row.id,
+      ...deserialize(row.payload),
+    }));
+  };
+
 
   const getView = async (key) => {
     checkInitialized();
@@ -182,6 +195,7 @@ export const createLibsqlInfra = (config) => {
     setView,
     setDiscordView,
     getView,
+    getAllEventsSince,
     findViewsByPrefix,
     addSessionThreadRecord,
     getSessionIdByThread,

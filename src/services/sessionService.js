@@ -169,11 +169,8 @@ export const createSessionService = (deps) => {
 
   const fetchRecentSessionEvents = async (payload) => {
     const { lastOffsetId } = payload;
-    const allEvents = await repository.getEventsAsync({ lastOffsetId, filterInit: true });
-    return allEvents.map((event) => ({
-      ...deserialize(event.payload.value.eventData),
-      id: event.id,
-    }));
+    const allEvents = await libsqlInfra.getAllEventsSince(lastOffsetId);
+    return allEvents;
   };
 
   return {
