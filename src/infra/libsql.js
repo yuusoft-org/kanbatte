@@ -97,6 +97,28 @@ export const createLibsqlInfra = (config) => {
     }
   };
 
+  const setDiscordView = async (key, data) => {
+    checkInitialized();
+    const viewData = serialize(data);
+    const now = Date.now();
+    const existing = await db.execute({
+      sql: `SELECT id FROM ${view} WHERE key = ?`,
+      args: [key],
+    });
+
+    if (existing.rows.length > 0) {
+      await db.execute({
+        sql: `UPDATE ${view} SET data = ?, updated_at = ? WHERE key = ?`,
+        args: [viewData, now, key],
+      });
+    } else {
+      await db.execute({
+        sql: `INSERT INTO ${view} (id, key, data, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`,
+        args: [generateId(), key, viewData, now, now],
+      });
+    }
+  };
+
   const getView = async (key) => {
     checkInitialized();
     const result = await db.execute({
@@ -158,6 +180,7 @@ export const createLibsqlInfra = (config) => {
     get,
     set,
     setView,
+    setDiscordView,
     getView,
     findViewsByPrefix,
     addSessionThreadRecord,

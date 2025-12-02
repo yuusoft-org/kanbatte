@@ -31,7 +31,7 @@ export const createDiscordService = (deps) => {
       }
     }
 
-    await discordLibsql.setView(viewKey, state);
+    await discordLibsql.setDiscordView(viewKey, state);
     return state;
   };
 
