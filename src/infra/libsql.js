@@ -125,10 +125,13 @@ export const createLibsqlInfra = (config) => {
       sql: `SELECT id, payload FROM ${eventLog} WHERE id > ? ORDER BY id`,
       args: [lastOffsetId],
     });
-    return result.rows.map((row) => ({
-      id: row.id,
-      ...deserialize(row.payload),
-    }));
+    return result.rows.map((row) => {
+      const outerPayload = deserialize(row.payload);
+      return {
+        id: row.id,
+        ...deserialize(outerPayload.value.eventData),
+      };
+    });
   };
 
 
