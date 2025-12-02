@@ -122,10 +122,10 @@ const setStatus = {
   },
 };
 
-const requestCommit = {
+const requestNewPR = {
   data: new SlashCommandBuilder()
-    .setName("request-commit")
-    .setDescription("Append request message to submit a commit for the current session thread")
+    .setName("request-new-pr")
+    .setDescription("Append request message to commit changes and create a new pull request")
     .addStringOption((option) =>
       option
         .setName("message")
@@ -161,37 +161,12 @@ const requestCommit = {
       await interaction.reply(`Could not find author info for the specified user.`);
       return;
     }
-    const authorPrompt = `Author is: ${authorInfo.userName} <${authorInfo.email}>.`;
+    const authorPrompt = `Author is: ${authorInfo.name} <${authorInfo.email}>.`;
 
-    const prompt = `Save all changes, check new branch if current branch is main, submit a commit. ${messagePrompt} ${authorPrompt} Do not change git config. Do not push for now. Don't add any coauthors and dont mention claude or any AI. Keep commit message minimal and simple.
-`.trim();
+    const prompt = `Save all changes, submit a commit, then create a PR. ${messagePrompt} ${authorPrompt} Do not change git config. Don't add any coauthors and dont mention claude or any AI. Keep commit message and PR content minimal and simple.`.trim();
     await appendSessionMessages({ insiemeDao }, { sessionId, messages: `[{"role": "user","content": "${prompt}"}]` });
 
-    await interaction.reply(`Your commit request has been added to session ${sessionId}.`);
-  }
-};
-
-const requestNewPR = {
-  data: new SlashCommandBuilder()
-    .setName("request-new-pr")
-    .setDescription("Append request message to create a new pull request for the current session thread"),
-  async execute(interaction) {
-    const isThread = isThreadChannel(interaction.channel);
-    if (!isThread) {
-      await interaction.reply({
-        content: 'This command can only be used in a thread channel.',
-      });
-      return;
-    }
-
-    const discordInsiemeDao = await createDiscordInsiemeDao();
-    const insiemeDao = await createMainInsiemeDao();
-    const sessionId = await discordInsiemeDao.getSessionIdByThread({ threadId: interaction.channel.id });
-    
-    const prompt = `Create PR. don't add any coauthors and dont mention claude or any AI. keep PR content minimal and simple.`.trim();
-    await appendSessionMessages({ insiemeDao }, { sessionId, messages: `[{"role": "user","content": "${prompt}"}]` });
-
-    await interaction.reply(`Your PR request has been added to session ${sessionId}.`);
+    await interaction.reply(`Your commit and PR request has been added to session ${sessionId}.`);
   }
 };
 
@@ -199,6 +174,5 @@ const requestNewPR = {
 export default {
   "queue-session": queueSession,
   "set-status": setStatus,
-  "request-commit": requestCommit,
   "request-new-pr": requestNewPR,
 };

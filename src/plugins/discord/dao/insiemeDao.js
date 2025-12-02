@@ -82,11 +82,11 @@ export const getSessionIdByThread = async (deps, payload) => {
 
 export const addUserEmailRecord = async (deps, payload) => {
   const { db } = deps;
-  const { userId, userName, email } = payload;
+  const { userId, name, email } = payload;
 
   await db.execute({
-    sql: "INSERT OR REPLACE INTO discord_user_email_record (user_id, user_name, email) VALUES (?, ?, ?)",
-    args: [userId, userName, email],
+    sql: "INSERT OR REPLACE INTO discord_user_email_record (user_id, name, email) VALUES (?, ?, ?)",
+    args: [userId, name, email],
   });
 }
 
@@ -95,7 +95,7 @@ export const getInfoByUserId = async (deps, payload) => {
   const { userId } = payload;
   
   const result = await db.execute({
-    sql: "SELECT user_name, email FROM discord_user_email_record WHERE user_id = ?",
+    sql: "SELECT name, email FROM discord_user_email_record WHERE user_id = ?",
     args: [userId],
   });
 
@@ -103,7 +103,7 @@ export const getInfoByUserId = async (deps, payload) => {
     return null;
   }
   return {
-    userName: result.rows[0].user_name,
+    name: result.rows[0].name,
     email: result.rows[0].email,
   };
 }
