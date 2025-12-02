@@ -55,7 +55,10 @@ const handleSessionEvents = async (deps, payload) => {
     const mergedMessage = messageQueue.join('\n\n');
     const splitMessages = splitTextForDiscord(mergedMessage);
     for (const msg of splitMessages) {
-      await thread.send(msg);
+      // Validate message is not empty before sending
+      if (msg && msg.trim().length > 0) {
+        await thread.send(msg);
+      }
     }
     if (shouldLockThread) {
       await thread.setLocked(true);
