@@ -62,6 +62,7 @@ const discordLibsqlInfra = createLibsqlInfra({
     view: "discord_view",
     kvStore: "discord_kv_store",
     sessionThreadRecord: "discord_session_thread_record",
+    userEmailRecord: "discord_user_email_record",
   },
 });
 

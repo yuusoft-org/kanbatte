@@ -115,13 +115,7 @@ const setStatus = {
 const requestPR = {
   data: new SlashCommandBuilder()
     .setName("request-pr")
-    .setDescription("Append request message to commit changes and create a new pull request")
-    .addStringOption((option) =>
-      option
-        .setName("message")
-        .setDescription("Commit message")
-        .setRequired(false),
-    ),
+    .setDescription("Append request message to commit changes and create a new pull request"),
 
   async execute(interaction, services) {
     const { sessionService, discordService } = services;
@@ -146,10 +140,17 @@ const requestPR = {
       return;
     }
 
-    const customMessage = interaction.options.getString("message");
-    const prompt = customMessage
-      ? `Save all changes, submit a commit with message "${customMessage}", then create a PR. Do not change git config. Don't add any coauthors and dont mention claude or any AI. Keep PR content minimal and simple.`
-      : `Save all changes, submit a commit, then create a PR. Do not change git config. Don't add any coauthors and dont mention claude or any AI. Keep commit message and PR content minimal and simple.`;
+    const authorInfo = await discordService.getUserEmailRecord({ userId: interaction.user.id });
+    if (!authorInfo) {
+      await interaction.reply({
+        content: `Could not find author info for your user ID. Please bind your user first using \`discord user add\`.`,
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    const authorPrompt = `Author is: ${authorInfo.name} <${authorInfo.email}>.`;
+    const prompt = `Save all changes, submit a commit, then create a PR. ${authorPrompt} Do not change git config. Don't add any coauthors and dont mention claude or any AI. Keep commit message and PR content minimal and simple.`;
 
     await sessionService.appendSessionMessages({
       sessionId,

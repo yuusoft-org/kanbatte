@@ -63,6 +63,41 @@ export const setupDiscordCli = (deps) => {
       }
     });
 
+  const userCmd = cmd.command("user").description("Discord user management");
+
+  userCmd
+    .command("add")
+    .requiredOption("-u, --user-id <userId>", "Discord User ID")
+    .requiredOption("-n, --name <name>", "Git name")
+    .requiredOption("-e, --email <email>", "Git email")
+    .description("Bind Discord user ID to Git user name and email")
+    .action(async (options) => {
+      const { discordService } = getDiscordServices();
+      const payload = {
+        userId: options.userId,
+        name: options.name,
+        email: options.email,
+      };
+      await discordService.addUserEmailRecord(payload);
+      console.log(`Bound Discord user ID ${options.userId} to Git user ${options.name} <${options.email}>`);
+    });
+
+  userCmd
+    .command("list")
+    .description("List Discord user bindings")
+    .action(async () => {
+      const { discordService } = getDiscordServices();
+      const records = await discordService.listUserEmailRecords();
+      if (records.length === 0) {
+        console.log("No Discord user bindings found.");
+        return;
+      }
+      console.log("Discord User ID Bindings:");
+      for (const record of records) {
+        console.log(`- ${record.userId}: ${record.name} <${record.email}>`);
+      }
+    });
+
   const channelCmd = cmd.command("channel").description("Discord channel management");
   
   channelCmd
