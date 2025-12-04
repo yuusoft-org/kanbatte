@@ -1,11 +1,11 @@
 import { splitTextForDiscord, classifyEventsBySession, transformSessionMessageAppend } from "../utils";
 
 const handleSessionEvents = async (deps, payload) => {
-  const { client, discordInsiemeDao } = deps;
+  const { client, discordService } = deps;
   const { sessionId, events } = payload;
 
   try {
-    const threadId = await discordInsiemeDao.getThreadIdBySession({ sessionId });
+    const threadId = await discordService.getThreadIdBySession({ sessionId });
     if (!threadId) {
       console.warn(`⚠️ No thread found for session ${sessionId}`);
       return;
@@ -33,7 +33,6 @@ const handleSessionEvents = async (deps, payload) => {
           case 'session_updated':
             messageQueue.push(`🔄 Session ${sessionId} status updated to: ${data.status}`)
             console.log(`Session ${sessionId} status updated to: ${data.status}`)
-            // If status is set to 'done', archive and lock the thread
             if (data.status === 'done') {
               shouldLockThread = true;
             }
@@ -51,11 +50,15 @@ const handleSessionEvents = async (deps, payload) => {
         continue;
       }
     }
-    // merge all messages and re-spilt for discord limits
+
     const mergedMessage = messageQueue.join('\n\n');
     const splitMessages = splitTextForDiscord(mergedMessage);
     for (const msg of splitMessages) {
-      await thread.send(msg);
+      // Replace sequences of 3 or more consecutive newlines with exactly 2 newlines
+      const normalizedMsg = msg.replace(/\n{3,}/g, '\n\n');
+      if (normalizedMsg && normalizedMsg.trim().length > 0) {
+        await thread.send(normalizedMsg);
+      }
     }
     if (shouldLockThread) {
       await thread.setLocked(true);
@@ -68,43 +71,48 @@ const handleSessionEvents = async (deps, payload) => {
   }
 };
 
-export const discordStartLoop = async (deps, payload) => {
-  const { discordStore, mainInsiemeDao, discordInsiemeDao, client } = deps;
-  const { currentOffsetId } = payload;
+export const createStartCommands = (deps) => {
+  const { discordLibsql, sessionService, discordService, client } = deps;
 
-  const recentEvents = await mainInsiemeDao.fetchRecentSessionEvents({
-    lastOffsetId: currentOffsetId
-  });
+  const discordStartLoop = async (currentOffsetId) => {
+    const recentEvents = await sessionService.fetchRecentSessionEvents({
+      lastOffsetId: currentOffsetId
+    });
 
-  let newOffsetId = currentOffsetId;
+    let newOffsetId = currentOffsetId;
 
-  if (recentEvents.length > 0) {
-    console.log(`🆕 ${recentEvents.length} new session events detected!`);
+    if (recentEvents.length > 0) {
+      console.log(`🆕 ${recentEvents.length} new session events detected!`);
 
-    const eventsBySession = classifyEventsBySession(recentEvents);
+      const eventsBySession = classifyEventsBySession(recentEvents);
 
-    for (const [sessionId, events] of Object.entries(eventsBySession)) {
-      await handleSessionEvents({ discordInsiemeDao, client }, { sessionId, events });
+      for (const [sessionId, events] of Object.entries(eventsBySession)) {
+        await handleSessionEvents({ discordService, client }, { sessionId, events });
+      }
+
+      const lastEvent = recentEvents[recentEvents.length - 1];
+      newOffsetId = lastEvent.id;
+      await discordLibsql.set("lastOffsetId", newOffsetId);
     }
 
-    // Update offset only after successfully processing all events
-    const lastEvent = recentEvents[recentEvents.length - 1];
-    newOffsetId = lastEvent.id;
-    await discordStore.set("lastOffsetId", newOffsetId);
-  }
+    return newOffsetId;
+  };
 
-  return newOffsetId;
-};
+  const initializeOffset = async () => {
+    let currentOffsetId = await discordLibsql.get("lastOffsetId");
 
-export const initializeOffset = async ({ discordStore }) => {
-  let currentOffsetId = await discordStore.get("lastOffsetId");
+    if (currentOffsetId === null) {
+      currentOffsetId = 0;
+      console.log("📊 Starting from beginning (no previous offset found)");
+    } else {
+      console.log(`📊 Starting from offset: ${currentOffsetId}`);
+    }
 
-  if (currentOffsetId === null) {
-    currentOffsetId = 0;
-    console.log("📊 Starting from beginning (no previous offset found)");
-  } else {
-    console.log(`📊 Starting from offset: ${currentOffsetId}`);
-  }
+    return currentOffsetId;
+  };
 
-  return currentOffsetId;
+  return {
+    discordStartLoop,
+    initializeOffset,
+  };
 };

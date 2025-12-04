@@ -16,6 +16,9 @@ export const isMemberAllowed = (member, allowedRoleIds) => {
 }
 
 export const splitTextForDiscord = (text, maxLength = 1500) => {
+  if (!text || text.trim().length === 0) {
+    return [];
+  }
   if (text.length <= maxLength) {
     return [text];
   }
@@ -98,13 +101,49 @@ const generateTodoText = (todos) => {
   return todoText.trim();
 }
 
+const generateDiffText = (oldString, newString) => {
+  const oldLines = oldString.split('\n');
+  const newLines = newString.split('\n');
+
+  const diffLines = [];
+  const maxLines = Math.max(oldLines.length, newLines.length);
+
+  for (let i = 0; i < maxLines; i++) {
+    const oldLine = oldLines[i] ?? '';
+    const newLine = newLines[i] ?? '';
+
+    if (oldLine === newLine) {
+      if (oldLine !== '') {
+        diffLines.push(` ${oldLine}`);
+      }
+    } else if (oldLine === '') {
+      diffLines.push(`+${newLine}`);
+    } else if (newLine === '') {
+      diffLines.push(`-${oldLine}`);
+    } else {
+      diffLines.push(`-${oldLine}`);
+      diffLines.push(`+${newLine}`);
+    }
+  }
+
+  return diffLines.join('\n');
+};
+
 const generateToolUseMessage = (contentPart) => {
   switch (contentPart.name) {
     case 'Bash':
       return `🛠️ Running bash command, ${contentPart.input["description"]} \n\`\`\`sh\n${contentPart.input["command"]}\n\`\`\``;
     case 'Edit':
-      // TODO: handle contentPart.input["old_string"] & contentPart.input["new_string"]
-      return `🛠️ Editing file: ${contentPart.input["file_path"]}`;
+      const { file_path, old_string, new_string } = contentPart.input;
+      let editMessage = `🛠️ Editing file: ${file_path}\n\`\`\`diff\n`;
+
+      if (old_string && new_string) {
+        const diffText = generateDiffText(old_string, new_string);
+        editMessage += diffText;
+      }
+
+      editMessage += '\n```';
+      return editMessage;
     case 'Grep':
       const glob = contentPart.input["glob"];
       const type = contentPart.input["type"];

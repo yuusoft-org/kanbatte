@@ -1,18 +1,5 @@
 import { SlashCommandBuilder, MessageFlags } from "discord.js";
 import { isThreadChannel } from "../utils";
-import { createMainInsiemeDao } from "../../../deps/mainDao";
-import { createDiscordInsiemeDao } from "../deps/discordDao";
-import { addSession, appendSessionMessages } from "../../../commands/session";
-
-// export const ping = {
-//   data: new SlashCommandBuilder()
-//     .setName('ping')
-//     .setDescription('Replies with Pong!'),
-
-//   async execute(interaction) {
-//     await interaction.reply('Pong!');
-//   },
-// };
 
 const queueSession = {
   data: new SlashCommandBuilder()
@@ -25,12 +12,12 @@ const queueSession = {
         .setRequired(true),
     ),
 
-  async execute(interaction) {
-    const isThread = isThreadChannel(interaction.channel);
-    if (isThread) {
+  async execute(interaction, services) {
+    const { sessionService, discordService } = services;
+
+    if (isThreadChannel(interaction.channel)) {
       await interaction.reply({
-        content:
-          "This command cannot be used in a thread channel. Please use it in a regular channel.",
+        content: "This command cannot be used in a thread. Please use it in a regular channel.",
         flags: MessageFlags.Ephemeral,
       });
       return;
@@ -38,42 +25,43 @@ const queueSession = {
 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-    const insiemeDao = await createMainInsiemeDao();
-    const discordInsiemeDao = await createDiscordInsiemeDao();
     const channelId = interaction.channel.id;
+    const project = await discordService.getProjectIdByChannel({ channelId });
 
-    const project = await discordInsiemeDao.getProjectIdByChannel({
-      channelId,
-    });
+    if (!project) {
+      await interaction.editReply({
+        content: `This channel is not configured for a project. Use the \`discord channel add\` command.`,
+      });
+      return;
+    }
 
     const message = interaction.options.getString("message");
+    const sessionNumber = await sessionService.getNextSessionNumber({ projectId: project });
+    const sessionId = `${project}-${sessionNumber}`;
+    const now = Date.now();
+    const sessionData = {
+      messages: [{ role: "user", content: message, timestamp: now }],
+      project: project,
+      status: "ready",
+      createdAt: now,
+      updatedAt: now,
+    };
 
-    const session = await addSession({ insiemeDao }, { project, message });
+    await sessionService.addSession({ sessionId, sessionData });
 
-    // Not in a thread - create one
     const thread = await interaction.channel.threads.create({
-      name: `${session.sessionId}`,
-      autoArchiveDuration: 1440, // 24 hours
-      reason: `Session: ${session.sessionId}`,
+      name: `${sessionId}`,
+      autoArchiveDuration: 1440,
+      reason: `Session: ${sessionId}`,
     });
 
-    // Add the user who created the task to the thread
     await thread.members.add(interaction.user.id);
-
-    // Send message to the new thread
     await thread.send(`🗨️ User: ${message}`);
-    await discordInsiemeDao.addSessionThreadRecord({
-      sessionId: session.sessionId,
-      threadId: thread.id,
-    });
+    await discordService.addSessionThreadRecord({ sessionId, threadId: thread.id });
 
-    const reply = `Session ${session.sessionId} created: <#${thread.id}>`;
+    const reply = `Session ${sessionId} created: <#${thread.id}>`;
     console.log(reply);
-
-    // Update the deferred reply
-    await interaction.editReply({
-      content: reply,
-    });
+    await interaction.editReply({ content: reply });
   },
 };
 
@@ -94,27 +82,29 @@ const setStatus = {
         ),
     ),
 
-  async execute(interaction) {
-    const isThread = isThreadChannel(interaction.channel);
-    if (!isThread) {
+  async execute(interaction, services) {
+    const { sessionService, discordService } = services;
+
+    if (!isThreadChannel(interaction.channel)) {
       await interaction.reply({
-        content: 'This command can only be used in a thread channel.',
+        content: 'This command can only be used in a thread channel.'
       });
       return;
     }
+
     const status = interaction.options.getString("status");
-    const discordInsiemeDao = await createDiscordInsiemeDao();
-    const mainInsiemeDao = await createMainInsiemeDao();
-    const sessionId = await discordInsiemeDao.getSessionIdByThread({
+    const sessionId = await discordService.getSessionIdByThread({
       threadId: interaction.channel.id,
     });
+
     if (!sessionId) {
       await interaction.reply({
-        content: `No session found for this thread.`,
+        content: `No session found for this thread.`
       });
       return;
     }
-    await mainInsiemeDao.updateSessionStatus({ sessionId, status });
+    
+    await sessionService.updateSessionStatus({ sessionId, status });
 
     await interaction.reply({
       content: `🔄 Session ${sessionId} status updating to: ${status}...`,
@@ -131,38 +121,44 @@ const requestPR = {
         .setName("message")
         .setDescription("Commit message")
         .setRequired(false),
-    )
-    .addUserOption((option) =>
-      option
-        .setName("author")
-        .setDescription("Git author (overrides bound user)")
-        .setRequired(false),
     ),
 
-  async execute(interaction) {
-    const isThread = isThreadChannel(interaction.channel);
-    if (!isThread) {
+  async execute(interaction, services) {
+    const { sessionService, discordService } = services;
+
+    if (!isThreadChannel(interaction.channel)) {
       await interaction.reply({
         content: 'This command can only be used in a thread channel.',
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
 
-    const discordInsiemeDao = await createDiscordInsiemeDao();
-    const insiemeDao = await createMainInsiemeDao();
-    const sessionId = await discordInsiemeDao.getSessionIdByThread({ threadId: interaction.channel.id });
-    
-    const authorInfo = await discordInsiemeDao.getInfoByUserId({ userId: interaction.user.id });
-    if(!authorInfo) {
-      await interaction.reply(`Could not find author info for the specified user.`);
+    const sessionId = await discordService.getSessionIdByThread({
+      threadId: interaction.channel.id
+    });
+
+    if (!sessionId) {
+      await interaction.reply({
+        content: 'No session found for this thread.',
+        flags: MessageFlags.Ephemeral,
+      });
       return;
     }
-    const authorPrompt = `Author is: ${authorInfo.name} <${authorInfo.email}>.`;
 
-    const prompt = `Save all changes, submit a commit, then create a PR. ${authorPrompt} Do not change git config. Don't add any coauthors and dont mention claude or any AI. Keep commit message and PR content minimal and simple.`.trim();
-    await appendSessionMessages({ insiemeDao }, { sessionId, messages: `[{"role": "user","content": "${prompt}"}]` });
+    const customMessage = interaction.options.getString("message");
+    const prompt = customMessage
+      ? `Save all changes, submit a commit with message "${customMessage}", then create a PR. Do not change git config. Don't add any coauthors and dont mention claude or any AI. Keep PR content minimal and simple.`
+      : `Save all changes, submit a commit, then create a PR. Do not change git config. Don't add any coauthors and dont mention claude or any AI. Keep commit message and PR content minimal and simple.`;
 
-    await interaction.reply(`Your commit and PR request has been added to session ${sessionId}.`);
+    await sessionService.appendSessionMessages({
+      sessionId,
+      messages: [{ role: "user", content: prompt, timestamp: Date.now() }]
+    });
+
+    await interaction.reply({
+      content: `Your commit and PR request has been added to session ${sessionId}.`,
+    });
   }
 };
 

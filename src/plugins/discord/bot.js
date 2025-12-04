@@ -1,11 +1,7 @@
-// minimal-discord-bot.js
-import { Client, Collection, Events, GatewayIntentBits, MessageFlags } from 'discord.js';
+import { Client, Collection, Events, GatewayIntentBits } from 'discord.js';
 import { isThreadChannel, isMemberAllowed } from './utils';
 import * as sessionsSlashCommands from "./slash-commands/sessions";
-import { createMainInsiemeDao } from '../../deps/mainDao';
-import { createDiscordInsiemeDao, createDiscordStore } from './deps/discordDao';
-import { appendSessionMessages } from '../../commands/session';
-import { discordStartLoop, initializeOffset } from './commands/start';
+import { createStartCommands } from './commands/start.js';
 
 const token = process.env.DISCORD_BOT_TOKEN;
 
@@ -14,7 +10,7 @@ if (!token) {
   process.exit(1);
 }
 
-export const startDiscordBot = () => {
+export const startDiscordBot = (services) => {
   const client = new Client({
     intents: [
       GatewayIntentBits.Guilds,
@@ -23,22 +19,16 @@ export const startDiscordBot = () => {
     ],
   });
 
+  client.services = services;
+
   client.once(Events.ClientReady, async () => {
     console.log(`Logged in as ${client.user.tag}!`);
-    const discordStore = await createDiscordStore();
-    const mainInsiemeDao = await createMainInsiemeDao();
-    const discordInsiemeDao = await createDiscordInsiemeDao();
+    const startCommands = createStartCommands({ ...services, client });
 
-    let currentOffsetId = await initializeOffset({ discordStore });
+    let currentOffsetId = await startCommands.initializeOffset();
 
     while (true) {
-      currentOffsetId = await discordStartLoop({
-        mainInsiemeDao,
-        discordStore,
-        discordInsiemeDao,
-        client
-      }, { currentOffsetId });
-      // Wait 5 seconds before next check
+      currentOffsetId = await startCommands.discordStartLoop(currentOffsetId);
       await new Promise(resolve => setTimeout(resolve, 5000));
     }
   });
@@ -52,16 +42,11 @@ export const startDiscordBot = () => {
   console.log("Commands loaded:", client.commands.map(cmd => cmd.data.name));
 
   client.on(Events.MessageCreate, async (message) => {
-    // Ignore bot messages to avoid loops
     if (message.author.bot) return;
+    if (!isThreadChannel(message.channel)) return;
 
-    const isThread = isThreadChannel(message.channel);
-
-    if (!isThread) return;
-
-    // reject if member roles is not cached
-    const discordStore = await createDiscordStore();
-    const roles = await discordStore.get("allowedRoleIds") || [];
+    const { discordService } = message.client.services;
+    const roles = await discordService.getAllowedRoleIds() || [];
     if (!isMemberAllowed(message.member, roles)) {
       await message.reply("❌ You don't have permission to interact in this thread.");
       return;
@@ -69,11 +54,15 @@ export const startDiscordBot = () => {
 
     if (message.mentions.has(client.user)) {
       try {
-        const insiemeDao = await createMainInsiemeDao();
-        const discordInsiemeDao = await createDiscordInsiemeDao();
-        const sessionId = await discordInsiemeDao.getSessionIdByThread({ threadId: message.channel.id });
+        const { sessionService, discordService } = message.client.services;
+        const sessionId = await discordService.getSessionIdByThread({ threadId: message.channel.id });
         const messageContent = message.content.replace(/<@!?(\d+)>/, '').trim();
-        await appendSessionMessages({ insiemeDao }, { sessionId, messages: `[{"role": "user","content": "${messageContent}"}]` });
+        
+        await sessionService.appendSessionMessages({
+          sessionId,
+          messages: [{ role: "user", content: messageContent }]
+        });
+        
         await message.reply(`Your message has been appended to session ${sessionId}.`);
       } catch (error) {
         console.error('Error:', error);
@@ -89,16 +78,15 @@ export const startDiscordBot = () => {
       return;
     }
     try {
-      // reject if member roles is not cached
-      const discordStore = await createDiscordStore();
-      const roles = await discordStore.get("allowedRoleIds") || [];
+      const { discordService } = interaction.client.services;
+      const roles = await discordService.getAllowedRoleIds() || [];
       if (!isMemberAllowed(interaction.member, roles)) {
         await interaction.reply({
           content: "❌ You don't have permission to use this command.",
         });
         return;
       }
-      await command.execute(interaction);
+      await command.execute(interaction, interaction.client.services);
     } catch (error) {
       console.error(error);
       if (interaction.replied || interaction.deferred) {
@@ -107,7 +95,7 @@ export const startDiscordBot = () => {
         });
       } else {
         await interaction.reply({
-          content: 'There was an error while executing this command!',
+          content: 'There was an error while executing this command!'
         });
       }
     }
