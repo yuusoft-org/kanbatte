@@ -1,5 +1,5 @@
 ---
-title: Fix Discord API error: Cannot send an empty message (code 50006)
+title: 'Fix Discord API error: Cannot send an empty message (code 50006)'
 status: done
 priority: high
 ---
