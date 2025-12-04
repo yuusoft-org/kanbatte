@@ -1,6 +1,6 @@
 ---
 title:  discord create thread
-status: todo
+status: done
 priority: medium
 assignee: 738NGX
 labels: [discord]

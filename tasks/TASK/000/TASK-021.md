@@ -1,6 +1,6 @@
 ---
 title:  discord follow up message in thread
-status: todo
+status: done
 priority: medium
 assignee: 738NGX
 labels: [discord]
