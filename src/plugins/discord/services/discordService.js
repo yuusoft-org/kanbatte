@@ -93,6 +93,18 @@ export const createDiscordService = (deps) => {
     return (await discordLibsql.get("allowedRoleIds")) || [];
   };
 
+  const addUserEmailRecord = async (payload) => {
+    return await discordLibsql.addUserEmailRecord(payload);
+  };
+
+  const getUserEmailRecord = async (payload) => {
+    return await discordLibsql.getUserEmailRecord(payload);
+  };
+
+  const listUserEmailRecords = async () => {
+    return await discordLibsql.listUserEmailRecords();
+  };
+
   return {
     addChannel,
     updateChannel,
@@ -103,5 +115,8 @@ export const createDiscordService = (deps) => {
     getThreadIdBySession,
     setAllowedRoleIds,
     getAllowedRoleIds,
+    addUserEmailRecord,
+    getUserEmailRecord,
+    listUserEmailRecords,
   };
 };

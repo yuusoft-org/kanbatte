@@ -1,6 +1,6 @@
 ---
 title:  discord thread names
-status: todo
+status: done
 priority: medium
 assignee: 738NGX
 labels: [discord]

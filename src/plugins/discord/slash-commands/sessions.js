@@ -112,7 +112,60 @@ const setStatus = {
   },
 };
 
+const requestPR = {
+  data: new SlashCommandBuilder()
+    .setName("request-pr")
+    .setDescription("Append request message to commit changes and create a new pull request"),
+
+  async execute(interaction, services) {
+    const { sessionService, discordService } = services;
+
+    if (!isThreadChannel(interaction.channel)) {
+      await interaction.reply({
+        content: 'This command can only be used in a thread channel.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    const sessionId = await discordService.getSessionIdByThread({
+      threadId: interaction.channel.id
+    });
+
+    if (!sessionId) {
+      await interaction.reply({
+        content: 'No session found for this thread.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    const authorInfo = await discordService.getUserEmailRecord({ userId: interaction.user.id });
+    if (!authorInfo) {
+      await interaction.reply({
+        content: `Could not find author info for your user ID. Please bind your user first using \`discord user add\`.`,
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    const authorPrompt = `Author is: ${authorInfo.name} <${authorInfo.email}>.`;
+    const prompt = `Save all changes, submit a commit, then create a PR. ${authorPrompt} Do not change git config. Don't add any coauthors and dont mention claude or any AI. Keep commit message and PR content minimal and simple.`;
+
+    await sessionService.appendSessionMessages({
+      sessionId,
+      messages: [{ role: "user", content: prompt, timestamp: Date.now() }]
+    });
+
+    await interaction.reply({
+      content: `Your commit and PR request has been added to session ${sessionId}.`,
+    });
+  }
+};
+
+
 export default {
   "queue-session": queueSession,
   "set-status": setStatus,
+  "request-pr": requestPR,
 };

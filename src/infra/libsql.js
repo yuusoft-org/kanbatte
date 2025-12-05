@@ -5,7 +5,7 @@ import { generateId } from "../utils/helper.js";
 
 export const createLibsqlInfra = (config) => {
   const { dbPath, migrationsPath, tableNames } = config;
-  const { eventLog, view, kvStore, sessionThreadRecord } = tableNames;
+  const { eventLog, view, kvStore, sessionThreadRecord, userEmailRecord } = tableNames;
 
   let db;
 
@@ -192,6 +192,36 @@ export const createLibsqlInfra = (config) => {
     return result.rows.length > 0 ? result.rows[0].thread_id : null;
   };
 
+  const addUserEmailRecord = async (payload) => {
+    checkInitialized();
+    if (!userEmailRecord) throw new Error("userEmailRecord table name not configured.");
+    const { userId, name, email } = payload;
+    await db.execute({
+      sql: `INSERT INTO ${userEmailRecord} (user_id, name, email) VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET name = excluded.name, email = excluded.email`,
+      args: [userId, name, email],
+    });
+  };
+
+  const getUserEmailRecord = async (payload) => {
+    checkInitialized();
+    if (!userEmailRecord) throw new Error("userEmailRecord table name not configured.");
+    const { userId } = payload;
+    const result = await db.execute({
+      sql: `SELECT name, email FROM ${userEmailRecord} WHERE user_id = ?`,
+      args: [userId],
+    });
+    return result.rows.length > 0 ? { name: result.rows[0].name, email: result.rows[0].email } : null;
+  };
+
+  const listUserEmailRecords = async () => {
+    checkInitialized();
+    if (!userEmailRecord) throw new Error("userEmailRecord table name not configured.");
+    const result = await db.execute({
+      sql: `SELECT user_id, name, email FROM ${userEmailRecord}`,
+    });
+    return result.rows.map(row => ({ userId: row.user_id, name: row.name, email: row.email }));
+  };
+
   return {
     init,
     migrateDb,
@@ -207,5 +237,8 @@ export const createLibsqlInfra = (config) => {
     addSessionThreadRecord,
     getSessionIdByThread,
     getThreadIdBySession,
+    addUserEmailRecord,
+    getUserEmailRecord,
+    listUserEmailRecords,
   };
 };

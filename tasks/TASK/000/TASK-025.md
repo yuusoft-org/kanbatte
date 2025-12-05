@@ -1,6 +1,6 @@
 ---
 title: Discord improvements
-status: todo
+status: done
 priority: medium
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: Refactor all dependencies
-status: todo
+status: done
 priority: high
 ---
 
