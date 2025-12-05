@@ -1,6 +1,6 @@
 ---
 title: always-update-repository-git-pull-before-worktree
-status: todo
+status: done
 priority: low
 ---
 
