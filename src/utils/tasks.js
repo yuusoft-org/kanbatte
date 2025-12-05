@@ -54,6 +54,28 @@ export const filterByPriority = (tasks, priorities) => {
 };
 
 /**
+ * Filters tasks by assignee (supports comma-separated values)
+ */
+export const filterByAssignee = (tasks, assignees) => {
+  if (!assignees) return tasks;
+  const assigneeList = assignees.split(",").map((a) => a.trim());
+  return tasks.filter((task) => assigneeList.includes(task.assignee));
+};
+
+/**
+ * Filters tasks by label (supports comma-separated values)
+ * Returns tasks that have at least one of the specified labels
+ */
+export const filterByLabels = (tasks, labels) => {
+  if (!labels) return tasks;
+  const labelList = labels.split(",").map((l) => l.trim());
+  return tasks.filter((task) => {
+    if (!task.labels || task.labels.length === 0) return false;
+    return task.labels.some((label) => labelList.includes(label));
+  });
+};
+
+/**
  * Formats tasks as a table for CLI output
  */
 export const formatTaskTable = (tasks) => {
@@ -61,10 +83,18 @@ export const formatTaskTable = (tasks) => {
     return "No tasks found.";
   }
 
+  // Format labels as comma-separated string
+  const formatLabels = (labels) => {
+    if (!labels || labels.length === 0) return "";
+    return Array.isArray(labels) ? labels.join(",") : String(labels);
+  };
+
   // Calculate column widths
   const maxTaskIdWidth = Math.max("Task ID".length, ...tasks.map((t) => t.taskId.length));
   const maxStatusWidth = Math.max("Status".length, ...tasks.map((t) => t.status.length));
   const maxPriorityWidth = Math.max("Priority".length, ...tasks.map((t) => t.priority.length));
+  const maxAssigneeWidth = Math.max("Assignee".length, ...tasks.map((t) => (t.assignee || "").length));
+  const maxLabelsWidth = Math.max("Labels".length, ...tasks.map((t) => formatLabels(t.labels).length));
   const maxTitleWidth = Math.max("Title".length, ...tasks.map((t) => t.title.length));
 
   // Truncate title if too long (max 50 chars)
@@ -73,12 +103,15 @@ export const formatTaskTable = (tasks) => {
     title: task.title.length > 50 ? task.title.substring(0, 47) + "..." : task.title,
   }));
   const actualMaxTitleWidth = Math.min(50, maxTitleWidth);
+  const actualMaxLabelsWidth = Math.min(30, maxLabelsWidth);
 
   // Build table header
   const header = [
     "Task ID".padEnd(maxTaskIdWidth),
     "Status".padEnd(maxStatusWidth),
     "Priority".padEnd(maxPriorityWidth),
+    "Assignee".padEnd(maxAssigneeWidth),
+    "Labels".padEnd(actualMaxLabelsWidth),
     "Title".padEnd(actualMaxTitleWidth),
   ].join(" | ");
 
@@ -86,14 +119,20 @@ export const formatTaskTable = (tasks) => {
   const separator = "-".repeat(header.length);
 
   // Build table rows
-  const rows = truncatedTasks.map((task) =>
-    [
+  const rows = truncatedTasks.map((task) => {
+    let labelsStr = formatLabels(task.labels);
+    if (labelsStr.length > 30) {
+      labelsStr = labelsStr.substring(0, 27) + "...";
+    }
+    return [
       task.taskId.padEnd(maxTaskIdWidth),
       task.status.padEnd(maxStatusWidth),
       task.priority.padEnd(maxPriorityWidth),
+      (task.assignee || "").padEnd(maxAssigneeWidth),
+      labelsStr.padEnd(actualMaxLabelsWidth),
       task.title.padEnd(actualMaxTitleWidth),
-    ].join(" | "),
-  );
+    ].join(" | ");
+  });
 
   return [header, separator, ...rows].join("\n");
 };

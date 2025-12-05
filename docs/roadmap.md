@@ -59,6 +59,7 @@ title: Task Title
 status: todo
 priority: low
 assignee: username
+labels: [feature, ui]
 ---
 
 # Description
@@ -78,6 +79,8 @@ Everything below the description is freeform. You can add more sections as neede
 **Priority:** Can be `low`, `medium`, or `high`.
 
 **Assignee:** Optional field to assign the task to a specific user.
+
+**Labels:** Optional array of labels/tags for categorizing the task.
 
 
 ### Tasks CLI
@@ -121,8 +124,14 @@ kanbatte task list TASK -s 'todo' -p 'high,medium'
 kanbatte task list TASK -a 'username'
 # Filter by assignee
 
-kanbatte task list TASK -s 'todo' -p 'high' -a 'username'
-# Filter by status, priority, and assignee
+kanbatte task list TASK -l 'discord'
+# Filter by label
+
+kanbatte task list TASK -l 'discord,ui'
+# Filter by multiple labels (OR logic - matches any)
+
+kanbatte task list TASK -s 'todo' -p 'high' -a 'username' -l 'feature'
+# Filter by status, priority, assignee, and label
 ```
 
 #### Updating Tasks
