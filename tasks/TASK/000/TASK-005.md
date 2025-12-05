@@ -1,6 +1,6 @@
 ---
 title: Add Assignee and Labels
-status: todo
+status: done
 assignee: aditya
 priority: high
 ---

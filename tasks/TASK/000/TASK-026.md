@@ -1,21 +1,17 @@
 ---
 title: Next steps
-status: todo
+status: done
 priority: low
 ---
 
 # Description
 
-- [ ] Add role detect
-- [ ] Block queue session in thread.
-- [ ] Set State let discord directly choose, instead of string
-- [ ] 3*`\n` or more is unexpected, should be 2. 
-- [ ] Tool Use:
+- [x] Add role detect
+- [x] Block queue session in thread.
+- [x] Set State let discord directly choose, instead of string
+- [x] 3*`\n` or more is unexpected, should be 2. 
+- [x] Tool Use:
     - Bash Fix
     - Edit Complete
     - Confirm if there has more tools unhandled.
-- [ ] Tool Use Result handle
-    - For example, web search result display...
-- [ ] Discord Embeds
-- [ ] Prompts Presets
 

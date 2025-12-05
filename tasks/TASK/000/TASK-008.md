@@ -1,6 +1,6 @@
 ---
 title: dependency inject fs
-status: todo
+status: done
 assignee: 738NGX
 priority: low
 ---
