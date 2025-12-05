@@ -66,6 +66,26 @@ Frontend setup:
 - user can run `kanbatte task aggregate`
 - it will generate SPA in `_site` folder, ready to be deployed as static files
 
+## Plan
+
+- When running `kanbatte task build`, copy the tasks.yaml (or maybe a modified version that adds more fields such as assignee) to `_site` folder as data source. Tasks.yaml could then be fetched from root directory. Decided to use `tasks.yaml` instead of `tasks.json` since it seem more straightforward than json. rettangoli-fe and rettangoli-ui should also work directly with `tasks.yaml`.
+- Create new folder for page generated with `kanbatte task aggregate` (draft, may change file and folder details)
+```
+site-aggregate/
+    pages/
+    static/
+    templates/
+    sites.config.js
+```
+- After running `kanbatte task aggregate`, a SPA will be generated and put to `_site` under `tasks-aggregate`.
+- The SPA will read config file `kanbatte.config.yaml` from root and update itself once per minute. The SPA will display workspace name, projects name, priority, assignee, label and title. Filter will be available to filter out (can do Github issue style, type something like `label: discord` in a searchbar).
+- On clicking the displayed tasks, it will be redirected to the original page (e.g. Suppose aggregated data is held at http://kanbatte.aggregate.yuusoft.com/tasks-aggregate, clicking this TASK-031 will be redirected to http://kanbatte.yuusoft.com/tasks/TASK-031/). This decision:
+  - Reduces repeativity and makes full use of existing sites
+  - But will 'break' the `< Back` button in the existing sites -- `< Back` returns to specific project index instead of aggregated data index.
+- More frontend implementation details (logging, error dealing, etc.) to be updated later.
+
+
+
 ## Other notes
 
 Currently, all tasks are  `TASK` , this will cause different projects to have same task ID. in future we will change task to something unique for projects such ash `RG` for Route Graphics, `KAN` for kanbatte
