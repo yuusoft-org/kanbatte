@@ -5,6 +5,8 @@ import {
   generateTaskContent,
   filterByStatus,
   filterByPriority,
+  filterByAssignee,
+  filterByLabels,
   formatTaskTable,
   parseTaskId,
   calculateFolder,
@@ -51,6 +53,8 @@ export const createTaskService = (deps) => {
       title: metadata.title,
       status: metadata.status,
       priority: metadata.priority,
+      assignee: metadata.assignee || "",
+      labels: metadata.labels || [],
     };
   };
 
@@ -181,7 +185,7 @@ export const createTaskService = (deps) => {
    * Lists tasks with optional filtering
    */
   const listTasks = (projectRoot, options = {}) => {
-    const { type, status, priority } = options;
+    const { type, status, priority, assignee, label } = options;
 
     let tasks = scanTaskFiles(projectRoot, type);
 
@@ -190,6 +194,12 @@ export const createTaskService = (deps) => {
     }
     if (priority) {
       tasks = filterByPriority(tasks, priority);
+    }
+    if (assignee) {
+      tasks = filterByAssignee(tasks, assignee);
+    }
+    if (label) {
+      tasks = filterByLabels(tasks, label);
     }
 
     return formatTaskTable(tasks);

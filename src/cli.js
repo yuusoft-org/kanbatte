@@ -116,6 +116,8 @@ taskCmd
   .argument("[type]", "Task type to filter by (TASK, FEAT, BUG, etc.)")
   .option("-s, --status <status>", "Filter by status (todo, done)")
   .option("-p, --priority <priority>", "Filter by priority (low, medium, high, comma-separated)")
+  .option("-a, --assignee <assignee>", "Filter by assignee (comma-separated)")
+  .option("-l, --label <label>", "Filter by label (comma-separated)")
   .action((type, options) => {
     taskCommands.listTasks(projectRoot, { type, ...options });
   });
