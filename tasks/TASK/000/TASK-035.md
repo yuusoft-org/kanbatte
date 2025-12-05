@@ -1,5 +1,8 @@
 ---
 title: Simple parallelization of agentStart for multi-thread processing
+status: todo
+priority: low
+---
 
 ## Problem
 agentStart processes all sessions sequentially. Different Discord threads should run in parallel while keeping same-thread sessions serial.
@@ -61,10 +64,4 @@ async function processThreadSessions(sessions, deps) {
 - Same thread stays serial (no race conditions)
 - Super simple - just an object to track running threads
 - No complex libraries or major refactoring
-
-status: todo
-priority: low
----
-
-# Description
 
