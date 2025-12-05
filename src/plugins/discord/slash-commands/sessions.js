@@ -150,7 +150,7 @@ const requestPR = {
     }
 
     const authorPrompt = `Commit author is: ${authorInfo.name} <${authorInfo.email}>.`;
-    const prompt = `Save all changes, submit a commit. ${authorPrompt} Do not change git config. Don't add any coauthors and dont mention claude or any AI. Check this worktree already exists related Pull Request, if not create a new pr, or just update it. Keep commit message and PR content minimal and simple.`;
+    const prompt = `Save all changes, submit a commit. ${authorPrompt} Do not change git config. Don't add any coauthors and dont mention claude or any AI. Check this branch already exists related Pull Request, if not create a new pr, or just update it. Keep commit message and PR content minimal and simple.`;
 
     await sessionService.appendSessionMessages({
       sessionId,
