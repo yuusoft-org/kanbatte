@@ -49,6 +49,8 @@ Please continue working on this session for project "${session.project}". You ca
         const result = query({
           prompt: userPrompt,
           options: {
+            model: "opus",
+            settingSources: ['project'],
             canUseTool: (toolName, inputData) => {
               return {
                 behavior: "allow",
