@@ -1,6 +1,6 @@
 ---
 title: show assignee and labels
-status: todo
+status: done
 priority: medium
 ---
 
