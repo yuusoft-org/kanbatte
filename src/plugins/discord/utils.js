@@ -101,49 +101,14 @@ const generateTodoText = (todos) => {
   return todoText.trim();
 }
 
-const generateDiffText = (oldString, newString) => {
-  const oldLines = oldString.split('\n');
-  const newLines = newString.split('\n');
-
-  const diffLines = [];
-  const maxLines = Math.max(oldLines.length, newLines.length);
-
-  for (let i = 0; i < maxLines; i++) {
-    const oldLine = oldLines[i] ?? '';
-    const newLine = newLines[i] ?? '';
-
-    if (oldLine === newLine) {
-      if (oldLine !== '') {
-        diffLines.push(` ${oldLine}`);
-      }
-    } else if (oldLine === '') {
-      diffLines.push(`+${newLine}`);
-    } else if (newLine === '') {
-      diffLines.push(`-${oldLine}`);
-    } else {
-      diffLines.push(`-${oldLine}`);
-      diffLines.push(`+${newLine}`);
-    }
-  }
-
-  return diffLines.join('\n');
-};
 
 const generateToolUseMessage = (contentPart) => {
   switch (contentPart.name) {
     case 'Bash':
       return `🛠️ Running bash command, ${contentPart.input["description"]} \n\`\`\`sh\n${contentPart.input["command"]}\n\`\`\``;
     case 'Edit':
-      const { file_path, old_string, new_string } = contentPart.input;
-      let editMessage = `🛠️ Editing file: ${file_path}\n\`\`\`diff\n`;
-
-      if (old_string && new_string) {
-        const diffText = generateDiffText(old_string, new_string);
-        editMessage += diffText;
-      }
-
-      editMessage += '\n```';
-      return editMessage;
+      const { file_path } = contentPart.input;
+      return `🛠️ Editing file: ${file_path}`;
     case 'Grep':
       const glob = contentPart.input["glob"];
       const type = contentPart.input["type"];
