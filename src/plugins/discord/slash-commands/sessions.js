@@ -157,8 +157,11 @@ const requestPR = {
       messages: [{ role: "user", content: prompt, timestamp: Date.now() }]
     });
 
+    // Automatically set status to ready after request-pr
+    await sessionService.updateSessionStatus({ sessionId, status: "ready" });
+
     await interaction.reply({
-      content: `Your commit and PR request has been added to session ${sessionId}.`,
+      content: `Your commit and PR request has been added to session ${sessionId}. Status set to ready.`,
     });
   }
 };
