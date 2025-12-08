@@ -1,0 +1,126 @@
+elementName: aggregate-tasks
+
+viewDataSchema:
+  type: object
+  properties:
+    searchQuery: { type: string }
+    sortBy: { type: string }
+    sortAsc: { type: boolean }
+    tasks: { type: array }
+    lastUpdated: { type: string }
+    loading: { type: boolean }
+    error: { type: string }
+    taskCount: { type: number }
+    totalCount: { type: number }
+
+refs:
+  search-input:
+    eventListeners:
+      input-change:
+        handler: handleSearchInput
+      keydown:
+        handler: handleSearchKeydown
+  sort-id:
+    eventListeners:
+      click:
+        handler: handleSortById
+  sort-status:
+    eventListeners:
+      click:
+        handler: handleSortByStatus
+  sort-workspace:
+    eventListeners:
+      click:
+        handler: handleSortByWorkspace
+  sort-priority:
+    eventListeners:
+      click:
+        handler: handleSortByPriority
+  sort-project:
+    eventListeners:
+      click:
+        handler: handleSortByProject
+  toggle-order:
+    eventListeners:
+      click:
+        handler: handleToggleOrder
+  task-list:
+    eventListeners:
+      click:
+        handler: handleTaskListClick
+  clear-search:
+    eventListeners:
+      click:
+        handler: handleClearSearch
+
+styles: {}
+
+template:
+  - rtgl-view#root d=v ah=c w=f:
+      - rtgl-view#app w=1024 h=100vh ph=lg pv=lg:
+          - rtgl-text s=h1 mb=md: Aggregated Tasks
+          - rtgl-text s=sm c=mu-fg mb=lg: "Updated: ${lastUpdated}"
+          - rtgl-view w=f mb=sm d=h g=sm av=c:
+              - $if searchQuery:
+                  - "rtgl-input#search-input w=f placeholder='Search tasks...' value='${searchQuery}'":
+                $else:
+                  - "rtgl-input#search-input w=f placeholder='Search tasks...'":
+              - rtgl-button#clear-search s=sm v=ol: Clear
+          - rtgl-text s=sm c=mu-fg mb=lg: "Filter by status:todo | workspace:Name | priority:high | project:Name | assignee:Name | label:Name"
+          - rtgl-view d=h av=c mb=lg w=f:
+              - rtgl-text s=h3: Tasks
+              - rtgl-text s=sm c=mu-fg ml=md: "(${taskCount} of ${totalCount})"
+              - rtgl-view flex=1:
+              - rtgl-text s=sm c=mu-fg mr=sm: "Sort:"
+              - $if sortBy == "id":
+                  - rtgl-button#sort-id s=sm v=pr: ID
+                $else:
+                  - rtgl-button#sort-id s=sm v=ol: ID
+              - $if sortBy == "workspace":
+                  - rtgl-button#sort-workspace s=sm v=pr: Workspace
+                $else:
+                  - rtgl-button#sort-workspace s=sm v=ol: Workspace
+              - $if sortBy == "project":
+                  - rtgl-button#sort-project s=sm v=pr: Project
+                $else:
+                  - rtgl-button#sort-project s=sm v=ol: Project
+              - $if sortBy == "status":
+                  - rtgl-button#sort-status s=sm v=pr: Status
+                $else:
+                  - rtgl-button#sort-status s=sm v=ol: Status
+              - $if sortBy == "priority":
+                  - rtgl-button#sort-priority s=sm v=pr: Priority
+                $else:
+                  - rtgl-button#sort-priority s=sm v=ol: Priority
+              - $if sortAsc:
+                  - "rtgl-button#toggle-order s=sm v=ol": "↑"
+                $else:
+                  - "rtgl-button#toggle-order s=sm v=ol": "↓"
+          - $if loading:
+              - rtgl-text c=mu-fg: Loading tasks...
+          - $if error:
+              - rtgl-text c=er-fg: "${error}"
+          - rtgl-view#task-list g=md w=f:
+              - $for task in tasks:
+                  - $if task.isNewGroup:
+                      - "rtgl-view pv=md w=1024 style='word-break: break-all;'":
+                          - rtgl-text s=h3: "${task.groupLabel}"
+                  - rtgl-view d=h av=c pv=md w=f bgc=su br=lg:
+                      - a href="${task.url}/tasks/${task.filename}" target="_blank" style="display:contents":
+                          - rtgl-view d=h av=c flex=1 h-bgc=suv h-cur=p:
+                              - rtgl-text s=lg: "${task.id}"
+                              - rtgl-text mh=md: "-"
+                              - rtgl-text: "${task.title}"
+                      - rtgl-view d=h av=c g=md:
+                          - "rtgl-view w=80":
+                              - "rtgl-text s=sm c=mu-fg h-cur=p data-filter=workspace data-value='${task.workspaceName}'": "${task.displayWorkspace}"
+                          - "rtgl-view w=80":
+                              - "rtgl-text s=sm c=mu-fg h-cur=p data-filter=project data-value='${task.projectName}'": "${task.displayProject}"
+                          - "rtgl-view w=80":
+                              - $if task.assignee:
+                                  - "rtgl-text s=sm c=mu-fg h-cur=p data-filter=assignee data-value='${task.assignee}'": "@${task.displayAssignee}"
+                          - rtgl-view w=96 d=v ov=h:
+                              - $for label in task.displayLabels:
+                                  - "rtgl-text s=sm c=mu-fg h-cur=p data-filter=label data-value='${label.name}'": "${label.display}"
+                          - "rtgl-text s=sm c=on-suv w=48 h-cur=p data-filter=status data-value='${task.status}'": "${task.status}"
+                          - "rtgl-text s=sm c=on-suv w=64 h-cur=p data-filter=priority data-value='${task.priority}'": "${task.priority}"
