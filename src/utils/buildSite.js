@@ -197,8 +197,7 @@ export const generateTasksData = (tasksDir, destDataDir, destJsonDir) => {
   };
 
   const markdownFiles = findMarkdownFiles(tasksDir);
-  const tasksForYaml = [];
-  const tasksForJson = [];
+  const tasks = [];
 
   for (const filePath of markdownFiles) {
     const content = readFileSync(filePath, "utf8");
@@ -218,19 +217,7 @@ export const generateTasksData = (tasksDir, destDataDir, destJsonDir) => {
         ? priority.charAt(0).toUpperCase() + priority.slice(1)
         : priority;
 
-      // For YAML: without assignee and labels
-      tasksForYaml.push({
-        id: taskId,
-        filename: fileName,
-        data: {
-          title: frontmatter.title,
-          status: upperCaseStatus,
-          priority: upperCasePriority,
-        },
-      });
-
-      // For JSON: with assignee and labels
-      tasksForJson.push({
+      tasks.push({
         id: taskId,
         filename: fileName,
         data: {
@@ -244,32 +231,28 @@ export const generateTasksData = (tasksDir, destDataDir, destJsonDir) => {
     }
   }
 
-  // Separate todo and done tasks for YAML
-  const todoTasksYaml = sortTasks(
-    tasksForYaml.filter((task) => task.data.status === "Todo"),
+  // Separate todo and done tasks
+  const todoTasks = sortTasks(
+    tasks.filter((task) => task.data.status === "Todo"),
   );
-  const doneTasksYaml = sortTasks(
-    tasksForYaml.filter((task) => task.data.status === "Done"),
+  const doneTasks = sortTasks(
+    tasks.filter((task) => task.data.status === "Done"),
   );
 
-  const tasksDataYaml = {
-    todo: todoTasksYaml,
-    done: doneTasksYaml,
+  // Create the data structure
+  const tasksData = {
+    todo: todoTasks,
+    done: doneTasks,
     meta: {
-      total: tasksForYaml.length,
-      todo: todoTasksYaml.length,
-      done: doneTasksYaml.length,
+      total: tasks.length,
+      todo: todoTasks.length,
+      done: doneTasks.length,
     },
   };
 
-  // JSON: flat tasks array sorted by id
-  const tasksDataJson = {
-    tasks: sortTasks(tasksForJson),
-  };
-
-  // Write to tasks.yaml (without assignee and labels)
+  // Write to tasks.yaml
   const tasksYamlPath = join(destDataDir, "tasks.yaml");
-  const yamlContent = dump(tasksDataYaml, {
+  const yamlContent = dump(tasksData, {
     indent: 2,
     lineWidth: 120,
     noRefs: true,
@@ -277,10 +260,10 @@ export const generateTasksData = (tasksDir, destDataDir, destJsonDir) => {
 
   writeFileSync(tasksYamlPath, yamlContent);
 
-  // Write to tasks.json (with assignee and labels)
+  // Write to tasks.json (same data structure)
   if (!existsSync(destJsonDir)) {
     mkdirSync(destJsonDir, { recursive: true });
   }
   const tasksJsonPath = join(destJsonDir, "tasks.json");
-  writeFileSync(tasksJsonPath, JSON.stringify(tasksDataJson, null, 2));
+  writeFileSync(tasksJsonPath, JSON.stringify(tasksData, null, 2));
 };

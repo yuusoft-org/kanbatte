@@ -1,67 +1,74 @@
-let refreshInterval = null;
-let timeUpdateInterval = null;
-
 export const handleSearchInput = (deps, payload) => {
+  const { render, store } = deps;
   const event = payload._event;
   const value = event.detail.value;
-  deps.store.setSearchQuery(value);
-  deps.render();
+  store.setSearchQuery(value);
+  render();
 };
 
 export const handleSearchKeydown = (deps, payload) => {
+  const { render, store } = deps;
   const event = payload._event;
   if (event.key === "Escape") {
-    deps.store.setSearchQuery("");
-    deps.render();
+    store.setSearchQuery("");
+    render();
   }
 };
 
 export const handleClearSearch = (deps) => {
-  deps.store.setSearchQuery("");
-  deps.render();
+  const { render, store } = deps;
+  store.setSearchQuery("");
+  render();
 };
 
 export const handleSortById = (deps) => {
-  deps.store.setSortBy("id");
-  deps.render();
+  const { render, store } = deps;
+  store.setSortBy("id");
+  render();
 };
 
 export const handleSortByStatus = (deps) => {
-  deps.store.setSortBy("status");
-  deps.render();
+  const { render, store } = deps;
+  store.setSortBy("status");
+  render();
 };
 
 export const handleSortByWorkspace = (deps) => {
-  deps.store.setSortBy("workspace");
-  deps.render();
+  const { render, store } = deps;
+  store.setSortBy("workspace");
+  render();
 };
 
 export const handleSortByPriority = (deps) => {
-  deps.store.setSortBy("priority");
-  deps.render();
+  const { render, store } = deps;
+  store.setSortBy("priority");
+  render();
 };
 
 export const handleSortByProject = (deps) => {
-  deps.store.setSortBy("project");
-  deps.render();
+  const { render, store } = deps;
+  store.setSortBy("project");
+  render();
 };
 
 export const handleToggleOrder = (deps) => {
-  deps.store.toggleSortOrder();
-  deps.render();
+  const { render, store } = deps;
+  store.toggleSortOrder();
+  render();
 };
 
 export const handleAfterMount = (deps) => {
+  const { render, store, fetchService, refreshService } = deps;
   loadData(deps);
-  startAutoRefresh(deps);
-  startTimeUpdate(deps);
+  refreshService.startAutoRefresh(fetchService.fetchAllTasks, store, render);
+  refreshService.startTimeUpdate(render);
 };
 
 export const handleTaskListClick = (deps, payload) => {
+  const { render, store } = deps;
   const event = payload._event;
   const target = event.target;
 
-  // Find the closest element with data-filter attribute
   const filterEl = target.closest("[data-filter]");
   if (!filterEl) return;
 
@@ -71,99 +78,28 @@ export const handleTaskListClick = (deps, payload) => {
   if (filterType && value) {
     event.preventDefault();
     event.stopPropagation();
-    const currentQuery = deps.store.getState().searchQuery;
+    const currentQuery = store.getState().searchQuery;
     const newFilter = `${filterType}:${value}`;
     const newQuery = currentQuery ? `${currentQuery} ${newFilter}` : newFilter;
-    deps.store.setSearchQuery(newQuery);
-    deps.render();
+    store.setSearchQuery(newQuery);
+    render();
   }
-};
-
-const fetchConfig = async () => {
-  const response = await fetch("./kanbatte.config.json");
-  if (!response.ok) {
-    throw new Error("Failed to fetch config");
-  }
-  return response.json();
-};
-
-const fetchAllTasks = async (config) => {
-  const allTasks = [];
-
-  for (const workspace of config.workspaces) {
-    for (const project of workspace.projects) {
-      try {
-        const response = await fetch(`${project.url}/tasks.json`);
-        if (response.ok) {
-          const data = await response.json();
-          const tasks = data.tasks || [];
-
-          for (const task of tasks) {
-            allTasks.push({
-              id: task.id,
-              filename: task.filename,
-              title: task.data?.title || task.title,
-              status: task.data?.status || task.status,
-              priority: task.data?.priority || task.priority,
-              assignee: task.data?.assignee || null,
-              labels: task.data?.labels || [],
-              url: project.url,
-              projectName: project.name,
-              workspaceName: workspace.name,
-            });
-          }
-        }
-      } catch (err) {
-        console.warn(`Failed to fetch tasks from ${project.url}:`, err.message);
-      }
-    }
-  }
-
-  return allTasks;
 };
 
 const loadData = async (deps) => {
+  const { render, store, fetchService } = deps;
   try {
-    deps.store.setLoading(true);
-    deps.render();
+    store.setLoading(true);
+    render();
 
-    const config = await fetchConfig();
-    deps.store.setConfig(config);
+    const config = await fetchService.fetchConfig();
+    store.setConfig(config);
 
-    const tasks = await fetchAllTasks(config);
-    deps.store.setTasks(tasks);
-    deps.render();
+    const tasks = await fetchService.fetchAllTasks(config);
+    store.setTasks(tasks);
+    render();
   } catch (err) {
-    deps.store.setError(err.message);
-    deps.render();
+    store.setError(err.message);
+    render();
   }
-};
-
-const startAutoRefresh = (deps) => {
-  if (refreshInterval) {
-    clearInterval(refreshInterval);
-  }
-
-  refreshInterval = setInterval(async () => {
-    try {
-      const config = deps.store.getState().config;
-      if (config) {
-        const tasks = await fetchAllTasks(config);
-        deps.store.setTasks(tasks);
-        deps.render();
-      }
-    } catch (err) {
-      console.warn("Auto-refresh failed:", err.message);
-    }
-  }, 60000); // 60 seconds
-};
-
-const startTimeUpdate = (deps) => {
-  if (timeUpdateInterval) {
-    clearInterval(timeUpdateInterval);
-  }
-
-  timeUpdateInterval = setInterval(() => {
-    deps.render();
-  }, 1000); // Update time display every second
 };

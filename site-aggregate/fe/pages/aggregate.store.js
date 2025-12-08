@@ -1,92 +1,3 @@
-export const createInitialState = () => ({
-  searchQuery: "",
-  sortBy: "status", // id, status, workspace, priority, project
-  sortAsc: true,
-  config: null,
-  tasks: [],
-  lastUpdated: null,
-  loading: true,
-  error: null,
-});
-
-export const selectViewData = ({ state }) => {
-  const filteredTasks = filterTasks(state.tasks, state.searchQuery);
-  const sorted = [...filteredTasks].sort(getSortFn(state.sortBy));
-  const sortedTasks = state.sortAsc ? sorted : sorted.reverse();
-
-  // Add display labels and group separator flag
-  const tasks = sortedTasks.map((task, index) => {
-    const labels = task.labels || [];
-    const displayLabels = labels.map((l) => {
-      const truncated = l.length > 8 ? l.slice(0, 7) + "…" : l;
-      return { name: l, display: `#${truncated}` };
-    });
-
-    // Detect if this task starts a new group based on current sort field
-    let isNewGroup = false;
-    let groupLabel = null;
-    const getSortValue = (t) => {
-      switch (state.sortBy) {
-        case "status":
-          return t.status || "";
-        case "workspace":
-          return t.workspaceName || "";
-        case "project":
-          return t.projectName || "";
-        case "priority":
-          return t.priority || "";
-        default:
-          return null;
-      }
-    };
-    const currVal = getSortValue(task);
-
-    if (index === 0) {
-      // First task always shows group header (if sorting by a groupable field)
-      if (currVal !== null) {
-        isNewGroup = true;
-        groupLabel = currVal;
-      }
-    } else {
-      const prevTask = sortedTasks[index - 1];
-      const prevVal = getSortValue(prevTask);
-      if (currVal !== null && currVal !== prevVal) {
-        isNewGroup = true;
-        groupLabel = currVal;
-      }
-    }
-
-    // Truncate workspace, project, assignee to 10 chars
-    const truncate = (str, len) => {
-      if (!str) return str;
-      return str.length > len ? str.slice(0, len - 1) + "…" : str;
-    };
-
-    return {
-      ...task,
-      displayLabels,
-      hasLabels: labels.length > 0,
-      isNewGroup,
-      groupLabel,
-      displayWorkspace: truncate(task.workspaceName, 10),
-      displayProject: truncate(task.projectName, 10),
-      displayAssignee: truncate(task.assignee, 10),
-    };
-  });
-
-  return {
-    searchQuery: state.searchQuery,
-    sortBy: state.sortBy,
-    sortAsc: state.sortAsc,
-    tasks,
-    lastUpdated: state.lastUpdated ? formatTimeAgo(state.lastUpdated) : "Never",
-    loading: state.loading,
-    error: state.error,
-    taskCount: tasks.length,
-    totalCount: state.tasks.length,
-  };
-};
-
 const getSortFn = (sortBy) => {
   switch (sortBy) {
     case "status":
@@ -202,6 +113,99 @@ const filterTasks = (tasks, query) => {
     }
     return true;
   });
+};
+
+export const createInitialState = () => ({
+  searchQuery: "",
+  sortBy: "status", // id, status, workspace, priority, project
+  sortAsc: true,
+  config: null,
+  tasks: [],
+  lastUpdated: null,
+  loading: true,
+  error: null,
+});
+
+export const selectViewData = ({ state }) => {
+  const filteredTasks = filterTasks(state.tasks, state.searchQuery);
+  const sorted = [...filteredTasks].sort(getSortFn(state.sortBy));
+  const sortedTasks = state.sortAsc ? sorted : sorted.reverse();
+
+  // Add display labels and group separator flag
+  const tasks = sortedTasks.map((task, index) => {
+    const labels = task.labels || [];
+    const displayLabels = labels.map((l) => {
+      const truncated = l.length > 8 ? l.slice(0, 7) + "…" : l;
+      return { name: l, display: `#${truncated}` };
+    });
+
+    // Detect if this task starts a new group based on current sort field
+    let isNewGroup = false;
+    let groupLabel = null;
+    const getSortValue = (t) => {
+      switch (state.sortBy) {
+        case "status":
+          return t.status || "";
+        case "workspace":
+          return t.workspaceName || "";
+        case "project":
+          return t.projectName || "";
+        case "priority":
+          return t.priority || "";
+        default:
+          return null;
+      }
+    };
+    const currVal = getSortValue(task);
+
+    if (index === 0) {
+      // First task always shows group header (if sorting by a groupable field)
+      if (currVal !== null) {
+        isNewGroup = true;
+        groupLabel = currVal;
+      }
+    } else {
+      const prevTask = sortedTasks[index - 1];
+      const prevVal = getSortValue(prevTask);
+      if (currVal !== null && currVal !== prevVal) {
+        isNewGroup = true;
+        groupLabel = currVal;
+      }
+    }
+
+    // Truncate workspace, project, assignee to 10 chars
+    const truncate = (str, len) => {
+      if (!str) return str;
+      return str.length > len ? str.slice(0, len - 1) + "…" : str;
+    };
+
+    return {
+      ...task,
+      displayLabels,
+      hasLabels: labels.length > 0,
+      isNewGroup,
+      groupLabel,
+      displayWorkspace: truncate(task.workspaceName, 10),
+      displayProject: truncate(task.projectName, 10),
+      displayAssignee: truncate(task.assignee, 10),
+    };
+  });
+
+  return {
+    searchQuery: state.searchQuery,
+    sortBy: state.sortBy,
+    sortAsc: state.sortAsc,
+    tasks,
+    lastUpdated: state.lastUpdated ? formatTimeAgo(state.lastUpdated) : "Never",
+    loading: state.loading,
+    error: state.error,
+    taskCount: tasks.length,
+    totalCount: state.tasks.length,
+  };
+};
+
+export const selectConfig = ({ state }) => {
+  return state.config;
 };
 
 // Actions
