@@ -1,6 +1,6 @@
 ---
 title: Discord Embeds
-status: todo
+status: done
 priority: low
 ---
 
