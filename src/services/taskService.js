@@ -12,6 +12,11 @@ import {
   calculateFolder,
   buildTaskPath,
 } from "../utils/tasks.js";
+import {
+  validateConfig,
+  writeConfigJson,
+  buildAggregateSpa,
+} from "../utils/aggregate.js";
 
 export const createTaskService = (deps) => {
   const { fs } = deps;
@@ -73,21 +78,25 @@ export const createTaskService = (deps) => {
         typeDirs = [typeFilter];
       }
     } else {
-      typeDirs = fs.readdirSync(tasksPath, { withFileTypes: true })
+      typeDirs = fs
+        .readdirSync(tasksPath, { withFileTypes: true })
         .filter((dirent) => dirent.isDirectory())
         .map((dirent) => dirent.name);
     }
 
     for (const type of typeDirs) {
       const typePath = join(tasksPath, type);
-      const numericFolders = fs.readdirSync(typePath, { withFileTypes: true })
+      const numericFolders = fs
+        .readdirSync(typePath, { withFileTypes: true })
         .filter((dirent) => dirent.isDirectory() && /^\d{3}$/.test(dirent.name))
         .map((dirent) => dirent.name)
         .sort((a, b) => parseInt(a) - parseInt(b));
 
       for (const folder of numericFolders) {
         const folderPath = join(typePath, folder);
-        const files = fs.readdirSync(folderPath).filter((file) => file.endsWith(".md"));
+        const files = fs
+          .readdirSync(folderPath)
+          .filter((file) => file.endsWith(".md"));
 
         for (const file of files) {
           const filePath = join(folderPath, file);
@@ -95,7 +104,9 @@ export const createTaskService = (deps) => {
             const task = parseTaskFile(filePath);
             allTasks.push(task);
           } catch (error) {
-            console.warn(`Warning: Skipping invalid task file ${filePath}: ${error.message}`);
+            console.warn(
+              `Warning: Skipping invalid task file ${filePath}: ${error.message}`,
+            );
           }
         }
       }
@@ -111,14 +122,16 @@ export const createTaskService = (deps) => {
       return { taskId: `${type}-001`, folder: "000" };
     }
 
-    const folders = fs.readdirSync(taskTypePath, { withFileTypes: true })
+    const folders = fs
+      .readdirSync(taskTypePath, { withFileTypes: true })
       .filter((dirent) => dirent.isDirectory())
       .map((dirent) => dirent.name)
       .sort((a, b) => parseInt(a) - parseInt(b));
 
     for (const folder of folders) {
       const folderPath = join(taskTypePath, folder);
-      const files = fs.readdirSync(folderPath)
+      const files = fs
+        .readdirSync(folderPath)
         .filter((file) => file.endsWith(".md") && file.startsWith(type + "-"))
         .map((file) => {
           const match = file.match(new RegExp(`${type}-(\\d+)\\.md`));
@@ -141,7 +154,8 @@ export const createTaskService = (deps) => {
       }
     }
 
-    const lastFolderNum = folders.length > 0 ? parseInt(folders[folders.length - 1]) : 0;
+    const lastFolderNum =
+      folders.length > 0 ? parseInt(folders[folders.length - 1]) : 0;
     const newFolderNum = lastFolderNum === 0 ? 100 : lastFolderNum + 100;
     const newFolder = newFolderNum.toString().padStart(3, "0");
     const newTaskIdNum = newFolderNum === 100 ? 100 : newFolderNum;
@@ -220,9 +234,36 @@ export const createTaskService = (deps) => {
     return `./tasks/${type}/${folder}/${taskId}.md`;
   };
 
+  /**
+   * Aggregates tasks from remote sources
+   */
+  const aggregateTasks = async (projectRoot) => {
+    const configPath = join(projectRoot, "kanbatte.config.yaml");
+
+    if (!fs.existsSync(configPath)) {
+      throw new Error("kanbatte.config.yaml not found in project root");
+    }
+
+    const configContent = fs.readFileSync(configPath, "utf8");
+    let config;
+    try {
+      config = load(configContent);
+    } catch (error) {
+      throw new Error(`Failed to parse kanbatte.config.yaml: ${error.message}`);
+    }
+
+    validateConfig(config);
+
+    const aggregateSpaDir = join(projectRoot, "_site", "aggregate");
+    writeConfigJson(fs, aggregateSpaDir, config);
+
+    await buildAggregateSpa(aggregateSpaDir);
+  };
+
   return {
     createTask,
     listTasks,
     locateTask,
+    aggregateTasks,
   };
 };

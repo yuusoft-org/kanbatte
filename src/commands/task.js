@@ -20,9 +20,14 @@ export const createTaskCommands = (deps) => {
     console.log(path);
   };
 
+  const aggregateTasks = async (projectRoot) => {
+    await taskService.aggregateTasks(projectRoot);
+  };
+
   return {
     createTask,
     listTasks,
     locateTask,
+    aggregateTasks,
   };
 };

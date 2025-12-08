@@ -1,4 +1,12 @@
-import { existsSync, rmSync, mkdirSync, readdirSync, copyFileSync, writeFileSync, readFileSync } from "fs";
+import {
+  existsSync,
+  rmSync,
+  mkdirSync,
+  readdirSync,
+  copyFileSync,
+  writeFileSync,
+  readFileSync,
+} from "fs";
 import { join, basename } from "path";
 import { load, dump } from "js-yaml";
 
@@ -6,7 +14,7 @@ export const removeDirectory = (dirPath) => {
   if (existsSync(dirPath)) {
     rmSync(dirPath, { recursive: true, force: true });
   }
-}
+};
 
 export const copyDirectory = (src, dest) => {
   if (!existsSync(dest)) {
@@ -25,7 +33,7 @@ export const copyDirectory = (src, dest) => {
       copyFileSync(srcPath, destPath);
     }
   }
-}
+};
 
 export const copyDirectoryOverwrite = (src, dest) => {
   // Ensure destination exists
@@ -45,10 +53,10 @@ export const copyDirectoryOverwrite = (src, dest) => {
       copyFileSync(srcPath, destPath); // This will overwrite existing files
     }
   }
-}
+};
 
 export const processTaskFile = (srcPath, destPath) => {
-  const content = readFileSync(srcPath, 'utf8');
+  const content = readFileSync(srcPath, "utf8");
 
   // Split content into frontmatter and body
   const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
@@ -61,23 +69,24 @@ export const processTaskFile = (srcPath, destPath) => {
   const body = content.slice(frontmatterMatch[0].length);
 
   // Parse existing frontmatter
-  const frontmatterLines = frontmatter.split('\n');
+  const frontmatterLines = frontmatter.split("\n");
   const updatedLines = [];
 
   // Process existing frontmatter and transform status/priority
   for (const line of frontmatterLines) {
-    if (line.startsWith('template:') || line.startsWith('tags:')) {
+    if (line.startsWith("template:") || line.startsWith("tags:")) {
       // Skip these, we'll add them fresh
       continue;
-    } else if (line.startsWith('status:')) {
+    } else if (line.startsWith("status:")) {
       // Transform status to capitalize first letter
-      const status = line.replace('status:', '').trim();
+      const status = line.replace("status:", "").trim();
       const upperCaseStatus = status.charAt(0).toUpperCase() + status.slice(1);
       updatedLines.push(`status: ${upperCaseStatus}`);
-    } else if (line.startsWith('priority:')) {
+    } else if (line.startsWith("priority:")) {
       // Transform priority to capitalize first letter
-      const priority = line.replace('priority:', '').trim();
-      const upperCasePriority = priority.charAt(0).toUpperCase() + priority.slice(1);
+      const priority = line.replace("priority:", "").trim();
+      const upperCasePriority =
+        priority.charAt(0).toUpperCase() + priority.slice(1);
       updatedLines.push(`priority: ${upperCasePriority}`);
     } else {
       // Keep other lines as is
@@ -86,14 +95,14 @@ export const processTaskFile = (srcPath, destPath) => {
   }
 
   // Add required frontmatter
-  updatedLines.push('template: task');
-  updatedLines.push('tags: tasks');
+  updatedLines.push("template: task");
+  updatedLines.push("tags: tasks");
 
   // Reconstruct content
-  const updatedContent = `---\n${updatedLines.join('\n')}\n---${body}`;
+  const updatedContent = `---\n${updatedLines.join("\n")}\n---${body}`;
 
   writeFileSync(destPath, updatedContent);
-}
+};
 
 export const processAllTaskFiles = (tasksDir, destTasksDir) => {
   if (!existsSync(destTasksDir)) {
@@ -108,21 +117,21 @@ export const processAllTaskFiles = (tasksDir, destTasksDir) => {
       const fullPath = join(dir, entry.name);
       if (entry.isDirectory()) {
         findMarkdownFiles(fullPath, fileList);
-      } else if (entry.isFile() && entry.name.endsWith('.md')) {
+      } else if (entry.isFile() && entry.name.endsWith(".md")) {
         fileList.push(fullPath);
       }
     }
     return fileList;
-  }
+  };
 
   const markdownFiles = findMarkdownFiles(tasksDir);
 
   for (const srcPath of markdownFiles) {
-    const fileName = srcPath.split('/').pop(); // Get just the filename
+    const fileName = srcPath.split("/").pop(); // Get just the filename
     const destPath = join(destTasksDir, fileName);
     processTaskFile(srcPath, destPath);
   }
-}
+};
 
 const parseFrontmatter = (content) => {
   const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
@@ -136,18 +145,18 @@ const parseFrontmatter = (content) => {
     console.warn(`Failed to parse frontmatter: ${error.message}`);
     return null;
   }
-}
+};
 
 const extractTaskId = (filePath) => {
-  const fileName = basename(filePath, '.md');
+  const fileName = basename(filePath, ".md");
   return fileName; // Get the filename without extension (e.g., TASK-001)
-}
+};
 
 const sortTasks = (tasks) => {
   const priorityMap = {
     high: 3,
     medium: 2,
-    low: 1
+    low: 1,
   };
 
   return [...tasks].sort((a, b) => {
@@ -160,10 +169,9 @@ const sortTasks = (tasks) => {
       return a.id.localeCompare(b.id); // ascending order by id
     }
   });
-}
+};
 
-
-export const generateTasksData = (tasksDir, destDataDir) => {
+export const generateTasksData = (tasksDir, destDataDir, destJsonDir) => {
   if (!existsSync(tasksDir)) {
     console.log("⚠ No tasks directory found, skipping tasks data generation");
     return;
@@ -181,46 +189,55 @@ export const generateTasksData = (tasksDir, destDataDir) => {
       const fullPath = join(dir, entry.name);
       if (entry.isDirectory()) {
         findMarkdownFiles(fullPath, fileList);
-      } else if (entry.isFile() && entry.name.endsWith('.md')) {
+      } else if (entry.isFile() && entry.name.endsWith(".md")) {
         fileList.push(fullPath);
       }
     }
     return fileList;
-  }
+  };
 
   const markdownFiles = findMarkdownFiles(tasksDir);
   const tasks = [];
 
   for (const filePath of markdownFiles) {
-    const content = readFileSync(filePath, 'utf8');
+    const content = readFileSync(filePath, "utf8");
     const frontmatter = parseFrontmatter(content);
 
     if (frontmatter) {
       const taskId = extractTaskId(filePath);
-      const fileName = basename(filePath, '.md');
+      const fileName = basename(filePath, ".md");
 
       // Transform status and priority to capitalize first letter (for consistency with processTaskFile)
       const status = frontmatter.status;
       const priority = frontmatter.priority;
-      const upperCaseStatus = status ? status.charAt(0).toUpperCase() + status.slice(1) : status;
-      const upperCasePriority = priority ? priority.charAt(0).toUpperCase() + priority.slice(1) : priority;
+      const upperCaseStatus = status
+        ? status.charAt(0).toUpperCase() + status.slice(1)
+        : status;
+      const upperCasePriority = priority
+        ? priority.charAt(0).toUpperCase() + priority.slice(1)
+        : priority;
 
-      
       tasks.push({
         id: taskId,
         filename: fileName,
         data: {
           title: frontmatter.title,
           status: upperCaseStatus,
-          priority: upperCasePriority
-        }
+          priority: upperCasePriority,
+          assignee: frontmatter.assignee || null,
+          labels: frontmatter.labels || [],
+        },
       });
     }
   }
 
   // Separate todo and done tasks
-  const todoTasks = sortTasks(tasks.filter(task => task.data.status === 'Todo'));
-  const doneTasks = sortTasks(tasks.filter(task => task.data.status === 'Done'));
+  const todoTasks = sortTasks(
+    tasks.filter((task) => task.data.status === "Todo"),
+  );
+  const doneTasks = sortTasks(
+    tasks.filter((task) => task.data.status === "Done"),
+  );
 
   // Create the data structure
   const tasksData = {
@@ -229,17 +246,24 @@ export const generateTasksData = (tasksDir, destDataDir) => {
     meta: {
       total: tasks.length,
       todo: todoTasks.length,
-      done: doneTasks.length
-    }
+      done: doneTasks.length,
+    },
   };
 
   // Write to tasks.yaml
-  const tasksYamlPath = join(destDataDir, 'tasks.yaml');
+  const tasksYamlPath = join(destDataDir, "tasks.yaml");
   const yamlContent = dump(tasksData, {
     indent: 2,
     lineWidth: 120,
-    noRefs: true
+    noRefs: true,
   });
 
   writeFileSync(tasksYamlPath, yamlContent);
-}
+
+  // Write to tasks.json (same data structure)
+  if (!existsSync(destJsonDir)) {
+    mkdirSync(destJsonDir, { recursive: true });
+  }
+  const tasksJsonPath = join(destJsonDir, "tasks.json");
+  writeFileSync(tasksJsonPath, JSON.stringify(tasksData, null, 2));
+};

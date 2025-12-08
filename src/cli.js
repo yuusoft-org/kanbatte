@@ -14,7 +14,13 @@ import { createInsieme } from "./infra/insieme.js";
 import { createSessionService } from "./services/sessionService.js";
 import { formatOutput } from "./utils/output.js";
 import { agent } from "./commands/agent.js";
-import { removeDirectory, copyDirectory, copyDirectoryOverwrite, processAllTaskFiles, generateTasksData } from "./utils/buildSite.js";
+import {
+  removeDirectory,
+  copyDirectory,
+  copyDirectoryOverwrite,
+  processAllTaskFiles,
+  generateTasksData,
+} from "./utils/buildSite.js";
 import { createMainInsiemeDao } from "./deps/mainDao.js";
 import { setupDiscordCli } from "./plugins/discord/cli.js";
 
@@ -53,7 +59,10 @@ const insieme = createInsieme({
 });
 const sessionService = createSessionService({ libsqlInfra, insieme });
 
-const discordMigrationsPath = join(__dirname, "plugins/discord/db/migrations/*.sql");
+const discordMigrationsPath = join(
+  __dirname,
+  "plugins/discord/db/migrations/*.sql",
+);
 const discordLibsqlInfra = createLibsqlInfra({
   dbPath,
   migrationsPath: discordMigrationsPath,
@@ -93,7 +102,6 @@ setupDiscordCli({
   sessionService,
 });
 
-
 // Task command group
 const taskCmd = program.command("task");
 
@@ -115,7 +123,10 @@ taskCmd
   .description("List tasks in table format")
   .argument("[type]", "Task type to filter by (TASK, FEAT, BUG, etc.)")
   .option("-s, --status <status>", "Filter by status (todo, done)")
-  .option("-p, --priority <priority>", "Filter by priority (low, medium, high, comma-separated)")
+  .option(
+    "-p, --priority <priority>",
+    "Filter by priority (low, medium, high, comma-separated)",
+  )
   .option("-a, --assignee <assignee>", "Filter by assignee (comma-separated)")
   .option("-l, --label <label>", "Filter by label (comma-separated)")
   .action((type, options) => {
@@ -129,6 +140,14 @@ taskCmd
   .argument("<taskId>", "Task ID to locate (e.g., TASK-001, FEAT-002)")
   .action((taskId) => {
     taskCommands.locateTask(projectRoot, taskId);
+  });
+
+// Task aggregate command
+taskCmd
+  .command("aggregate")
+  .description("Aggregate tasks from remote sources")
+  .action(async () => {
+    await taskCommands.aggregateTasks(projectRoot);
   });
 
 // Build Task site
@@ -145,7 +164,7 @@ taskCmd
 
     removeDirectory(tempDir);
     copyDirectory(templateDir, tempDir);
-    generateTasksData(tasksDir, destDataDir);
+    generateTasksData(tasksDir, destDataDir, finalSiteDir);
 
     if (existsSync(tasksDir)) {
       processAllTaskFiles(tasksDir, destTasksDir);
@@ -183,7 +202,10 @@ sessionCmd
   .requiredOption("-m, --messages <messages>", "Messages in JSON array format")
   .action(async (sessionId, options) => {
     libsqlInfra.init();
-    await sessionCommands.appendSessionMessages({ sessionId, messages: options.messages });
+    await sessionCommands.appendSessionMessages({
+      sessionId,
+      messages: options.messages,
+    });
   });
 
 // Session status command
@@ -208,7 +230,11 @@ sessionCmd
   .description("List sessions in a project")
   .requiredOption("-p, --project <projectId>", "Project ID")
   .option("-s, --status <status>", "Filter by status")
-  .option("-f, --format <format>", "Output format: table, json, markdown", "table")
+  .option(
+    "-f, --format <format>",
+    "Output format: table, json, markdown",
+    "table",
+  )
   .action(async (options) => {
     libsqlInfra.init();
     await sessionCommands.listSessions(options);
@@ -219,7 +245,11 @@ sessionCmd
   .command("view")
   .description("View a specific session")
   .argument("<sessionId>", "Session ID")
-  .option("-f, --format <format>", "Output format: table, json, markdown", "markdown")
+  .option(
+    "-f, --format <format>",
+    "Output format: table, json, markdown",
+    "markdown",
+  )
   .action(async (sessionId, options) => {
     libsqlInfra.init();
     await sessionCommands.readSession(sessionId, options.format);
@@ -242,7 +272,7 @@ sessionProjectCmd
       projectId: options.project,
       name: options.name,
       repository: options.repository,
-      description: options.description
+      description: options.description,
     });
   });
 
