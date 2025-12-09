@@ -5,12 +5,14 @@ import { createStartCommands } from './commands/start.js';
 
 const token = process.env.DISCORD_BOT_TOKEN;
 
-if (!token) {
-  console.error('Error: Missing DISCORD_BOT_TOKEN environment variable');
-  process.exit(1);
-}
 
 export const startDiscordBot = (services) => {
+
+  if (!token) {
+    console.error('Error: Missing DISCORD_BOT_TOKEN environment variable');
+    process.exit(1);
+  }
+
   const client = new Client({
     intents: [
       GatewayIntentBits.Guilds,
@@ -57,12 +59,12 @@ export const startDiscordBot = (services) => {
         const { sessionService, discordService } = message.client.services;
         const sessionId = await discordService.getSessionIdByThread({ threadId: message.channel.id });
         const messageContent = message.content.replace(/<@!?(\d+)>/, '').trim();
-        
+
         await sessionService.appendSessionMessages({
           sessionId,
           messages: [{ role: "user", content: messageContent }]
         });
-        
+
         await message.reply(`Your message has been appended to session ${sessionId}.`);
       } catch (error) {
         console.error('Error:', error);
