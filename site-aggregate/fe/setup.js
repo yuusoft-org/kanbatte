@@ -3,7 +3,7 @@ import { h } from "snabbdom/build/h";
 import { createTasksAggregateService } from "../deps/services/tasksAggregateService.js";
 
 const pageDependencies = {
-  tasksService: createTasksAggregateService(),
+  taskAggregateService: createTasksAggregateService(),
 };
 
 const deps = {

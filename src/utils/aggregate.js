@@ -71,36 +71,23 @@ export const buildAggregateSpa = async (aggregateDir) => {
     mkdirSync(publicDir, { recursive: true });
   }
 
+  // Copy static files (index.html, public/theme.css, etc.)
+  cpSync(staticDir, aggregateDir, { recursive: true });
+
   console.log("Building aggregate SPA...");
 
   await build({
     cwd: siteAggregateDir,
     dirs: ["./fe/pages"],
-    outfile: "./_build/main.js",
+    outfile: join(publicDir, "main.js"),
     setup: "./fe/setup.js",
     development: false,
   });
 
-  // Copy built JS to aggregate public directory
-  const builtJs = join(siteAggregateDir, "_build", "main.js");
-  if (existsSync(builtJs)) {
-    cpSync(builtJs, join(publicDir, "main.js"));
-  }
-
-  // Copy static files (index.html)
-  const indexHtmlSrc = join(staticDir, "index.html");
-  if (existsSync(indexHtmlSrc)) {
-    cpSync(indexHtmlSrc, join(aggregateDir, "index.html"));
-  }
-
   // Clean up build artifacts
   const tempDir = join(siteAggregateDir, ".temp");
-  const buildDir = join(siteAggregateDir, "_build");
   if (existsSync(tempDir)) {
     rmSync(tempDir, { recursive: true, force: true });
-  }
-  if (existsSync(buildDir)) {
-    rmSync(buildDir, { recursive: true, force: true });
   }
 
   console.log(`  -> Aggregate SPA built to ${aggregateDir}`);

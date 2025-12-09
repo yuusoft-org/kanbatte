@@ -58,16 +58,16 @@ export const handleToggleOrder = (deps) => {
 };
 
 export const handleAfterMount = async (deps) => {
-  const { render, store, tasksService } = deps;
+  const { render, store, taskAggregateService } = deps;
 
   try {
     store.setLoading(true);
     render();
 
-    const config = await tasksService.fetchConfig();
+    const config = await taskAggregateService.fetchConfig();
     store.setConfig(config);
 
-    const tasks = await tasksService.fetchAllTasks(config);
+    const tasks = await taskAggregateService.fetchAllTasks(config);
     store.setTasks(tasks);
     render();
   } catch (err) {
@@ -75,15 +75,15 @@ export const handleAfterMount = async (deps) => {
     render();
   }
 
-  tasksService.startAutoRefresh(async () => {
+  taskAggregateService.startAutoRefresh(async () => {
     const config = store.selectConfig();
     if (config) {
-      const tasks = await tasksService.fetchAllTasks(config);
+      const tasks = await taskAggregateService.fetchAllTasks(config);
       store.setTasks(tasks);
       render();
     }
   });
-  tasksService.startTimeUpdate(render);
+  taskAggregateService.startTimeUpdate(render);
 };
 
 export const handleTaskListClick = (deps, payload) => {
