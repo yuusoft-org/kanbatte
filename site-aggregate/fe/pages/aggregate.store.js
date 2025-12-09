@@ -50,22 +50,28 @@ const parseSearchQuery = (query) => {
     text: [],
   };
 
-  const parts = query.trim().split(/\s+/);
-  for (const part of parts) {
-    if (part.startsWith("workspace:")) {
-      filters.workspace = part.slice(10).toLowerCase();
-    } else if (part.startsWith("project:")) {
-      filters.project = part.slice(8).toLowerCase();
-    } else if (part.startsWith("priority:")) {
-      filters.priority = part.slice(9).toLowerCase();
-    } else if (part.startsWith("status:")) {
-      filters.status = part.slice(7).toLowerCase();
-    } else if (part.startsWith("assignee:")) {
-      filters.assignee = part.slice(9).toLowerCase();
-    } else if (part.startsWith("label:")) {
-      filters.label = part.slice(6).toLowerCase();
-    } else if (part) {
-      filters.text.push(part.toLowerCase());
+  const filterKeys = [
+    "workspace",
+    "project",
+    "priority",
+    "status",
+    "assignee",
+    "label",
+  ];
+
+  // Match: key:"quoted value" or key:unquoted or plain text
+  const tokenRegex = /(\w+):"([^"]+)"|(\w+):(\S+)|(\S+)/g;
+  let match;
+
+  while ((match = tokenRegex.exec(query)) !== null) {
+    const key = (match[1] || match[3] || "").toLowerCase();
+    const value = (match[2] || match[4] || "").toLowerCase();
+    const plainText = match[5];
+
+    if (key && value && filterKeys.includes(key)) {
+      filters[key] = value;
+    } else if (plainText) {
+      filters.text.push(plainText.toLowerCase());
     }
   }
 

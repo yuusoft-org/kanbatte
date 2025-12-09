@@ -113,14 +113,14 @@ template:
                               - rtgl-text: "${task.title}"
                       - rtgl-view d=h av=c g=md:
                           - "rtgl-view w=80":
-                              - "rtgl-text s=sm c=mu-fg h-cur=p data-filter=workspace data-value='${task.workspaceName}'": "${task.displayWorkspace}"
+                              - "rtgl-text s=sm c=mu-fg h-cur=p data-filter=workspace data-value='${task.workspaceName}' title='${task.workspaceName}'": "${task.displayWorkspace}"
                           - "rtgl-view w=80":
-                              - "rtgl-text s=sm c=mu-fg h-cur=p data-filter=project data-value='${task.projectName}'": "${task.displayProject}"
+                              - "rtgl-text s=sm c=mu-fg h-cur=p data-filter=project data-value='${task.projectName}' title='${task.projectName}'": "${task.displayProject}"
                           - "rtgl-view w=80":
                               - $if task.assignee:
-                                  - "rtgl-text s=sm c=mu-fg h-cur=p data-filter=assignee data-value='${task.assignee}'": "@${task.displayAssignee}"
+                                  - "rtgl-text s=sm c=mu-fg h-cur=p data-filter=assignee data-value='${task.assignee}' title='${task.assignee}'": "@${task.displayAssignee}"
                           - rtgl-view w=96 d=v ov=h:
                               - $for label in task.displayLabels:
-                                  - "rtgl-text s=sm c=mu-fg h-cur=p data-filter=label data-value='${label.name}'": "${label.display}"
+                                  - "rtgl-text s=sm c=mu-fg h-cur=p data-filter=label data-value='${label.name}' title='${label.name}'": "${label.display}"
                           - "rtgl-text s=sm c=on-suv w=48 h-cur=p data-filter=status data-value='${task.status}'": "${task.status}"
                           - "rtgl-text s=sm c=on-suv w=64 h-cur=p data-filter=priority data-value='${task.priority}'": "${task.priority}"

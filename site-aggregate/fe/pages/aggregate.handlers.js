@@ -101,7 +101,9 @@ export const handleTaskListClick = (deps, payload) => {
     event.preventDefault();
     event.stopPropagation();
     const currentQuery = store.getState().searchQuery;
-    const newFilter = `${filterType}:${value}`;
+    // Wrap value in quotes if it contains spaces
+    const formattedValue = value.includes(" ") ? `"${value}"` : value;
+    const newFilter = `${filterType}:${formattedValue}`;
     const newQuery = currentQuery ? `${currentQuery} ${newFilter}` : newFilter;
     store.setSearchQuery(newQuery);
     render();
