@@ -1,7 +1,8 @@
 ---
 title: aggregate tasks
-status: todo
+status: done
 priority: medium
+assignee: JeffY
 ---
 
 # Description
