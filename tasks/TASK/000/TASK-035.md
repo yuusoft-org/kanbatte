@@ -1,6 +1,6 @@
 ---
 title: improve PR generation
-status: open
+status: todo
 priority: medium
 ---
 
