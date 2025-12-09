@@ -57,11 +57,33 @@ export const handleToggleOrder = (deps) => {
   render();
 };
 
-export const handleAfterMount = (deps) => {
-  const { render, store, fetchService, refreshService } = deps;
-  loadData(deps);
-  refreshService.startAutoRefresh(fetchService.fetchAllTasks, store, render);
-  refreshService.startTimeUpdate(render);
+export const handleAfterMount = async (deps) => {
+  const { render, store, tasksService } = deps;
+
+  try {
+    store.setLoading(true);
+    render();
+
+    const config = await tasksService.fetchConfig();
+    store.setConfig(config);
+
+    const tasks = await tasksService.fetchAllTasks(config);
+    store.setTasks(tasks);
+    render();
+  } catch (err) {
+    store.setError(err.message);
+    render();
+  }
+
+  tasksService.startAutoRefresh(async () => {
+    const config = store.selectConfig();
+    if (config) {
+      const tasks = await tasksService.fetchAllTasks(config);
+      store.setTasks(tasks);
+      render();
+    }
+  });
+  tasksService.startTimeUpdate(render);
 };
 
 export const handleTaskListClick = (deps, payload) => {
@@ -82,24 +104,6 @@ export const handleTaskListClick = (deps, payload) => {
     const newFilter = `${filterType}:${value}`;
     const newQuery = currentQuery ? `${currentQuery} ${newFilter}` : newFilter;
     store.setSearchQuery(newQuery);
-    render();
-  }
-};
-
-const loadData = async (deps) => {
-  const { render, store, fetchService } = deps;
-  try {
-    store.setLoading(true);
-    render();
-
-    const config = await fetchService.fetchConfig();
-    store.setConfig(config);
-
-    const tasks = await fetchService.fetchAllTasks(config);
-    store.setTasks(tasks);
-    render();
-  } catch (err) {
-    store.setError(err.message);
     render();
   }
 };
