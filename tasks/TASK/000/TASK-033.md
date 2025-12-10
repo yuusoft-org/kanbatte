@@ -2,6 +2,7 @@
 title: Discord Embeds
 status: todo
 priority: low
+labels: ['discord']
 ---
 
 # Description
