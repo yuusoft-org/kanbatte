@@ -2,6 +2,7 @@
 title: Tool Use Result handle
 status: todo
 priority: low
+labels: ['discord']
 ---
 
 # Description

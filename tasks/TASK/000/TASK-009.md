@@ -3,6 +3,7 @@ title: add puty test for cli
 status: todo
 assignee: han4wluc
 priority: low
+labels: ['testing']
 ---
 
 # Description

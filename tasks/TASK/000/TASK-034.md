@@ -1,7 +1,7 @@
 ---
 title: Prompts Presets
 status: todo
-priority: low
+priority: medium
 ---
 
 # Description
