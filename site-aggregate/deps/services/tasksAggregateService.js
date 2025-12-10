@@ -71,7 +71,8 @@ const createTasksAggregateService = () => {
 
   return {
     async fetchConfig() {
-      const response = await fetch("./kanbatte.config.json");
+      const timestamp = Date.now();
+      const response = await fetch(`./kanbatte.config.json?t=${timestamp}`);
       if (!response.ok) {
         throw new Error("Failed to fetch config");
       }
@@ -84,7 +85,8 @@ const createTasksAggregateService = () => {
       for (const workspace of config.workspaces) {
         for (const project of workspace.projects) {
           try {
-            const response = await fetch(`${project.url}/tasks.json`);
+            const timestamp = Date.now();
+            const response = await fetch(`${project.url}/tasks.json?t=${timestamp}`);
             if (response.ok) {
               const data = await response.json();
 
