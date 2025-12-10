@@ -1,7 +1,7 @@
 ---
 title: Add session append stop option
 status: todo
-priority: low
+priority: medium
 labels: ['discord', 'session']
 ---
 
