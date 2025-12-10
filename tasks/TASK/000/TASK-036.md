@@ -1,8 +1,8 @@
 ---
 title: query params for filter and sort
 status: todo
-priority: medium
-assignee: anyone
+priority: high
+assignee: JeffY
 labels: [task]
 ---
 
