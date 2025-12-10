@@ -46,8 +46,8 @@ discord:
     - name: Yuusoft
       guildId: 1234
       channels:
-        projectId: kanbatte
-        channelId: 1234
+        - projectId: kanbatte
+          channelId: 1234
       allowedRoles:
         - 1234
 
