@@ -107,7 +107,9 @@ configCmd
     libsqlInfra.init();
     discordLibsqlInfra.init();
 
-    const discordInsieme = createInsieme({ discordLibsqlInfra });
+    const discordInsieme = createInsieme({
+      libsqlInfra: discordLibsqlInfra,
+    });
     await discordInsieme.init();
     const discordService = createDiscordService({
       discordInsieme,
