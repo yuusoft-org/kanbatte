@@ -9,9 +9,11 @@ import { buildSite } from "@rettangoli/sites/cli";
 import { createTaskService } from "./services/taskService.js";
 import { createTaskCommands } from "./commands/task.js";
 import { createSessionCommands } from "./commands/session.js";
+import { createConfigCommands } from "./commands/config.js";
 import { createLibsqlInfra } from "./infra/libsql.js";
 import { createInsieme } from "./infra/insieme.js";
 import { createSessionService } from "./services/sessionService.js";
+import { createDiscordService } from "./plugins/discord/services/discordService.js";
 import { formatOutput } from "./utils/output.js";
 import { agent } from "./commands/agent.js";
 import {
@@ -21,7 +23,6 @@ import {
   processAllTaskFiles,
   generateTasksData,
 } from "./utils/buildSite.js";
-import { createMainInsiemeDao } from "./deps/mainDao.js";
 import { setupDiscordCli } from "./plugins/discord/cli.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -92,6 +93,31 @@ dbCmd
     await libsqlInfra.migrateDb();
     await insieme.init();
     console.log("Database setup completed!");
+  });
+
+const configCmd = program
+  .command("config")
+  .description("Manage configuration from kanbatte.config.yaml");
+
+configCmd
+  .command("sync")
+  .description("Sync settings from kanbatte.config.yaml to the database")
+  .action(async () => {
+    console.log("Starting configuration sync...");
+    libsqlInfra.init();
+    discordLibsqlInfra.init();
+
+    const discordInsieme = createInsieme({ discordLibsqlInfra });
+    await discordInsieme.init();
+    const discordService = createDiscordService({
+      discordInsieme,
+      discordLibsql: discordLibsqlInfra,
+    });
+    const configCommands = createConfigCommands({
+      sessionService,
+      discordService,
+    });
+    await configCommands.syncConfig(projectRoot);
   });
 
 const discordCmd = program.command("discord");
