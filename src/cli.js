@@ -262,6 +262,15 @@ sessionCmd
     await sessionCommands.readSession(sessionId, options.format);
   });
 
+const sessionProjectCmd = sessionCmd.command("project");
+
+sessionProjectCmd
+  .command("list")
+  .description("List all projects from kanbatte.config.yaml")
+  .action(async () => {
+    await sessionCommands.listProjects();
+  });
+
 const agentCmd = program.command("agent").description("Control AI agents");
 
 agentCmd

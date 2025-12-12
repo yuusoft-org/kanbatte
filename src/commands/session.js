@@ -92,6 +92,21 @@ export const createSessionCommands = (deps) => {
     }
   };
 
+  const listProjects = async () => {
+    const projects = configService.getProjects();
+
+    if (projects.length > 0) {
+      const displayProjects = projects.map(({ id, gitRepository }) => ({
+        projectId: id,
+        repository: gitRepository,
+      }));
+      console.log("Projects (from kanbatte.config.yaml):");
+      console.table(displayProjects);
+    } else {
+      console.log("No projects found in kanbatte.config.yaml.");
+    }
+  };
+
   const appendSessionMessages = async (payload) => {
     if (!payload.sessionId) {
       throw new Error("Session ID is required");
@@ -120,6 +135,7 @@ export const createSessionCommands = (deps) => {
     updateSession,
     readSession,
     listSessions,
+    listProjects,
     appendSessionMessages,
   };
 };
