@@ -65,6 +65,11 @@ const validateTasksJson = (data, projectUrl) => {
   return errors;
 };
 
+const capitalize = (str) => {
+  if (!str) return "";
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+};
+
 const createTasksAggregateService = () => {
   let refreshIntervalId = null;
   let timeUpdateIntervalId = null;
@@ -105,13 +110,13 @@ const createTasksAggregateService = () => {
                   id: task.id,
                   filename: task.filename,
                   title: task.data?.title || task.title,
-                  status: task.data?.status || task.status,
-                  priority: task.data?.priority || task.priority,
+                  status: capitalize(task.data?.status || task.status),
+                  priority: capitalize(task.data?.priority || task.priority),
                   assignee: task.data?.assignee || null,
                   labels: task.data?.labels || [],
                   url: project.url,
-                  projectName: project.name,
-                  workspaceName: workspace.name,
+                  project: project.name,
+                  workspace: workspace.name,
                 });
               }
             }
