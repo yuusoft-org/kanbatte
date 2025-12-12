@@ -48,7 +48,7 @@ export const startDiscordBot = (services) => {
     if (!isThreadChannel(message.channel)) return;
 
     const { discordService } = message.client.services;
-    const roles = await discordService.getAllowedRoleIds() || [];
+    const roles = discordService.getAllowedRolesByGuildId({ guildId: message.guild.id }) || [];
     if (!isMemberAllowed(message.member, roles)) {
       await message.reply("❌ You don't have permission to interact in this thread.");
       return;
@@ -81,7 +81,7 @@ export const startDiscordBot = (services) => {
     }
     try {
       const { discordService } = interaction.client.services;
-      const roles = await discordService.getAllowedRoleIds() || [];
+      const roles = discordService.getAllowedRolesByGuildId({ guildId: interaction.guild.id }) || [];
       if (!isMemberAllowed(interaction.member, roles)) {
         await interaction.reply({
           content: "❌ You don't have permission to use this command.",

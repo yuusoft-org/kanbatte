@@ -24,13 +24,13 @@ export const agent = async (deps) => {
       });
 
       // Get project repository
-      const project = await sessionService.getProjectById({ projectId: session.project });
-      if (!project || !project.repository) {
-        throw new Error(`No repository found for project ${session.project}`);
+      const project = sessionService.getProjectById({ projectId: session.project });
+      if (!project || !project.gitRepository) {
+        throw new Error(`No repository found for project ${session.project} in config file.`);
       }
 
       // Setup git worktree using project repository
-      const worktreePath = await setupWorktree(session.sessionId, project.repository);
+      const worktreePath = await setupWorktree(session.sessionId, project.gitRepository);
       console.log(`\nWorktree ready at: ${worktreePath}\n`);
 
       // Build context from session messages

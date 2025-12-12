@@ -1,75 +1,9 @@
-import { serialize, deserialize } from "../../../utils/serialization.js";
-
 export const createDiscordService = (deps) => {
-  const { discordInsieme, discordLibsql } = deps;
-  const { repository } = discordInsieme;
+  const { discordLibsql, configService } = deps;
 
-  const _computeAndSaveView = async (id) => {
-    const events = await repository.getEventsAsync({ partition: [id] });
-    if (events.length === 0) return null;
-
-    let state;
-    let viewKey;
-    let firstEvent = deserialize(events[0].payload.value.eventData);
-
-    if (firstEvent.type === "channel_created") {
-      state = { projectId: id, channel: "" };
-      viewKey = `project:${id}`;
-    } else {
-      return null;
-    }
-
-    for (const row of events) {
-      const event = deserialize(row.payload.value.eventData);
-      switch (event.type) {
-        case "channel_created":
-          state.channel = event.data.channel || state.channel;
-          break;
-        case "channel_updated":
-          if (event.data.channel !== undefined) state.channel = event.data.channel;
-          break;
-      }
-    }
-
-    await discordLibsql.setDiscordView(viewKey, state);
-    return state;
-  };
-
-  const addChannel = async (payload) => {
-    const { projectId, channelData } = payload;
-    const eventData = serialize({ type: "channel_created", projectId, data: channelData, timestamp: Date.now() });
-    await repository.addEvent({
-      type: "treePush",
-      partition: projectId,
-      payload: { target: "events", value: { eventData }, options: { parent: "_root" } },
-    });
-    return await _computeAndSaveView(projectId);
-  };
-
-  const updateChannel= async (payload) => {
-    const { projectId, validUpdates } = payload;
-    const eventData = serialize({ type: "channel_updated", projectId, data: validUpdates, timestamp: Date.now() });
-    await repository.addEvent({
-      type: "treePush",
-      partition: projectId,
-      payload: { target: "events", value: { eventData }, options: { parent: "_root" } },
-    });
-    return await _computeAndSaveView(projectId);
-  };
-
-  const listProjects = async () => {
-    const views = await discordLibsql.findViewsByPrefix("project:");
-    return views.map(data => ({
-      projectId: data.projectId,
-      channel: data.channel,
-    }));
-  };
-
-  const getProjectIdByChannel = async (payload) => {
+  const getProjectConfigByChannelId = (payload) => {
     const { channelId } = payload;
-    const projects = await discordLibsql.findViewsByPrefix("project:");
-    const project = projects.find(p => p.channel === channelId);
-    return project ? project.projectId : null;
+    return configService.getProjectConfigByChannelId(channelId);
   };
 
   const addSessionThreadRecord = async (payload) => {
@@ -84,39 +18,22 @@ export const createDiscordService = (deps) => {
     return await discordLibsql.getThreadIdBySession(payload);
   };
 
-  const setAllowedRoleIds = async (payload) => {
-    const { roleIds } = payload;
-    await discordLibsql.set("allowedRoleIds", roleIds);
+  const getAllowedRolesByGuildId = (payload) => {
+    const { guildId } = payload;
+    return configService.getAllowedRolesByGuildId(guildId);
   };
 
-  const getAllowedRoleIds = async () => {
-    return (await discordLibsql.get("allowedRoleIds")) || [];
-  };
-
-  const addUserEmailRecord = async (payload) => {
-    return await discordLibsql.addUserEmailRecord(payload);
-  };
-
-  const getUserEmailRecord = async (payload) => {
-    return await discordLibsql.getUserEmailRecord(payload);
-  };
-
-  const listUserEmailRecords = async () => {
-    return await discordLibsql.listUserEmailRecords();
+  const getDiscordUserByUserId = (payload) => {
+    const { userId } = payload;
+    return configService.getDiscordUserByUserId(userId);
   };
 
   return {
-    addChannel,
-    updateChannel,
-    listProjects,
-    getProjectIdByChannel,
+    getProjectConfigByChannelId,
     addSessionThreadRecord,
     getSessionIdByThread,
     getThreadIdBySession,
-    setAllowedRoleIds,
-    getAllowedRoleIds,
-    addUserEmailRecord,
-    getUserEmailRecord,
-    listUserEmailRecords,
+    getAllowedRolesByGuildId,
+    getDiscordUserByUserId,
   };
 };

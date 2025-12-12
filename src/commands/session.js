@@ -1,5 +1,5 @@
 export const createSessionCommands = (deps) => {
-  const { sessionService, formatOutput, discordLibsql } = deps;
+  const { sessionService, formatOutput, configService } = deps;
 
   const addSession = async (payload) => {
     if (!payload.message) {
@@ -9,9 +9,9 @@ export const createSessionCommands = (deps) => {
       throw new Error("Project ID is required (use -p or --project)");
     }
 
-    const project = await sessionService.getProjectById({ projectId: payload.project });
+    const project = configService.getProjectById(payload.project);
     if (!project) {
-      throw new Error(`Project '${payload.project}' does not exist`);
+      throw new Error(`Project '${payload.project}' does not exist in kanbatte.config.yaml`);
     }
 
     const sessionNumber = await sessionService.getNextSessionNumber({ projectId: payload.project });
@@ -92,79 +92,6 @@ export const createSessionCommands = (deps) => {
     }
   };
 
-  const addProject = async (payload) => {
-    const { projectId } = payload;
-    if (!projectId) {
-      throw new Error("Project ID is required (use -p or --project-id)");
-    }
-    if (!payload.name) {
-      throw new Error("Project name is required (use -n or --name)");
-    }
-
-    const existing = await sessionService.getProjectById({ projectId });
-    if (existing) {
-      throw new Error(`Project with ID '${projectId}' already exists`);
-    }
-
-    const projectData = {
-      projectId: payload.projectId,
-      name: payload.name,
-      repository: payload.repository,
-      description: payload.description,
-    };
-
-    const project = await sessionService.addProject({ projectId, projectData });
-    console.log("Project created successfully!", { projectId: project.projectId });
-  };
-
-  const updateProject = async (payload) => {
-    const { projectId } = payload;
-    if (!projectId) {
-      throw new Error("Project ID is required (use -p or --project-id)");
-    }
-    const existing = await sessionService.getProjectById({ projectId: projectId });
-    if (!existing) {
-      throw new Error(`Project '${projectId}' does not exist`);
-    }
-
-    const validUpdates = {};
-    if (payload.name !== undefined) validUpdates.name = payload.name;
-    if (payload.repository !== undefined) validUpdates.repository = payload.repository;
-    if (payload.description !== undefined) validUpdates.description = payload.description;
-
-    if (Object.keys(validUpdates).length === 0) {
-      throw new Error("At least one update field is required (-n, -r, or --description)");
-    }
-
-    const result = await sessionService.updateProject({ projectId, validUpdates });
-    console.log("Project updated successfully!", { projectId: result.projectId });
-  };
-
-  const listProjects = async () => {
-    const mainProjects = await sessionService.listProjects();
-    const discordProjects = await discordLibsql.findViewsByPrefix("project:");
-    const discordProjectMap = new Map(discordProjects.map(p => [p.projectId, p]));
-
-    const projects = mainProjects.map(p => {
-      const discordData = discordProjectMap.get(p.projectId);
-      return { ...p, channel: discordData ? discordData.channel : undefined };
-    });
-
-    if (projects.length > 0) {
-      const displayProjects = projects.map(({ projectId, name, repository, description, channel }) => ({
-        projectId,
-        name,
-        repository,
-        description,
-        channel,
-      }));
-      console.log("Projects:");
-      console.table(displayProjects);
-    } else {
-      console.log("No projects found.");
-    }
-  };
-
   const appendSessionMessages = async (payload) => {
     if (!payload.sessionId) {
       throw new Error("Session ID is required");
@@ -193,9 +120,6 @@ export const createSessionCommands = (deps) => {
     updateSession,
     readSession,
     listSessions,
-    addProject,
-    updateProject,
-    listProjects,
     appendSessionMessages,
   };
 };

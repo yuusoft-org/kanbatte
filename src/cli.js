@@ -9,6 +9,7 @@ import { buildSite } from "@rettangoli/sites/cli";
 import { createTaskService } from "./services/taskService.js";
 import { createTaskCommands } from "./commands/task.js";
 import { createSessionCommands } from "./commands/session.js";
+import { createConfigService } from "./services/configService.js";
 import { createLibsqlInfra } from "./infra/libsql.js";
 import { createInsieme } from "./infra/insieme.js";
 import { createSessionService } from "./services/sessionService.js";
@@ -21,7 +22,6 @@ import {
   processAllTaskFiles,
   generateTasksData,
 } from "./utils/buildSite.js";
-import { createMainInsiemeDao } from "./deps/mainDao.js";
 import { setupDiscordCli } from "./plugins/discord/cli.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -37,6 +37,9 @@ program
   .name("kanbatte")
   .description("Orchestrate your AI agents with Kanban-like boards")
   .version(packageJson.version);
+
+const configService = createConfigService();
+configService.init(projectRoot);
 
 const taskService = createTaskService({ fs });
 const taskCommands = createTaskCommands({ taskService });
@@ -57,7 +60,11 @@ const libsqlInfra = createLibsqlInfra({
 const insieme = createInsieme({
   libsqlInfra,
 });
-const sessionService = createSessionService({ libsqlInfra, insieme });
+const sessionService = createSessionService({
+  libsqlInfra,
+  insieme,
+  configService,
+});
 
 const discordMigrationsPath = join(
   __dirname,
@@ -71,14 +78,13 @@ const discordLibsqlInfra = createLibsqlInfra({
     view: "discord_view",
     kvStore: "discord_kv_store",
     sessionThreadRecord: "discord_session_thread_record",
-    userEmailRecord: "discord_user_email_record",
   },
 });
 
 const sessionCommands = createSessionCommands({
   sessionService,
   formatOutput,
-  discordLibsql: discordLibsqlInfra,
+  configService,
 });
 
 const dbCmd = program.command("db").description("Database operations");
@@ -100,6 +106,7 @@ setupDiscordCli({
   libsqlInfra,
   discordLibsqlInfra,
   sessionService,
+  configService,
 });
 
 // Task command group
@@ -253,55 +260,6 @@ sessionCmd
   .action(async (sessionId, options) => {
     libsqlInfra.init();
     await sessionCommands.readSession(sessionId, options.format);
-  });
-
-// Session project command group
-const sessionProjectCmd = sessionCmd.command("project");
-
-// Session project create command
-sessionProjectCmd
-  .command("create")
-  .description("Create a new project")
-  .requiredOption("-p, --project <project>", "Project ID")
-  .requiredOption("-n, --name <name>", "Project name")
-  .requiredOption("-r, --repository <repository>", "Repository URL")
-  .option("-d, --description <description>", "Project description")
-  .action(async (options) => {
-    libsqlInfra.init();
-    await sessionCommands.addProject({
-      projectId: options.project,
-      name: options.name,
-      repository: options.repository,
-      description: options.description,
-    });
-  });
-
-// Session project update command
-sessionProjectCmd
-  .command("update")
-  .description("Update an existing project")
-  .requiredOption("-p, --project <project>", "Project ID")
-  .option("-n, --name <name>", "Project name")
-  .option("-r, --repository <repository>", "Repository URL")
-  .option("-d, --description <description>", "Project description")
-  .action(async (options) => {
-    libsqlInfra.init();
-    await sessionCommands.updateProject({
-      projectId: options.project,
-      name: options.name,
-      repository: options.repository,
-      description: options.description,
-    });
-  });
-
-// Session project list command
-sessionProjectCmd
-  .command("list")
-  .description("List all projects")
-  .action(async () => {
-    libsqlInfra.init();
-    discordLibsqlInfra.init();
-    await sessionCommands.listProjects();
   });
 
 const agentCmd = program.command("agent").description("Control AI agents");
