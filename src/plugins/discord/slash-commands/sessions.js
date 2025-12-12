@@ -140,9 +140,7 @@ const requestPR = {
       });
       return;
     }
-
     const authorInfo = discordService.getDiscordUserByUserId({ userId: interaction.user.id });
-    console.log("Author Info:", authorInfo);
     if (!authorInfo || !authorInfo.name || !authorInfo.email) {
       await interaction.reply({
         content: `Could not find your git author info in kanbatte.config.yaml. Please bind your user first.`,
