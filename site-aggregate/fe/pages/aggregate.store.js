@@ -99,51 +99,33 @@ const filterTasks = (tasks, state) => {
   return tasks.filter((task) => {
     // Filter by status (OR logic - match any selected status)
     if (state.filterStatus.length > 0) {
-      const taskStatus = task.status?.toLowerCase() || "";
-      const matches = state.filterStatus.some(
-        (s) => s.toLowerCase() === taskStatus,
-      );
-      if (!matches) return false;
+      const taskStatus = task.status || "";
+      if (!state.filterStatus.includes(taskStatus)) return false;
     }
     // Filter by priority (OR logic)
     if (state.filterPriority.length > 0) {
-      const taskPriority = task.priority?.toLowerCase() || "";
-      const matches = state.filterPriority.some(
-        (p) => p.toLowerCase() === taskPriority,
-      );
-      if (!matches) return false;
+      const taskPriority = task.priority || "";
+      if (!state.filterPriority.includes(taskPriority)) return false;
     }
     // Filter by workspace (OR logic)
     if (state.filterWorkspace.length > 0) {
-      const taskWorkspace = task.workspaceName?.toLowerCase() || "";
-      const matches = state.filterWorkspace.some(
-        (w) => w.toLowerCase() === taskWorkspace,
-      );
-      if (!matches) return false;
+      const taskWorkspace = task.workspaceName || "";
+      if (!state.filterWorkspace.includes(taskWorkspace)) return false;
     }
     // Filter by project (OR logic)
     if (state.filterProject.length > 0) {
-      const taskProject = task.projectName?.toLowerCase() || "";
-      const matches = state.filterProject.some(
-        (p) => p.toLowerCase() === taskProject,
-      );
-      if (!matches) return false;
+      const taskProject = task.projectName || "";
+      if (!state.filterProject.includes(taskProject)) return false;
     }
     // Filter by assignee (OR logic)
     if (state.filterAssignee.length > 0) {
-      const taskAssignee = task.assignee?.toLowerCase() || "";
-      const matches = state.filterAssignee.some(
-        (a) => a.toLowerCase() === taskAssignee,
-      );
-      if (!matches) return false;
+      const taskAssignee = task.assignee || "";
+      if (!state.filterAssignee.includes(taskAssignee)) return false;
     }
     // Filter by label (OR logic - task must have at least one matching label)
     if (state.filterLabel.length > 0) {
-      const taskLabels = (task.labels || []).map((l) => l?.toLowerCase());
-      const matches = state.filterLabel.some((l) =>
-        taskLabels.includes(l.toLowerCase()),
-      );
-      if (!matches) return false;
+      const taskLabels = task.labels || [];
+      if (!state.filterLabel.some((l) => taskLabels.includes(l))) return false;
     }
     // Text search (searchQuery is now pure text search)
     if (state.searchQuery.trim()) {
