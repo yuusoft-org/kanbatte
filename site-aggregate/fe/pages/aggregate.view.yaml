@@ -12,6 +12,19 @@ viewDataSchema:
     error: { type: string }
     taskCount: { type: number }
     totalCount: { type: number }
+    hasActiveFilters: { type: boolean }
+    activeFilters: { type: array }
+    # Dropdown menu state
+    openDropdown: { type: string }
+    dropdownX: { type: number }
+    dropdownY: { type: number }
+    # Dropdown items
+    workspaceItems: { type: array }
+    projectItems: { type: array }
+    assigneeItems: { type: array }
+    labelItems: { type: array }
+    statusItems: { type: array }
+    priorityItems: { type: array }
 
 refs:
   search-input:
@@ -52,6 +65,74 @@ refs:
     eventListeners:
       click:
         handler: handleClearSearch
+  filter-btn-workspace:
+    eventListeners:
+      click:
+        handler: handleOpenWorkspaceDropdown
+  filter-btn-project:
+    eventListeners:
+      click:
+        handler: handleOpenProjectDropdown
+  filter-btn-assignee:
+    eventListeners:
+      click:
+        handler: handleOpenAssigneeDropdown
+  filter-btn-label:
+    eventListeners:
+      click:
+        handler: handleOpenLabelDropdown
+  filter-btn-status:
+    eventListeners:
+      click:
+        handler: handleOpenStatusDropdown
+  filter-btn-priority:
+    eventListeners:
+      click:
+        handler: handleOpenPriorityDropdown
+  dropdown-workspace:
+    eventListeners:
+      click-item:
+        handler: handleWorkspaceItemClick
+      close:
+        handler: handleCloseDropdown
+  dropdown-project:
+    eventListeners:
+      click-item:
+        handler: handleProjectItemClick
+      close:
+        handler: handleCloseDropdown
+  dropdown-assignee:
+    eventListeners:
+      click-item:
+        handler: handleAssigneeItemClick
+      close:
+        handler: handleCloseDropdown
+  dropdown-label:
+    eventListeners:
+      click-item:
+        handler: handleLabelItemClick
+      close:
+        handler: handleCloseDropdown
+  dropdown-status:
+    eventListeners:
+      click-item:
+        handler: handleStatusItemClick
+      close:
+        handler: handleCloseDropdown
+  dropdown-priority:
+    eventListeners:
+      click-item:
+        handler: handlePriorityItemClick
+      close:
+        handler: handleCloseDropdown
+  active-filters:
+    eventListeners:
+      click:
+        handler: handleRemoveFilter
+  clear-all-filters:
+    eventListeners:
+      click:
+        handler: handleClearAllFilters
 
 styles: {}
 
@@ -66,10 +147,14 @@ template:
                 $else:
                   - "rtgl-input#search-input w=f placeholder='Search tasks...'":
               - rtgl-button#clear-search s=sm v=ol: Clear
-          - rtgl-text s=sm c=mu-fg mb=lg: "Filter by status:todo | workspace:Name | priority:high | project:Name | assignee:Name | label:Name"
-          - rtgl-view d=h av=c mb=lg w=f:
-              - rtgl-text s=h3: Tasks
-              - rtgl-text s=sm c=mu-fg ml=md: "(${taskCount} of ${totalCount})"
+          - rtgl-view w=f mb=md d=h g=sm av=c:
+              - rtgl-text s=sm c=mu-fg mr=sm: "Filters:"
+              - rtgl-button#filter-btn-workspace s=sm v=ol: Workspace
+              - rtgl-button#filter-btn-project s=sm v=ol: Project
+              - rtgl-button#filter-btn-assignee s=sm v=ol: Assignee
+              - rtgl-button#filter-btn-label s=sm v=ol: Label
+              - rtgl-button#filter-btn-status s=sm v=ol: Status
+              - rtgl-button#filter-btn-priority s=sm v=ol: Priority
               - rtgl-view flex=1:
               - rtgl-text s=sm c=mu-fg mr=sm: "Sort:"
               - $if sortBy == "id":
@@ -96,6 +181,29 @@ template:
                   - "rtgl-button#toggle-order s=sm v=ol": "↑"
                 $else:
                   - "rtgl-button#toggle-order s=sm v=ol": "↓"
+          - $if openDropdown == "workspace":
+              - "rtgl-dropdown-menu#dropdown-workspace .items=workspaceItems open=true x='${dropdownX}' y='${dropdownY}' placement='bottom-start'":
+          - $if openDropdown == "project":
+              - "rtgl-dropdown-menu#dropdown-project .items=projectItems open=true x='${dropdownX}' y='${dropdownY}' placement='bottom-start'":
+          - $if openDropdown == "assignee":
+              - "rtgl-dropdown-menu#dropdown-assignee .items=assigneeItems open=true x='${dropdownX}' y='${dropdownY}' placement='bottom-start'":
+          - $if openDropdown == "label":
+              - "rtgl-dropdown-menu#dropdown-label .items=labelItems open=true x='${dropdownX}' y='${dropdownY}' placement='bottom-start'":
+          - $if openDropdown == "status":
+              - "rtgl-dropdown-menu#dropdown-status .items=statusItems open=true x='${dropdownX}' y='${dropdownY}' placement='bottom-start'":
+          - $if openDropdown == "priority":
+              - "rtgl-dropdown-menu#dropdown-priority .items=priorityItems open=true x='${dropdownX}' y='${dropdownY}' placement='bottom-start'":
+          - $if hasActiveFilters:
+              - "rtgl-view w=f mt=sm mb=md d=h g=sm av=c":
+                  - rtgl-text s=sm c=mu-fg mr=md: "Applied:"
+                  - "rtgl-view#active-filters flex=1 d=h g=sm av=c style='flex-wrap: wrap;'":
+                      - $for filter in activeFilters:
+                          - "rtgl-button s=sm v=ol data-filter-type='${filter.type}' data-filter-value='${filter.value}'": "${filter.type}: ${filter.value} ×"
+                  - rtgl-text s=sm c=mu-fg mh=sm: "|"
+                  - rtgl-button#clear-all-filters s=sm v=ol: Clear All
+          - rtgl-view d=h av=c mb=lg w=f:
+              - rtgl-text s=h3: Tasks
+              - rtgl-text s=sm c=mu-fg ml=md: "(${taskCount} of ${totalCount})"
           - $if loading:
               - rtgl-text c=mu-fg: Loading tasks...
           - $if error:
@@ -113,9 +221,9 @@ template:
                               - rtgl-text: "${task.title}"
                       - rtgl-view d=h av=c g=md:
                           - "rtgl-view w=80":
-                              - "rtgl-text s=sm c=mu-fg h-cur=p data-filter=workspace data-value='${task.workspaceName}' title='${task.workspaceName}'": "${task.displayWorkspace}"
+                              - "rtgl-text s=sm c=mu-fg h-cur=p data-filter=workspace data-value='${task.workspace}' title='${task.workspace}'": "${task.displayWorkspace}"
                           - "rtgl-view w=80":
-                              - "rtgl-text s=sm c=mu-fg h-cur=p data-filter=project data-value='${task.projectName}' title='${task.projectName}'": "${task.displayProject}"
+                              - "rtgl-text s=sm c=mu-fg h-cur=p data-filter=project data-value='${task.project}' title='${task.project}'": "${task.displayProject}"
                           - "rtgl-view w=80":
                               - $if task.assignee:
                                   - "rtgl-text s=sm c=mu-fg h-cur=p data-filter=assignee data-value='${task.assignee}' title='${task.assignee}'": "@${task.displayAssignee}"

@@ -1,64 +1,23 @@
-export const handleSearchInput = (deps, payload) => {
-  const { render, store } = deps;
-  const event = payload._event;
-  const value = event.detail.value;
-  store.setSearchQuery(value);
-  render();
-};
+import { syncStateToUrl, FILTER_TYPES } from "./aggregate.store.js";
 
-export const handleSearchKeydown = (deps, payload) => {
-  const { render, store } = deps;
-  const event = payload._event;
-  if (event.key === "Escape") {
-    store.setSearchQuery("");
-    render();
-  }
-};
-
-export const handleClearSearch = (deps) => {
-  const { render, store } = deps;
-  store.setSearchQuery("");
-  render();
-};
-
-export const handleSortById = (deps) => {
-  const { render, store } = deps;
-  store.setSortBy("id");
-  render();
-};
-
-export const handleSortByStatus = (deps) => {
-  const { render, store } = deps;
-  store.setSortBy("status");
-  render();
-};
-
-export const handleSortByWorkspace = (deps) => {
-  const { render, store } = deps;
-  store.setSortBy("workspace");
-  render();
-};
-
-export const handleSortByPriority = (deps) => {
-  const { render, store } = deps;
-  store.setSortBy("priority");
-  render();
-};
-
-export const handleSortByProject = (deps) => {
-  const { render, store } = deps;
-  store.setSortBy("project");
-  render();
-};
-
-export const handleToggleOrder = (deps) => {
-  const { render, store } = deps;
-  store.toggleSortOrder();
-  render();
+const addFilterByType = (store, type, value) => {
+  const actions = {
+    status: store.addFilterStatus,
+    priority: store.addFilterPriority,
+    workspace: store.addFilterWorkspace,
+    project: store.addFilterProject,
+    assignee: store.addFilterAssignee,
+    label: store.addFilterLabel,
+  };
+  const action = actions[type];
+  if (action) action(value);
 };
 
 export const handleAfterMount = async (deps) => {
   const { render, store, taskAggregateService } = deps;
+
+  store.loadStateFromUrl();
+  render();
 
   try {
     store.setLoading(true);
@@ -86,26 +45,126 @@ export const handleAfterMount = async (deps) => {
   taskAggregateService.startTimeUpdate(render);
 };
 
+export const handleSearchInput = (deps, payload) => {
+  const { render, store, debounceUrlSync } = deps;
+  const { value } = payload._event.detail;
+  store.setSearchQuery(value);
+  render();
+  debounceUrlSync(() => syncStateToUrl(store.selectUrlState()));
+};
+
+export const handleSearchKeydown = (deps, payload) => {
+  const { render, store } = deps;
+  const event = payload._event;
+  if (event.key === "Escape") {
+    store.setSearchQuery("");
+    render();
+    syncStateToUrl(store.selectUrlState());
+  }
+};
+
+export const handleClearSearch = (deps) => {
+  const { render, store } = deps;
+  store.setSearchQuery("");
+  render();
+  syncStateToUrl(store.selectUrlState());
+};
+
+const createSortHandler = (sortBy) => (deps) => {
+  const { render, store } = deps;
+  store.setSortBy(sortBy);
+  render();
+  syncStateToUrl(store.selectUrlState());
+};
+
+export const handleSortById = createSortHandler("id");
+export const handleSortByStatus = createSortHandler("status");
+export const handleSortByWorkspace = createSortHandler("workspace");
+export const handleSortByPriority = createSortHandler("priority");
+export const handleSortByProject = createSortHandler("project");
+
+export const handleToggleOrder = (deps) => {
+  const { render, store } = deps;
+  store.toggleSortOrder();
+  render();
+  syncStateToUrl(store.selectUrlState());
+};
+
 export const handleTaskListClick = (deps, payload) => {
   const { render, store } = deps;
   const event = payload._event;
-  const target = event.target;
-
-  const filterEl = target.closest("[data-filter]");
+  const filterEl = event.target.closest("[data-filter]");
   if (!filterEl) return;
 
   const value = filterEl.getAttribute("data-value");
   const filterType = filterEl.getAttribute("data-filter");
 
-  if (filterType && value) {
+  if (filterType && value && FILTER_TYPES.includes(filterType)) {
     event.preventDefault();
     event.stopPropagation();
-    const currentQuery = store.getState().searchQuery;
-    // Wrap value in quotes if it contains spaces
-    const formattedValue = value.includes(" ") ? `"${value}"` : value;
-    const newFilter = `${filterType}:${formattedValue}`;
-    const newQuery = currentQuery ? `${currentQuery} ${newFilter}` : newFilter;
-    store.setSearchQuery(newQuery);
+    addFilterByType(store, filterType, value);
     render();
+    syncStateToUrl(store.selectUrlState());
   }
 };
+
+export const handleRemoveFilter = (deps, payload) => {
+  const { render, store } = deps;
+  const event = payload._event;
+  const target = event.target.closest("[data-filter-type]");
+  if (!target) return;
+
+  const type = target.getAttribute("data-filter-type");
+  const value = target.getAttribute("data-filter-value");
+
+  if (type && value) {
+    store.removeFilter({ type, value });
+    render();
+    syncStateToUrl(store.selectUrlState());
+  }
+};
+
+export const handleClearAllFilters = (deps) => {
+  const { render, store } = deps;
+  store.clearAllFilters();
+  render();
+  syncStateToUrl(store.selectUrlState());
+};
+
+const createOpenDropdownHandler = (type) => (deps, payload) => {
+  const { render, store } = deps;
+  const rect = payload._event.target.getBoundingClientRect();
+  store.openDropdown({ type, x: rect.left, y: rect.bottom });
+  render();
+};
+
+export const handleOpenWorkspaceDropdown = createOpenDropdownHandler("workspace");
+export const handleOpenProjectDropdown = createOpenDropdownHandler("project");
+export const handleOpenAssigneeDropdown = createOpenDropdownHandler("assignee");
+export const handleOpenLabelDropdown = createOpenDropdownHandler("label");
+export const handleOpenStatusDropdown = createOpenDropdownHandler("status");
+export const handleOpenPriorityDropdown = createOpenDropdownHandler("priority");
+
+export const handleCloseDropdown = (deps) => {
+  const { render, store } = deps;
+  store.closeDropdown();
+  render();
+};
+
+const createFilterItemHandler = (type) => (deps, payload) => {
+  const { render, store } = deps;
+  const { item } = payload._event.detail;
+  if (item?.value) {
+    addFilterByType(store, type, item.value);
+    store.closeDropdown();
+    render();
+    syncStateToUrl(store.selectUrlState());
+  }
+};
+
+export const handleWorkspaceItemClick = createFilterItemHandler("workspace");
+export const handleProjectItemClick = createFilterItemHandler("project");
+export const handleAssigneeItemClick = createFilterItemHandler("assignee");
+export const handleLabelItemClick = createFilterItemHandler("label");
+export const handleStatusItemClick = createFilterItemHandler("status");
+export const handlePriorityItemClick = createFilterItemHandler("priority");
