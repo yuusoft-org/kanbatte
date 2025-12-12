@@ -10,29 +10,25 @@ export const createConfigService = () => {
     _config = loadConfig(configPath);
   };
 
-  const checkInitialized = () => {
-    if (!_config) {
-      throw new Error("ConfigService not initialized. Call init() first.");
-    }
-  };
+//   const checkInitialized = () => {
+//     if (!_config) {
+//       throw new Error("ConfigService not initialized. Call init() first.");
+//     }
+//   };
 
   const getProjects = () => {
-    checkInitialized();
     return _config.projects || [];
   };
 
   const getProjectById = (projectId) => {
-    checkInitialized();
     return (_config.projects || []).find(p => p.id === projectId);
   };
 
   const getDiscordUserByUserId = (userId) => {
-    checkInitialized();
     return (_config.discord?.users || []).find(u => u.userId === userId);
   };
   
   const getProjectConfigByChannelId = (channelId) => {
-    checkInitialized();
     if (!_config.discord || !_config.discord.servers) return null;
 
     for (const server of _config.discord.servers) {
@@ -45,7 +41,6 @@ export const createConfigService = () => {
   };
 
   const getAllowedRolesByGuildId = (guildId) => {
-    checkInitialized();
     if (!_config.discord || !_config.discord.servers) return [];
     const server = _config.discord.servers.find(s => s.guildId === guildId);
     return server ? server.allowedRoles || [] : [];
