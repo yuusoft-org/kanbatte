@@ -302,6 +302,20 @@ export const selectConfig = ({ state }) => {
   return state.config;
 };
 
+export const selectUrlState = ({ state }) => {
+  return {
+    sortBy: state.sortBy,
+    sortAsc: state.sortAsc,
+    filterStatus: state.filterStatus,
+    filterPriority: state.filterPriority,
+    filterWorkspace: state.filterWorkspace,
+    filterProject: state.filterProject,
+    filterAssignee: state.filterAssignee,
+    filterLabel: state.filterLabel,
+    searchQuery: state.searchQuery,
+  };
+};
+
 // Actions
 export const setSearchQuery = (state, query) => {
   state.searchQuery = query;

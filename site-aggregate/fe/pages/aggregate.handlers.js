@@ -5,7 +5,7 @@ let searchDebounceTimer = null;
 const debounceUrlSync = (store, delay = 300) => {
   clearTimeout(searchDebounceTimer);
   searchDebounceTimer = setTimeout(() => {
-    syncStateToUrl(store.getState());
+    syncStateToUrl(store.selectUrlState());
   }, delay);
 };
 
@@ -31,56 +31,56 @@ export const handleClearSearch = (deps) => {
   const { render, store } = deps;
   store.setSearchQuery("");
   render();
-  syncStateToUrl(store.getState());
+  syncStateToUrl(store.selectUrlState());
 };
 
 export const handleSortById = (deps) => {
   const { render, store } = deps;
   store.setSortBy("id");
   render();
-  syncStateToUrl(store.getState());
+  syncStateToUrl(store.selectUrlState());
 };
 
 export const handleSortByStatus = (deps) => {
   const { render, store } = deps;
   store.setSortBy("status");
   render();
-  syncStateToUrl(store.getState());
+  syncStateToUrl(store.selectUrlState());
 };
 
 export const handleSortByWorkspace = (deps) => {
   const { render, store } = deps;
   store.setSortBy("workspace");
   render();
-  syncStateToUrl(store.getState());
+  syncStateToUrl(store.selectUrlState());
 };
 
 export const handleSortByPriority = (deps) => {
   const { render, store } = deps;
   store.setSortBy("priority");
   render();
-  syncStateToUrl(store.getState());
+  syncStateToUrl(store.selectUrlState());
 };
 
 export const handleSortByProject = (deps) => {
   const { render, store } = deps;
   store.setSortBy("project");
   render();
-  syncStateToUrl(store.getState());
+  syncStateToUrl(store.selectUrlState());
 };
 
 export const handleToggleOrder = (deps) => {
   const { render, store } = deps;
   store.toggleSortOrder();
   render();
-  syncStateToUrl(store.getState());
+  syncStateToUrl(store.selectUrlState());
 };
 
 export const handleAfterMount = async (deps) => {
   const { render, store, taskAggregateService } = deps;
 
   // Load filter/sort state from URL on page load
-  loadStateFromUrl(store.getState());
+  loadStateFromUrl(store.selectUrlState());
   render();
 
   try {
@@ -146,40 +146,40 @@ export const handleTaskListClick = (deps, payload) => {
         break;
     }
     render();
-    syncStateToUrl(store.getState());
+    syncStateToUrl(store.selectUrlState());
   }
 };
 
 // Open dropdown handlers
-const openDropdownAtButton = (deps, type, event) => {
+const openDropdownAtButton = (deps, payload) => {
   const { render, store } = deps;
-  const rect = event.target.getBoundingClientRect();
-  store.openDropdown({ type, x: rect.left, y: rect.bottom });
+  const rect = payload._event.target.getBoundingClientRect();
+  store.openDropdown({ type: payload.type, x: rect.left, y: rect.bottom });
   render();
 };
 
 export const handleOpenWorkspaceDropdown = (deps, payload) => {
-  openDropdownAtButton(deps, "workspace", payload._event);
+  openDropdownAtButton(deps, { ...payload, type: "workspace" });
 };
 
 export const handleOpenProjectDropdown = (deps, payload) => {
-  openDropdownAtButton(deps, "project", payload._event);
+  openDropdownAtButton(deps, { ...payload, type: "project" });
 };
 
 export const handleOpenAssigneeDropdown = (deps, payload) => {
-  openDropdownAtButton(deps, "assignee", payload._event);
+  openDropdownAtButton(deps, { ...payload, type: "assignee" });
 };
 
 export const handleOpenLabelDropdown = (deps, payload) => {
-  openDropdownAtButton(deps, "label", payload._event);
+  openDropdownAtButton(deps, { ...payload, type: "label" });
 };
 
 export const handleOpenStatusDropdown = (deps, payload) => {
-  openDropdownAtButton(deps, "status", payload._event);
+  openDropdownAtButton(deps, { ...payload, type: "status" });
 };
 
 export const handleOpenPriorityDropdown = (deps, payload) => {
-  openDropdownAtButton(deps, "priority", payload._event);
+  openDropdownAtButton(deps, { ...payload, type: "priority" });
 };
 
 // Close dropdown handler
@@ -197,7 +197,7 @@ export const handleWorkspaceItemClick = (deps, payload) => {
     store.addFilterWorkspace(item.value);
     store.closeDropdown();
     render();
-    syncStateToUrl(store.getState());
+    syncStateToUrl(store.selectUrlState());
   }
 };
 
@@ -208,7 +208,7 @@ export const handleProjectItemClick = (deps, payload) => {
     store.addFilterProject(item.value);
     store.closeDropdown();
     render();
-    syncStateToUrl(store.getState());
+    syncStateToUrl(store.selectUrlState());
   }
 };
 
@@ -219,7 +219,7 @@ export const handleAssigneeItemClick = (deps, payload) => {
     store.addFilterAssignee(item.value);
     store.closeDropdown();
     render();
-    syncStateToUrl(store.getState());
+    syncStateToUrl(store.selectUrlState());
   }
 };
 
@@ -230,7 +230,7 @@ export const handleLabelItemClick = (deps, payload) => {
     store.addFilterLabel(item.value);
     store.closeDropdown();
     render();
-    syncStateToUrl(store.getState());
+    syncStateToUrl(store.selectUrlState());
   }
 };
 
@@ -241,7 +241,7 @@ export const handleStatusItemClick = (deps, payload) => {
     store.addFilterStatus(item.value);
     store.closeDropdown();
     render();
-    syncStateToUrl(store.getState());
+    syncStateToUrl(store.selectUrlState());
   }
 };
 
@@ -252,7 +252,7 @@ export const handlePriorityItemClick = (deps, payload) => {
     store.addFilterPriority(item.value);
     store.closeDropdown();
     render();
-    syncStateToUrl(store.getState());
+    syncStateToUrl(store.selectUrlState());
   }
 };
 
@@ -269,7 +269,7 @@ export const handleRemoveFilter = (deps, payload) => {
   if (type && value) {
     store.removeFilter({ type, value });
     render();
-    syncStateToUrl(store.getState());
+    syncStateToUrl(store.selectUrlState());
   }
 };
 
@@ -277,5 +277,5 @@ export const handleClearAllFilters = (deps) => {
   const { render, store } = deps;
   store.clearAllFilters();
   render();
-  syncStateToUrl(store.getState());
+  syncStateToUrl(store.selectUrlState());
 };
