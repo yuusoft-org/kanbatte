@@ -1,0 +1,71 @@
+# Kanbatte Configuration File
+# This file contains all configuration for Kanbatte projects, Discord integration, and more.
+# Copy this file to kanbatte.config.yaml and customize it for your needs.
+
+# Project definitions
+projects:
+  - id: kanbatte
+    name: Kanbatte
+    gitRepository: git@github.com:yuusoft-org/kanbatte.git
+    description: AI-powered project management assistant
+
+  # Add more projects as needed
+  # - id: example-project
+  #   name: Example Project
+  #   gitRepository: git@github.com:org/example.git
+  #   description: Example project description
+
+# Discord integration configuration
+discord:
+  # Discord user to Git author mapping
+  users:
+    - userId: "123456789"  # Discord user ID
+      gitAuthor: han4wluc <han4wluc@yuusoft.com>  # Git author format: name <email>
+      name: Han4wluc  # Display name (optional)
+      email: han4wluc@yuusoft.com  # Email (optional, if not in gitAuthor)
+
+    # Add more user mappings as needed
+    # - userId: "987654321"
+    #   gitAuthor: developer <dev@example.com>
+    #   name: Developer
+    #   email: dev@example.com
+
+  # Discord server configurations (supports multiple servers)
+  servers:
+    - name: Yuusoft
+      guildId: "1234567890"  # Discord server/guild ID
+
+      # Channel to project mappings
+      channels:
+        - projectId: kanbatte
+          channelId: "9876543210"  # Discord channel ID
+
+        # Add more channel mappings as needed
+        # - projectId: example-project
+        #   channelId: "1111111111"
+
+      # Allowed role IDs for bot interactions
+      allowedRoles:
+        - "1234567890"  # Role ID that can interact with the bot
+        # - "0987654321"  # Add more role IDs as needed
+
+    # Add more Discord servers as needed
+    # - name: Development Server
+    #   guildId: "9999999999"
+    #   channels:
+    #     - projectId: kanbatte
+    #       channelId: "8888888888"
+    #   allowedRoles:
+    #     - "7777777777"
+
+# Future extensions (commented out for now)
+# systemPrompts:
+#   default: "You are a helpful AI assistant for project management."
+#   channels:
+#     "9876543210": "Custom prompt for specific channel"
+#
+# promptPresets:
+#   - name: "Code Review"
+#     prompt: "Please review the following code for best practices..."
+#   - name: "Bug Report"
+#     prompt: "Help me debug this issue..."
