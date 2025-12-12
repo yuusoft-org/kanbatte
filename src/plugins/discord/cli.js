@@ -1,12 +1,10 @@
 import { createDiscordInsieme } from "./infra/discordInsieme.js";
 import { createDiscordService } from "./services/discordService.js";
-import { createChannelCommands } from "./commands/channel.js";
 import { createBotCommands } from "./commands/bot.js";
-import { createUserCommands } from "./commands/user.js";
 import { agentStart } from "../../commands/agent.js";
 
 export const setupDiscordCli = (deps) => {
-  const { cmd, discordLibsqlInfra, sessionService, libsqlInfra } = deps;
+  const { cmd, discordLibsqlInfra, sessionService, libsqlInfra, configService } = deps;
 
   const getDiscordServices = () => {
     discordLibsqlInfra.init();
@@ -14,6 +12,7 @@ export const setupDiscordCli = (deps) => {
     const discordService = createDiscordService({
       discordInsieme,
       discordLibsql: discordLibsqlInfra,
+      configService,
     });
     return { discordService, discordInsieme };
   };
@@ -23,9 +22,8 @@ export const setupDiscordCli = (deps) => {
     discordService,
     sessionService,
     discordLibsqlInfra,
+    configService,
   });
-  const userCommands = createUserCommands({ discordService });
-  const channelCommands = createChannelCommands({ discordService });
 
   cmd
     .command("db")
@@ -48,58 +46,5 @@ export const setupDiscordCli = (deps) => {
       libsqlInfra.init();
       botCommands.startBot();
       agentStart({ sessionService });
-    });
-
-  botCmd
-    .command("allowed-roles")
-    .argument("[roles]", "Comma-separated list of allowed Discord role IDs")
-    .description("Set allowed Discord role IDs for bot commands")
-    .action(async (roles) => {
-      await botCommands.setAllowedRoles(roles);
-    });
-
-  const userCmd = cmd.command("user").description("Discord user management");
-
-  userCmd
-    .command("add")
-    .requiredOption("-u, --user-id <userId>", "Discord User ID")
-    .requiredOption("-n, --name <name>", "Git name")
-    .requiredOption("-e, --email <email>", "Git email")
-    .description("Bind Discord user ID to Git user name and email")
-    .action(async (options) => {
-      await userCommands.addUser(options);
-    });
-
-  userCmd
-    .command("list")
-    .description("List Discord user bindings")
-    .action(async () => {
-      await userCommands.listUsers();
-    });
-
-  const channelCmd = cmd.command("channel").description("Discord channel management");
-
-  channelCmd
-    .command("add")
-    .requiredOption("-p, --project <projectId>", "Project ID")
-    .option("-c, --channel <channelId>", "Discord channel ID")
-    .description("Add Discord channel for project")
-    .action(async (options) => {
-      await channelCommands.addChannel({
-        projectId: options.project,
-        channelId: options.channel,
-      });
-    });
-
-  channelCmd
-    .command("update")
-    .requiredOption("-p, --project <projectId>", "Project ID")
-    .option("-c, --channel <channelId>", "Discord channel ID")
-    .description("Update Discord channel for project")
-    .action(async (options) => {
-      await channelCommands.updateChannel({
-        projectId: options.project,
-        channelId: options.channel,
-      });
     });
 };

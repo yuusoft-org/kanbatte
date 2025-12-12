@@ -26,22 +26,23 @@ const queueSession = {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const channelId = interaction.channel.id;
-    const project = await discordService.getProjectIdByChannel({ channelId });
+    const projectConfig = discordService.getProjectConfigByChannelId({ channelId });
 
-    if (!project) {
+    if (!projectConfig || !projectConfig.projectId) {
       await interaction.editReply({
-        content: `This channel is not configured for a project. Use the \`discord channel add\` command.`,
+        content: `This channel is not configured for a project in kanbatte.config.yaml.`,
       });
       return;
     }
+    const projectId = projectConfig.projectId;
 
     const message = interaction.options.getString("message");
-    const sessionNumber = await sessionService.getNextSessionNumber({ projectId: project });
-    const sessionId = `${project}-${sessionNumber}`;
+    const sessionNumber = await sessionService.getNextSessionNumber({ projectId });
+    const sessionId = `${projectId}-${sessionNumber}`;
     const now = Date.now();
     const sessionData = {
       messages: [{ role: "user", content: message, timestamp: now }],
-      project: project,
+      project: projectId,
       status: "ready",
       createdAt: now,
       updatedAt: now,
@@ -139,11 +140,10 @@ const requestPR = {
       });
       return;
     }
-
-    const authorInfo = await discordService.getUserEmailRecord({ userId: interaction.user.id });
-    if (!authorInfo) {
+    const authorInfo = discordService.getDiscordUserByUserId({ userId: interaction.user.id });
+    if (!authorInfo || !authorInfo.name || !authorInfo.email) {
       await interaction.reply({
-        content: `Could not find author info for your user ID. Please bind your user first using \`discord user add\`.`,
+        content: `Could not find your git author info in kanbatte.config.yaml. Please bind your user first.`,
         flags: MessageFlags.Ephemeral,
       });
       return;
