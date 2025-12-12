@@ -1,7 +1,3 @@
-// =============================================================================
-// CONSTANTS & HELPERS
-// =============================================================================
-
 export const FILTER_TYPES = ["status", "priority", "workspace", "project", "assignee", "label"];
 const SIMPLE_FILTERS = ["status", "priority", "workspace", "project", "assignee"];
 const GROUPABLE_SORTS = ["status", "workspace", "project", "priority"];
@@ -27,10 +23,6 @@ const parseArrayParam = (param) => {
   if (!param) return [];
   return param.split(",").filter((v) => v.trim());
 };
-
-// =============================================================================
-// URL SYNC
-// =============================================================================
 
 export const syncStateToUrl = (state) => {
   const params = new URLSearchParams();
@@ -64,10 +56,6 @@ export const loadStateFromUrl = (state) => {
   state.searchQuery = params.get("q") || "";
 };
 
-// =============================================================================
-// INITIAL STATE
-// =============================================================================
-
 export const createInitialState = () => {
   const filterState = {};
   FILTER_TYPES.forEach((type) => {
@@ -75,17 +63,13 @@ export const createInitialState = () => {
   });
 
   return {
-    // Search & sort
     searchQuery: "",
     sortBy: "status",
     sortAsc: true,
-    // Filters
     ...filterState,
-    // Dropdown menu
     openDropdown: null,
     dropdownX: 0,
     dropdownY: 0,
-    // Data
     config: null,
     tasks: [],
     lastUpdated: null,
@@ -93,10 +77,6 @@ export const createInitialState = () => {
     error: null,
   };
 };
-
-// =============================================================================
-// SELECTOR HELPERS
-// =============================================================================
 
 const getSortFn = (sortBy) => {
   switch (sortBy) {
@@ -219,10 +199,6 @@ const mapTaskForDisplay = (task, index, sortedTasks, sortBy) => {
   };
 };
 
-// =============================================================================
-// SELECTORS
-// =============================================================================
-
 export const selectViewData = ({ state }) => {
   const filteredTasks = filterTasks(state.tasks, state);
   const sorted = [...filteredTasks].sort(getSortFn(state.sortBy));
@@ -265,10 +241,6 @@ export const selectUrlState = ({ state }) => {
   };
 };
 
-// =============================================================================
-// ACTIONS: Data
-// =============================================================================
-
 export const setConfig = (state, config) => {
   state.config = config;
 };
@@ -289,10 +261,6 @@ export const setError = (state, error) => {
   state.loading = false;
 };
 
-// =============================================================================
-// ACTIONS: Search & Sort
-// =============================================================================
-
 export const setSearchQuery = (state, query) => {
   state.searchQuery = query;
 };
@@ -304,10 +272,6 @@ export const setSortBy = (state, sortBy) => {
 export const toggleSortOrder = (state) => {
   state.sortAsc = !state.sortAsc;
 };
-
-// =============================================================================
-// ACTIONS: Filters
-// =============================================================================
 
 const addFilter = (state, type, value) => {
   const key = getFilterKey(type);
@@ -334,10 +298,6 @@ export const clearAllFilters = (state) => {
   });
   state.searchQuery = "";
 };
-
-// =============================================================================
-// ACTIONS: Dropdown
-// =============================================================================
 
 export const openDropdown = (state, { type, x, y }) => {
   state.openDropdown = type;

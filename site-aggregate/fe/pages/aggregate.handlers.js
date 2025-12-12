@@ -1,8 +1,17 @@
-import { syncStateToUrl, FILTER_TYPES, capitalize } from "./aggregate.store.js";
+import { syncStateToUrl, FILTER_TYPES } from "./aggregate.store.js";
 
-// =============================================================================
-// LIFECYCLE
-// =============================================================================
+const addFilterByType = (store, type, value) => {
+  const actions = {
+    status: store.addFilterStatus,
+    priority: store.addFilterPriority,
+    workspace: store.addFilterWorkspace,
+    project: store.addFilterProject,
+    assignee: store.addFilterAssignee,
+    label: store.addFilterLabel,
+  };
+  const action = actions[type];
+  if (action) action(value);
+};
 
 export const handleAfterMount = async (deps) => {
   const { render, store, taskAggregateService } = deps;
@@ -36,10 +45,6 @@ export const handleAfterMount = async (deps) => {
   taskAggregateService.startTimeUpdate(render);
 };
 
-// =============================================================================
-// SEARCH HANDLERS
-// =============================================================================
-
 export const handleSearchInput = (deps, payload) => {
   const { render, store, debounceUrlSync } = deps;
   const { value } = payload._event.detail;
@@ -65,10 +70,6 @@ export const handleClearSearch = (deps) => {
   syncStateToUrl(store.selectUrlState());
 };
 
-// =============================================================================
-// SORT HANDLERS
-// =============================================================================
-
 const createSortHandler = (sortBy) => (deps) => {
   const { render, store } = deps;
   store.setSortBy(sortBy);
@@ -89,10 +90,6 @@ export const handleToggleOrder = (deps) => {
   syncStateToUrl(store.selectUrlState());
 };
 
-// =============================================================================
-// FILTER HANDLERS: Task List Click
-// =============================================================================
-
 export const handleTaskListClick = (deps, payload) => {
   const { render, store } = deps;
   const event = payload._event;
@@ -105,7 +102,7 @@ export const handleTaskListClick = (deps, payload) => {
   if (filterType && value && FILTER_TYPES.includes(filterType)) {
     event.preventDefault();
     event.stopPropagation();
-    store[`addFilter${capitalize(filterType)}`](value);
+    addFilterByType(store, filterType, value);
     render();
     syncStateToUrl(store.selectUrlState());
   }
@@ -134,10 +131,6 @@ export const handleClearAllFilters = (deps) => {
   syncStateToUrl(store.selectUrlState());
 };
 
-// =============================================================================
-// FILTER HANDLERS: Dropdown Open
-// =============================================================================
-
 const createOpenDropdownHandler = (type) => (deps, payload) => {
   const { render, store } = deps;
   const rect = payload._event.target.getBoundingClientRect();
@@ -158,15 +151,11 @@ export const handleCloseDropdown = (deps) => {
   render();
 };
 
-// =============================================================================
-// FILTER HANDLERS: Dropdown Item Click
-// =============================================================================
-
 const createFilterItemHandler = (type) => (deps, payload) => {
   const { render, store } = deps;
   const { item } = payload._event.detail;
   if (item?.value) {
-    store[`addFilter${capitalize(type)}`](item.value);
+    addFilterByType(store, type, item.value);
     store.closeDropdown();
     render();
     syncStateToUrl(store.selectUrlState());
