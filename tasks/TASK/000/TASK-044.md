@@ -2,7 +2,7 @@
 title: discord unknown interaction error
 status: todo
 priority: high
-assignee: 738NGX
+assignee: nellow
 ---
 
 # Description

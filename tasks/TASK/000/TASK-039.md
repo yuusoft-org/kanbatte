@@ -2,7 +2,7 @@
 title: improve followup messages in thread
 status: todo
 priority: high
-assignee: anyone
+assignee: nellow
 labels: [discord]
 ---
 

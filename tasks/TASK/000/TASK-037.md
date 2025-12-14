@@ -2,7 +2,7 @@
 title: move config from db to file
 status: todo
 priority: high
-assignee: anyone
+assignee: nellow
 labels: [ux]
 ---
 
