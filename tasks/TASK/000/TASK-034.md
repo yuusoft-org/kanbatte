@@ -2,6 +2,7 @@
 title: Prompts Presets
 status: todo
 priority: medium
+assignee: nellow
 ---
 
 # Description

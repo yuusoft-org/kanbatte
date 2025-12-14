@@ -2,6 +2,7 @@
 title: improve PR generation
 status: todo
 priority: medium
+assignee: nellow
 labels: [discord]
 ---
 
