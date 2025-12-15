@@ -1,6 +1,6 @@
 ---
 title: move config from db to file
-status: todo
+status: done
 priority: high
 assignee: nellow
 labels: [ux]
