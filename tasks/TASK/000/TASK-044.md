@@ -1,6 +1,6 @@
 ---
 title: discord unknown interaction error
-status: todo
+status: done
 priority: high
 assignee: nellow
 ---

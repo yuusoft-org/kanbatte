@@ -1,4 +1,4 @@
-import { Client, Collection, Events, GatewayIntentBits } from 'discord.js';
+import { Client, Collection, Events, GatewayIntentBits, RESTJSONErrorCodes  } from 'discord.js';
 import { isThreadChannel, isMemberAllowed } from './utils';
 import * as sessionsSlashCommands from "./slash-commands/sessions";
 import { createStartCommands } from './commands/start.js';
@@ -91,6 +91,10 @@ export const startDiscordBot = (services) => {
       await command.execute(interaction, interaction.client.services);
     } catch (error) {
       console.error(error);
+      if (error.code === RESTJSONErrorCodes.UnknownInteraction) {
+        console.warn("Interaction has expired, skipping reply.");
+        return;
+      }
       if (interaction.replied || interaction.deferred) {
         await interaction.followUp({
           content: 'There was an error while executing this command!',
