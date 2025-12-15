@@ -120,6 +120,8 @@ taskCmd
   .requiredOption("-t, --title <title>", "Task title")
   .option("-d, --description <description>", "Task description")
   .option("-p, --priority <priority>", "Task priority (low, medium, high)")
+  .option("-a, --assignee <assignee>", "Task assignee")
+  .option("-l, --labels <label>", "Task label(s) (comma-separated)")
   .action((type, options) => {
     taskCommands.createTask(projectRoot, { type, ...options });
   });

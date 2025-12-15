@@ -11,6 +11,7 @@ import {
   parseTaskId,
   calculateFolder,
   buildTaskPath,
+  formatLabels,
 } from "../utils/tasks.js";
 import {
   validateConfig,
@@ -170,7 +171,7 @@ export const createTaskService = (deps) => {
    * Creates a new task file with proper folder structure and ID generation
    */
   const createTask = (projectRoot, options) => {
-    const { type, title, description, priority } = options;
+    const { type, title, description, priority, assignee, labels } = options;
 
     if (!type) {
       throw new Error("Task type is required");
@@ -180,9 +181,10 @@ export const createTaskService = (deps) => {
     }
 
     const formattedPriority = formatPriority(priority);
+    const labelsList = formatLabels(labels);
     const { taskId, folder } = getNextTaskId(projectRoot, type);
     const folderPath = createTaskFolders(projectRoot, type, folder);
-    const content = generateTaskContent(title, description, formattedPriority);
+    const content = generateTaskContent(title, description, formattedPriority, assignee, labelsList);
     const filePath = join(folderPath, `${taskId}.md`);
     fs.writeFileSync(filePath, content, "utf8");
 

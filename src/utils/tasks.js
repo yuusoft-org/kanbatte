@@ -17,14 +17,24 @@ export const formatPriority = (priority) => {
 };
 
 /**
+ * Formats labels from comma-separated string to array
+ */
+export const formatLabels = (labelsString) => {
+  if (!labelsString) return [];
+  return labelsString.split(",").map((l) => l.trim()).filter(Boolean);
+};
+
+/**
  * Generates markdown content for a task file
  */
-export const generateTaskContent = (title, description, priority) => {
+export const generateTaskContent = (title, description, priority, assignee, labelsList) => {
   const yamlFrontmatter = [
     "---",
     `title: ${title}`,
     "status: todo",
     `priority: ${priority}`,
+    `assignee: ${assignee || ""}`,
+    `labels: [${(labelsList || []).join(", ")}]`,
     "---",
     "",
     "# Description",
