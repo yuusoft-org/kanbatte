@@ -33,37 +33,47 @@ export const agent = async (deps) => {
       const worktreePath = await setupWorktree(session.sessionId, project.gitRepository);
       console.log(`\nWorktree ready at: ${worktreePath}\n`);
 
-      // Build context from session messages
-      const messageContext = session.messages
-        .map(msg => `${msg.role}: ${msg.content}`)
-        .join('\n');
+      let claudeSessionId = await sessionService.getClaudeSessionIdBySessionId({
+        sessionId: session.sessionId
+      });
 
-      // Build user prompt with context
-      const userPrompt = `
-Session conversation so far:
-${messageContext}
+      const lastMessage = session.messages[session.messages.length - 1];
+      const userPrompt = `${lastMessage.content}`;
 
-Please continue working on this session for project "${session.project}". You can read files, write code, and make changes within this workspace.`;
+      const queryOptions = {
+        model: "opus",
+        settingSources: ['project'],
+        canUseTool: (toolName, inputData) => {
+          return {
+            behavior: "allow",
+            updatedInput: inputData,
+          };
+        },
+        cwd: worktreePath,
+      };
+
+      if (claudeSessionId) {
+        queryOptions.resume = claudeSessionId;
+      }
 
       try {
         const result = query({
           prompt: userPrompt,
-          options: {
-            model: "opus",
-            settingSources: ['project'],
-            canUseTool: (toolName, inputData) => {
-              return {
-                behavior: "allow",
-                updatedInput: inputData,
-              };
-            },
-            cwd: worktreePath,
-          },
+          options: queryOptions,
         });
 
         //const assistantContent = [];
 
         for await (const message of result) {
+          if (!claudeSessionId && message.type === 'system' && message.subtype === 'init' && message.session_id) {
+            claudeSessionId = message.session_id;
+            await sessionService.addClaudeSessionRecord({
+              sessionId: session.sessionId,
+              claudeSessionId: message.session_id,
+            });
+            console.log(`Claude session started and saved for ${session.sessionId}`);
+          }
+
           // Collect all content from the streaming response
           if (message.message?.content) {
             await sessionService.appendSessionMessages({
