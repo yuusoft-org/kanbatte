@@ -1,6 +1,6 @@
 ---
 title: for session history use claude code session id
-status: todo
+status: done
 priority: high
 assignee: nellow
 ---
