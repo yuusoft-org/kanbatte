@@ -5,7 +5,7 @@ import { generateId } from "../utils/helper.js";
 
 export const createLibsqlInfra = (config) => {
   const { dbPath, migrationsPath, tableNames } = config;
-  const { eventLog, view, kvStore, sessionThreadRecord, userEmailRecord } = tableNames;
+  const { eventLog, view, kvStore, sessionThreadRecord, userEmailRecord,claudeSessionRecord  } = tableNames;
 
   let db;
 
@@ -222,6 +222,27 @@ export const createLibsqlInfra = (config) => {
     return result.rows.map(row => ({ userId: row.user_id, name: row.name, email: row.email }));
   };
 
+  const addClaudeSessionRecord = async (payload) => {
+    checkInitialized();
+    if (!claudeSessionRecord) throw new Error("claudeSessionRecord table name not configured.");
+    const { sessionId, claudeSessionId } = payload;
+    await db.execute({
+      sql: `INSERT INTO ${claudeSessionRecord} (session_id, claude_session_id) VALUES (?, ?) ON CONFLICT(session_id) DO UPDATE SET claude_session_id = excluded.claude_session_id`,
+      args: [sessionId, claudeSessionId],
+    });
+  };
+
+  const getClaudeSessionIdBySessionId = async (payload) => {
+    checkInitialized();
+    if (!claudeSessionRecord) throw new Error("claudeSessionRecord table name not configured.");
+    const { sessionId } = payload;
+    const result = await db.execute({
+      sql: `SELECT claude_session_id FROM ${claudeSessionRecord} WHERE session_id = ?`,
+      args: [sessionId],
+    });
+    return result.rows.length > 0 ? result.rows[0].claude_session_id : null;
+  };
+
   return {
     init,
     migrateDb,
@@ -240,5 +261,7 @@ export const createLibsqlInfra = (config) => {
     addUserEmailRecord,
     getUserEmailRecord,
     listUserEmailRecords,
+    addClaudeSessionRecord,
+    getClaudeSessionIdBySessionId,
   };
 };

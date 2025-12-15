@@ -55,6 +55,7 @@ const libsqlInfra = createLibsqlInfra({
     eventLog: "event_log",
     view: "view",
     kvStore: "kv_store",
+    claudeSessionRecord: "claude_session_record",
   },
 });
 const insieme = createInsieme({
