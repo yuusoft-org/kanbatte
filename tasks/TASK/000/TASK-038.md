@@ -1,6 +1,6 @@
 ---
 title: frontmatter add assignee and labels
-status: todo
+status: done
 priority: high
 assignee: JeffY
 labels: [ux, task]
