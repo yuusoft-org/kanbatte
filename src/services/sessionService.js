@@ -139,6 +139,14 @@ export const createSessionService = (deps) => {
     return allEvents;
   };
 
+  const addClaudeSessionRecord = async (payload) => {
+    return await libsqlInfra.addClaudeSessionRecord(payload);
+  };
+
+  const getClaudeSessionIdBySessionId = async (payload) => {
+    return await libsqlInfra.getClaudeSessionIdBySessionId(payload);
+  };
+
   return {
     addSession,
     updateSession,
@@ -151,5 +159,7 @@ export const createSessionService = (deps) => {
     getProjectById,
     listProjects,
     fetchRecentSessionEvents,
+    addClaudeSessionRecord,
+    getClaudeSessionIdBySessionId,
   };
 };
