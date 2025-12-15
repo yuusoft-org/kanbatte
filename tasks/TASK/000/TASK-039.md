@@ -1,6 +1,6 @@
 ---
 title: improve followup messages in thread
-status: todo
+status: done
 priority: high
 assignee: nellow
 labels: [discord]

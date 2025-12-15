@@ -58,16 +58,29 @@ export const startDiscordBot = (services) => {
       try {
         const { sessionService, discordService } = message.client.services;
         const sessionId = await discordService.getSessionIdByThread({ threadId: message.channel.id });
-        const messageContent = message.content.replace(/<@!?(\d+)>/, '').trim();
+        const messageContent = message.content.replace(/<@!?\d+>/g, "").trim();
+
+        if (!sessionId) {
+          await message.reply("Could not find a Kanbatte session associated with this thread.");
+          return;
+        }
+
+        if (!messageContent) {
+          await message.reply("Please provide a message along with the mention.");
+          return;
+        }
 
         await sessionService.appendSessionMessages({
           sessionId,
           messages: [{ role: "user", content: messageContent }]
         });
 
+        await sessionService.updateSessionStatus({ sessionId, status: "ready" });
+
         await message.reply(`Your message has been appended to session ${sessionId}.`);
       } catch (error) {
         console.error('Error:', error);
+        await message.reply("There was an error processing your message. Please try again.");
       }
     }
   });
