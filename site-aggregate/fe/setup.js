@@ -1,11 +1,11 @@
 import { createWebPatch } from "@rettangoli/fe";
 import { h } from "snabbdom/build/h";
 import { createTasksAggregateService } from "../deps/services/tasksAggregateService.js";
-import { createDebouncer } from "../deps/services/debouncerService.js";
+import { createUrlStateService } from "../deps/services/urlStateService.js";
 
 const pageDependencies = {
   taskAggregateService: createTasksAggregateService(),
-  debounceUrlSync: createDebouncer(300),
+  urlStateService: createUrlStateService(),
 };
 
 const deps = {

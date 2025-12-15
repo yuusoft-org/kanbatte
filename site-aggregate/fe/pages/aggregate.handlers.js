@@ -1,4 +1,4 @@
-import { syncStateToUrl, FILTER_TYPES } from "./aggregate.store.js";
+import { FILTER_TYPES } from "./aggregate.store.js";
 
 const addFilterByType = (store, type, value) => {
   const actions = {
@@ -14,9 +14,10 @@ const addFilterByType = (store, type, value) => {
 };
 
 export const handleAfterMount = async (deps) => {
-  const { render, store, taskAggregateService } = deps;
+  const { render, store, taskAggregateService, urlStateService } = deps;
 
-  store.loadStateFromUrl();
+  const urlState = urlStateService.loadStateFromUrl();
+  store.applyUrlState(urlState);
   render();
 
   try {
@@ -46,35 +47,35 @@ export const handleAfterMount = async (deps) => {
 };
 
 export const handleSearchInput = (deps, payload) => {
-  const { render, store, debounceUrlSync } = deps;
+  const { render, store, urlStateService } = deps;
   const { value } = payload._event.detail;
   store.setSearchQuery(value);
   render();
-  debounceUrlSync(() => syncStateToUrl(store.selectUrlState()));
+  urlStateService.syncStateToUrl(store.selectUrlState());
 };
 
 export const handleSearchKeydown = (deps, payload) => {
-  const { render, store } = deps;
+  const { render, store, urlStateService } = deps;
   const event = payload._event;
   if (event.key === "Escape") {
     store.setSearchQuery("");
     render();
-    syncStateToUrl(store.selectUrlState());
+    urlStateService.syncStateToUrl(store.selectUrlState());
   }
 };
 
 export const handleClearSearch = (deps) => {
-  const { render, store } = deps;
+  const { render, store, urlStateService } = deps;
   store.setSearchQuery("");
   render();
-  syncStateToUrl(store.selectUrlState());
+  urlStateService.syncStateToUrl(store.selectUrlState());
 };
 
 const createSortHandler = (sortBy) => (deps) => {
-  const { render, store } = deps;
+  const { render, store, urlStateService } = deps;
   store.setSortBy(sortBy);
   render();
-  syncStateToUrl(store.selectUrlState());
+  urlStateService.syncStateToUrl(store.selectUrlState());
 };
 
 export const handleSortById = createSortHandler("id");
@@ -84,14 +85,14 @@ export const handleSortByPriority = createSortHandler("priority");
 export const handleSortByProject = createSortHandler("project");
 
 export const handleToggleOrder = (deps) => {
-  const { render, store } = deps;
+  const { render, store, urlStateService } = deps;
   store.toggleSortOrder();
   render();
-  syncStateToUrl(store.selectUrlState());
+  urlStateService.syncStateToUrl(store.selectUrlState());
 };
 
 export const handleTaskListClick = (deps, payload) => {
-  const { render, store } = deps;
+  const { render, store, urlStateService } = deps;
   const event = payload._event;
   const filterEl = event.target.closest("[data-filter]");
   if (!filterEl) return;
@@ -104,12 +105,12 @@ export const handleTaskListClick = (deps, payload) => {
     event.stopPropagation();
     addFilterByType(store, filterType, value);
     render();
-    syncStateToUrl(store.selectUrlState());
+    urlStateService.syncStateToUrl(store.selectUrlState());
   }
 };
 
 export const handleRemoveFilter = (deps, payload) => {
-  const { render, store } = deps;
+  const { render, store, urlStateService } = deps;
   const event = payload._event;
   const target = event.target.closest("[data-filter-type]");
   if (!target) return;
@@ -120,15 +121,15 @@ export const handleRemoveFilter = (deps, payload) => {
   if (type && value) {
     store.removeFilter({ type, value });
     render();
-    syncStateToUrl(store.selectUrlState());
+    urlStateService.syncStateToUrl(store.selectUrlState());
   }
 };
 
 export const handleClearAllFilters = (deps) => {
-  const { render, store } = deps;
+  const { render, store, urlStateService } = deps;
   store.clearAllFilters();
   render();
-  syncStateToUrl(store.selectUrlState());
+  urlStateService.syncStateToUrl(store.selectUrlState());
 };
 
 const createOpenDropdownHandler = (type) => (deps, payload) => {
@@ -152,13 +153,13 @@ export const handleCloseDropdown = (deps) => {
 };
 
 const createFilterItemHandler = (type) => (deps, payload) => {
-  const { render, store } = deps;
+  const { render, store, urlStateService } = deps;
   const { item } = payload._event.detail;
   if (item?.value) {
     addFilterByType(store, type, item.value);
     store.closeDropdown();
     render();
-    syncStateToUrl(store.selectUrlState());
+    urlStateService.syncStateToUrl(store.selectUrlState());
   }
 };
 

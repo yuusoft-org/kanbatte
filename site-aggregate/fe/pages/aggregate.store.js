@@ -19,43 +19,6 @@ const formatTimeAgo = (date) => {
   return `${hours}h ago`;
 };
 
-const parseArrayParam = (param) => {
-  if (!param) return [];
-  return param.split(",").filter((v) => v.trim());
-};
-
-export const syncStateToUrl = (state) => {
-  const params = new URLSearchParams();
-
-  if (state.sortBy !== "status") params.set("sort", state.sortBy);
-  if (!state.sortAsc) params.set("order", "desc");
-
-  FILTER_TYPES.forEach((type) => {
-    const values = state[getFilterKey(type)];
-    if (values.length > 0) params.set(type, values.join(","));
-  });
-
-  if (state.searchQuery) params.set("q", state.searchQuery);
-
-  const url = params.toString()
-    ? `${window.location.pathname}?${params.toString()}`
-    : window.location.pathname;
-  window.history.replaceState({}, "", url);
-};
-
-export const loadStateFromUrl = (state) => {
-  const params = new URLSearchParams(window.location.search);
-
-  state.sortBy = params.get("sort") || "status";
-  state.sortAsc = params.get("order") !== "desc";
-
-  FILTER_TYPES.forEach((type) => {
-    state[getFilterKey(type)] = parseArrayParam(params.get(type));
-  });
-
-  state.searchQuery = params.get("q") || "";
-};
-
 export const createInitialState = () => {
   const filterState = {};
   FILTER_TYPES.forEach((type) => {
@@ -307,4 +270,13 @@ export const openDropdown = (state, { type, x, y }) => {
 
 export const closeDropdown = (state) => {
   state.openDropdown = null;
+};
+
+export const applyUrlState = (state, urlState) => {
+  state.sortBy = urlState.sortBy;
+  state.sortAsc = urlState.sortAsc;
+  state.searchQuery = urlState.searchQuery;
+  FILTER_TYPES.forEach((type) => {
+    state[getFilterKey(type)] = urlState[getFilterKey(type)];
+  });
 };
