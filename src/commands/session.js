@@ -127,6 +127,11 @@ export const createSessionCommands = (deps) => {
 
     await sessionService.appendSessionMessages({ sessionId: payload.sessionId, messages });
     console.log("Messages appended successfully to session:", payload.sessionId);
+
+    if (payload.stop) {
+      await sessionService.updateSessionStatus({ sessionId: payload.sessionId, status: "ready" });
+      console.log(`Session ${payload.sessionId} status set to 'ready' for immediate agent pickup.`);
+    }
   };
 
   return {
