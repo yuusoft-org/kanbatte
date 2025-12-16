@@ -1,6 +1,6 @@
 ---
 title: Add session append stop option
-status: todo
+status: done
 priority: medium
 assignee: nellow
 labels: ['discord', 'session']
