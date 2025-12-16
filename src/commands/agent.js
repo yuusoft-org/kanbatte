@@ -65,6 +65,12 @@ export const agent = async (deps) => {
         //const assistantContent = [];
 
         for await (const message of result) {
+
+          const currentSessionState = await sessionService.getViewBySessionId({ sessionId: session.sessionId });
+          if (currentSessionState.status !== "in-progress") {
+            console.warn(`Interruption detected for session ${session.sessionId}.`);
+            break;
+          }
           if (!claudeSessionId && message.type === 'system' && message.subtype === 'init' && message.session_id) {
             claudeSessionId = message.session_id;
             await sessionService.addClaudeSessionRecord({
@@ -92,7 +98,12 @@ export const agent = async (deps) => {
         console.warn(`Error processing session ${session.sessionId}:`, error);
       }
 
-      // Always set status to review (both success and error cases)
+      const currentSessionState = await sessionService.getViewBySessionId({ sessionId: session.sessionId });
+      if (currentSessionState.status !== "in-progress") {
+        console.warn(`Work on session ${session.sessionId} was interrupted by user. Discarding results.`);
+        continue;
+      }
+
       await sessionService.updateSessionStatus({
         sessionId: session.sessionId,
         status: "review"
