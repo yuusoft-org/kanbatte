@@ -1,6 +1,6 @@
 ---
 title: query params for filter and sort
-status: todo
+status: done
 priority: high
 assignee: JeffY
 labels: [task]
