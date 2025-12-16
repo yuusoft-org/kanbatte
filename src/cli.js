@@ -216,6 +216,7 @@ sessionCmd
     await sessionCommands.appendSessionMessages({
       sessionId,
       messages: options.messages,
+      stop: options.stop,
     });
   });
 

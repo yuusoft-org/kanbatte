@@ -107,7 +107,7 @@ export const createSessionCommands = (deps) => {
     }
   };
 
-   const appendSessionMessages = async (payload) => {
+  const appendSessionMessages = async (payload) => {
     if (!payload.sessionId) {
       throw new Error("Session ID is required");
     }
