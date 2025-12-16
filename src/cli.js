@@ -210,6 +210,7 @@ sessionCmd
   .description("Append messages to an existing session (JSON array format)")
   .argument("<sessionId>", "Session ID")
   .requiredOption("-m, --messages <messages>", "Messages in JSON array format")
+  .option("-t, --stop", "Interrupt agent and set status to ready")
   .action(async (sessionId, options) => {
     libsqlInfra.init();
     await sessionCommands.appendSessionMessages({
