@@ -36,11 +36,3 @@ export const deployDiscordCommands = async (options = {}) => {
     throw error;
   }
 };
-
-// Support running directly with node/bun
-if (import.meta.url === `file://${process.argv[1]}`) {
-  deployDiscordCommands().catch(error => {
-    console.error("Failed to deploy commands:", error);
-    process.exit(1);
-  });
-}
