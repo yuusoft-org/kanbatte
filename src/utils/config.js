@@ -30,6 +30,6 @@ export const loadConfig = (configPath) => {
     //   throw new Error(`Config file not found at ${configPath}. Please create kanbatte.config.yaml.`);
     // }
     // throw new Error(`Error parsing config file ${configPath}: ${error.message}`);
-    return [];
+    return {};
   }
 };
