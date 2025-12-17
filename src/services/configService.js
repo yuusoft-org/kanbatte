@@ -46,7 +46,7 @@ export const createConfigService = () => {
     return server ? server.allowedRoles || [] : [];
   };
 
-   const getPrompt = (presetName) => {
+  const getPrompt = (presetName) => {
     if (!_config || !_config.prompts) return null;
     return _config.prompts[presetName] || null;
   };
