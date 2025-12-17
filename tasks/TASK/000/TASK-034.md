@@ -1,6 +1,6 @@
 ---
 title: Prompts Presets
-status: todo
+status: done
 priority: medium
 assignee: nellow
 ---

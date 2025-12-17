@@ -10,7 +10,24 @@ const queueSession = {
         .setName("message")
         .setDescription("Initial message for the session")
         .setRequired(true),
+    )
+    .addStringOption((option) =>
+      option
+        .setName("prompt-preset")
+        .setDescription("The agent persona to use (e.g., software-engineer)")
+        .setRequired(false)
+        .setAutocomplete(true),
     ),
+
+  async autocomplete(interaction, services) {
+    const { configService } = services;
+    const focusedValue = interaction.options.getFocused();
+    const presets = configService.getPromptPresets();
+    const filtered = presets.filter((choice) => choice.name.startsWith(focusedValue));
+    await interaction.respond(
+      filtered.map((choice) => ({ name: choice.name, value: choice.value })),
+    );
+  },
 
   async execute(interaction, services) {
     const { sessionService, discordService } = services;
@@ -37,6 +54,8 @@ const queueSession = {
     const projectId = projectConfig.projectId;
 
     const message = interaction.options.getString("message");
+    const presetName = interaction.options.getString("prompt-preset");
+
     const sessionNumber = await sessionService.getNextSessionNumber({ projectId });
     const sessionId = `${projectId}-${sessionNumber}`;
     const now = Date.now();
@@ -46,6 +65,7 @@ const queueSession = {
       status: "ready",
       createdAt: now,
       updatedAt: now,
+      promptPreset: presetName || null,
     };
 
     await sessionService.addSession({ sessionId, sessionData });
@@ -60,7 +80,10 @@ const queueSession = {
     await thread.send(`🗨️ User: ${message}`);
     await discordService.addSessionThreadRecord({ sessionId, threadId: thread.id });
 
-    const reply = `Session ${sessionId} created: <#${thread.id}>`;
+    let reply = `Session ${sessionId} created: <#${thread.id}>`;
+    if (presetName) {
+      reply += ` with the '${presetName}' persona.`;
+    }
     console.log(reply);
     await interaction.editReply({ content: reply });
   },
