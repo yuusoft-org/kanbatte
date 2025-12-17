@@ -40,10 +40,6 @@ export const createSessionService = (deps) => {
           }
           state.updatedAt = event.timestamp;
           break;
-        case "session_preset_updated":
-          state.promptPreset = event.data.presetName;
-          state.updatedAt = event.timestamp;
-          break;
       }
     }
 
@@ -54,22 +50,6 @@ export const createSessionService = (deps) => {
   const addSession = async (payload) => {
     const { sessionId, sessionData } = payload;
     const eventData = serialize({ type: "session_created", sessionId, data: sessionData, timestamp: Date.now() });
-    await repository.addEvent({
-      type: "treePush",
-      partition: sessionId,
-      payload: { target: "events", value: { eventData }, options: { parent: "_root" } },
-    });
-    return await _computeAndSaveView(sessionId);
-  };
-
-  const updateSessionPreset = async (payload) => {
-    const { sessionId, presetName } = payload;
-    const eventData = serialize({
-      type: "session_preset_updated",
-      sessionId,
-      data: { presetName },
-      timestamp: Date.now(),
-    });
     await repository.addEvent({
       type: "treePush",
       partition: sessionId,
@@ -179,7 +159,6 @@ export const createSessionService = (deps) => {
     getSessionsByStatus,
     getProjectById,
     listProjects,
-    updateSessionPreset,
     fetchRecentSessionEvents,
     addClaudeSessionRecord,
     getClaudeSessionIdBySessionId,
