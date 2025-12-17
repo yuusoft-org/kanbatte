@@ -46,6 +46,16 @@ export const createConfigService = () => {
     return server ? server.allowedRoles || [] : [];
   };
 
+   const getPrompt = (presetName) => {
+    if (!_config || !_config.prompts) return null;
+    return _config.prompts[presetName] || null;
+  };
+
+  const getPromptPresets = () => {
+    if (!_config || !_config.prompts) return [];
+    return Object.keys(_config.prompts).map((key) => ({ name: key, value: key }));
+  };
+
   return {
     init,
     getProjects,
@@ -53,5 +63,7 @@ export const createConfigService = () => {
     getDiscordUserByUserId,
     getProjectConfigByChannelId,
     getAllowedRolesByGuildId,
+    getPrompt,
+    getPromptPresets,
   };
 };
