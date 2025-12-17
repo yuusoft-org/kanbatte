@@ -2,6 +2,7 @@ import { createDiscordInsieme } from "./infra/discordInsieme.js";
 import { createDiscordService } from "./services/discordService.js";
 import { createBotCommands } from "./commands/bot.js";
 import { agentStart } from "../../commands/agent.js";
+import { deployDiscordCommands } from "./deploy.js";
 
 export const setupDiscordCli = (deps) => {
   const { cmd, discordLibsqlInfra, sessionService, libsqlInfra, configService } = deps;
@@ -46,5 +47,17 @@ export const setupDiscordCli = (deps) => {
       libsqlInfra.init();
       botCommands.startBot();
       agentStart({ sessionService, configService });
+    });
+
+  cmd
+    .command("deploy")
+    .description("Deploy Discord slash commands to your server")
+    .action(async () => {
+      try {
+        await deployDiscordCommands();
+      } catch (error) {
+        console.error("Failed to deploy Discord commands:", error.message);
+        process.exit(1);
+      }
     });
 };
