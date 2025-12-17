@@ -2,7 +2,7 @@ import { query } from "@anthropic-ai/claude-agent-sdk";
 import { setupWorktree } from "../utils/git.js";
 
 export const agent = async (deps) => {
-  const { sessionService } = deps;
+  const { sessionService, configService } = deps;
   const readySessions = await sessionService.getSessionsByStatus({ status: "ready" });
 
   if (readySessions.length === 0) {
@@ -51,6 +51,16 @@ export const agent = async (deps) => {
         },
         cwd: worktreePath,
       };
+
+      if (session.promptPreset) {
+        const systemPrompt = configService.getPrompt(session.promptPreset);
+        if (systemPrompt) {
+          queryOptions.systemPrompt = systemPrompt;
+          console.log(`Using system prompt preset: ${session.promptPreset}`);
+        } else {
+          console.warn(`Prompt preset '${session.promptPreset}' not found in config. Using default.`,);
+        }
+      }
 
       if (claudeSessionId) {
         queryOptions.resume = claudeSessionId;

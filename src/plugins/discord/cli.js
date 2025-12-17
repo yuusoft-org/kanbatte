@@ -45,6 +45,6 @@ export const setupDiscordCli = (deps) => {
     .action(async () => {
       libsqlInfra.init();
       botCommands.startBot();
-      agentStart({ sessionService });
+      agentStart({ sessionService, configService });
     });
 };
