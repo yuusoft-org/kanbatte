@@ -26,9 +26,10 @@ export const loadConfig = (configPath) => {
 
     return config;
   } catch (error) {
-    if (error.code === 'ENOENT') {
-      throw new Error(`Config file not found at ${configPath}. Please create kanbatte.config.yaml.`);
-    }
-    throw new Error(`Error parsing config file ${configPath}: ${error.message}`);
+    // if (error.code === 'ENOENT') {
+    //   throw new Error(`Config file not found at ${configPath}. Please create kanbatte.config.yaml.`);
+    // }
+    // throw new Error(`Error parsing config file ${configPath}: ${error.message}`);
+    return [];
   }
 };
