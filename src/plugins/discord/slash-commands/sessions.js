@@ -23,7 +23,9 @@ const queueSession = {
     const { configService } = services;
     const focusedValue = interaction.options.getFocused();
     const presets = configService.getPromptPresets();
-    const filtered = presets.filter((choice) => choice.name.startsWith(focusedValue));
+    const filtered = presets.filter((choice) =>
+      choice.name.startsWith(focusedValue),
+    );
     await interaction.respond(
       filtered.map((choice) => ({ name: choice.name, value: choice.value })),
     );
@@ -34,7 +36,8 @@ const queueSession = {
 
     if (isThreadChannel(interaction.channel)) {
       await interaction.reply({
-        content: "This command cannot be used in a thread. Please use it in a regular channel.",
+        content:
+          "This command cannot be used in a thread. Please use it in a regular channel.",
         flags: MessageFlags.Ephemeral,
       });
       return;
@@ -43,7 +46,9 @@ const queueSession = {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const channelId = interaction.channel.id;
-    const projectConfig = discordService.getProjectConfigByChannelId({ channelId });
+    const projectConfig = discordService.getProjectConfigByChannelId({
+      channelId,
+    });
 
     if (!projectConfig || !projectConfig.projectId) {
       await interaction.editReply({
@@ -56,7 +61,9 @@ const queueSession = {
     const message = interaction.options.getString("message");
     const presetName = interaction.options.getString("prompt-preset");
 
-    const sessionNumber = await sessionService.getNextSessionNumber({ projectId });
+    const sessionNumber = await sessionService.getNextSessionNumber({
+      projectId,
+    });
     const sessionId = `${projectId}-${sessionNumber}`;
     const now = Date.now();
     const sessionData = {
@@ -78,7 +85,10 @@ const queueSession = {
 
     await thread.members.add(interaction.user.id);
     await thread.send(`🗨️ User: ${message}`);
-    await discordService.addSessionThreadRecord({ sessionId, threadId: thread.id });
+    await discordService.addSessionThreadRecord({
+      sessionId,
+      threadId: thread.id,
+    });
 
     let reply = `Session ${sessionId} created: <#${thread.id}>`;
     if (presetName) {
@@ -102,7 +112,7 @@ const setStatus = {
           { name: "Ready", value: "ready" },
           { name: "In Progress", value: "in-progress" },
           { name: "Review", value: "review" },
-          { name: "Done", value: "done" }
+          { name: "Done", value: "done" },
         ),
     ),
 
@@ -111,7 +121,7 @@ const setStatus = {
 
     if (!isThreadChannel(interaction.channel)) {
       await interaction.reply({
-        content: 'This command can only be used in a thread channel.'
+        content: "This command can only be used in a thread channel.",
       });
       return;
     }
@@ -123,11 +133,11 @@ const setStatus = {
 
     if (!sessionId) {
       await interaction.reply({
-        content: `No session found for this thread.`
+        content: `No session found for this thread.`,
       });
       return;
     }
-    
+
     await sessionService.updateSessionStatus({ sessionId, status });
 
     await interaction.reply({
@@ -139,31 +149,35 @@ const setStatus = {
 const requestPR = {
   data: new SlashCommandBuilder()
     .setName("request-pr")
-    .setDescription("Append request message to commit changes and create a new pull request"),
+    .setDescription(
+      "Append request message to commit changes and create a new pull request",
+    ),
 
   async execute(interaction, services) {
     const { sessionService, discordService } = services;
 
     if (!isThreadChannel(interaction.channel)) {
       await interaction.reply({
-        content: 'This command can only be used in a thread channel.',
+        content: "This command can only be used in a thread channel.",
         flags: MessageFlags.Ephemeral,
       });
       return;
     }
 
     const sessionId = await discordService.getSessionIdByThread({
-      threadId: interaction.channel.id
+      threadId: interaction.channel.id,
     });
 
     if (!sessionId) {
       await interaction.reply({
-        content: 'No session found for this thread.',
+        content: "No session found for this thread.",
         flags: MessageFlags.Ephemeral,
       });
       return;
     }
-    const authorInfo = discordService.getDiscordUserByUserId({ userId: interaction.user.id });
+    const authorInfo = discordService.getDiscordUserByUserId({
+      userId: interaction.user.id,
+    });
     if (!authorInfo || !authorInfo.name || !authorInfo.email) {
       await interaction.reply({
         content: `Could not find your git author info in kanbatte.config.yaml. Please bind your user first.`,
@@ -177,7 +191,7 @@ const requestPR = {
 
     await sessionService.appendSessionMessages({
       sessionId,
-      messages: [{ role: "user", content: prompt, timestamp: Date.now() }]
+      messages: [{ role: "user", content: prompt, timestamp: Date.now() }],
     });
 
     // Automatically set status to ready after request-pr
@@ -186,9 +200,8 @@ const requestPR = {
     await interaction.reply({
       content: `Your commit and PR request has been added to session ${sessionId}. Status set to ready.`,
     });
-  }
+  },
 };
-
 
 export default {
   "queue-session": queueSession,

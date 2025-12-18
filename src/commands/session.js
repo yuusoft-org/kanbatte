@@ -3,7 +3,9 @@ export const createSessionCommands = (deps) => {
 
   const addSession = async (payload) => {
     if (!payload.message) {
-      throw new Error("Session message is required (provide message as argument)");
+      throw new Error(
+        "Session message is required (provide message as argument)",
+      );
     }
     if (!payload.project) {
       throw new Error("Project ID is required (use -p or --project)");
@@ -11,10 +13,14 @@ export const createSessionCommands = (deps) => {
 
     const project = configService.getProjectById(payload.project);
     if (!project) {
-      throw new Error(`Project '${payload.project}' does not exist in kanbatte.config.yaml`);
+      throw new Error(
+        `Project '${payload.project}' does not exist in kanbatte.config.yaml`,
+      );
     }
 
-    const sessionNumber = await sessionService.getNextSessionNumber({ projectId: payload.project });
+    const sessionNumber = await sessionService.getNextSessionNumber({
+      projectId: payload.project,
+    });
     const sessionId = `${payload.project}-${sessionNumber}`;
     const now = Date.now();
 
@@ -60,8 +66,14 @@ export const createSessionCommands = (deps) => {
       throw new Error("At least one update field is required (-s)");
     }
 
-    const result = await sessionService.updateSession({ sessionId, validUpdates });
-    console.log("Session status updated successfully!", { sessionId, status: result.status });
+    const result = await sessionService.updateSession({
+      sessionId,
+      validUpdates,
+    });
+    console.log("Session status updated successfully!", {
+      sessionId,
+      status: result.status,
+    });
   };
 
   const readSession = async (sessionId, format = "markdown") => {
@@ -79,7 +91,9 @@ export const createSessionCommands = (deps) => {
     if (!payload.project) {
       throw new Error("Project ID is required (use -p or --project)");
     }
-    const statuses = payload.status ? payload.status.split(",").map((s) => s.trim()) : null;
+    const statuses = payload.status
+      ? payload.status.split(",").map((s) => s.trim())
+      : null;
     const sessions = await sessionService.getViewsByProjectId({
       projectId: payload.project,
       statuses,
@@ -125,12 +139,23 @@ export const createSessionCommands = (deps) => {
       throw new Error("Input must be a JSON array of messages");
     }
 
-    await sessionService.appendSessionMessages({ sessionId: payload.sessionId, messages });
-    console.log("Messages appended successfully to session:", payload.sessionId);
+    await sessionService.appendSessionMessages({
+      sessionId: payload.sessionId,
+      messages,
+    });
+    console.log(
+      "Messages appended successfully to session:",
+      payload.sessionId,
+    );
 
     if (payload.stop) {
-      await sessionService.updateSessionStatus({ sessionId: payload.sessionId, status: "ready" });
-      console.log(`Session ${payload.sessionId} status set to 'ready' for immediate agent pickup.`);
+      await sessionService.updateSessionStatus({
+        sessionId: payload.sessionId,
+        status: "ready",
+      });
+      console.log(
+        `Session ${payload.sessionId} status set to 'ready' for immediate agent pickup.`,
+      );
     }
   };
 

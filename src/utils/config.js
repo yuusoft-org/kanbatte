@@ -5,7 +5,9 @@ export const parseGitAuthor = (gitAuthor) => {
   if (!gitAuthor) return null;
   const match = gitAuthor.match(/(.+?)\s*<(.+)>/);
   if (!match) {
-    console.warn(`Invalid gitAuthor format: "${gitAuthor}". Expected "Name <email@example.com>".`);
+    console.warn(
+      `Invalid gitAuthor format: "${gitAuthor}". Expected "Name <email@example.com>".`,
+    );
     return null;
   }
   return { name: match[1].trim(), email: match[2].trim() };
@@ -18,7 +20,7 @@ export const loadConfig = (configPath) => {
 
     // Parse gitAuthor for all discord users
     if (config.discord && config.discord.users) {
-      config.discord.users = config.discord.users.map(user => ({
+      config.discord.users = config.discord.users.map((user) => ({
         ...user,
         ...parseGitAuthor(user.gitAuthor),
       }));

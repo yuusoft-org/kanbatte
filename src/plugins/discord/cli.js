@@ -5,7 +5,13 @@ import { agentStart } from "../../commands/agent.js";
 import { deployDiscordCommands } from "./deploy.js";
 
 export const setupDiscordCli = (deps) => {
-  const { cmd, discordLibsqlInfra, sessionService, libsqlInfra, configService } = deps;
+  const {
+    cmd,
+    discordLibsqlInfra,
+    sessionService,
+    libsqlInfra,
+    configService,
+  } = deps;
 
   const getDiscordServices = () => {
     discordLibsqlInfra.init();

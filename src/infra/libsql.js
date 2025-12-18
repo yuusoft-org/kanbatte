@@ -5,13 +5,22 @@ import { generateId } from "../utils/helper.js";
 
 export const createLibsqlInfra = (config) => {
   const { dbPath, migrationsPath, tableNames } = config;
-  const { eventLog, view, kvStore, sessionThreadRecord, userEmailRecord,claudeSessionRecord  } = tableNames;
+  const {
+    eventLog,
+    view,
+    kvStore,
+    sessionThreadRecord,
+    userEmailRecord,
+    claudeSessionRecord,
+  } = tableNames;
 
   let db;
 
   const checkInitialized = () => {
     if (!db) {
-      throw new Error("Database service has not been initialized. Please run the appropriate 'db setup' command first.");
+      throw new Error(
+        "Database service has not been initialized. Please run the appropriate 'db setup' command first.",
+      );
     }
   };
 
@@ -118,8 +127,8 @@ export const createLibsqlInfra = (config) => {
       });
     }
   };
-  
-   const getAllEventsSince = async (lastOffsetId) => {
+
+  const getAllEventsSince = async (lastOffsetId) => {
     checkInitialized();
     const result = await db.execute({
       sql: `SELECT id, payload FROM ${eventLog} WHERE id > ? ORDER BY id`,
@@ -131,13 +140,14 @@ export const createLibsqlInfra = (config) => {
         return [];
       }
 
-      return [{
-        id: row.id,
-        ...deserialize(outerPayload.value.eventData),
-      }];
+      return [
+        {
+          id: row.id,
+          ...deserialize(outerPayload.value.eventData),
+        },
+      ];
     });
   };
-
 
   const getView = async (key) => {
     checkInitialized();
@@ -162,7 +172,8 @@ export const createLibsqlInfra = (config) => {
 
   const addSessionThreadRecord = async (payload) => {
     checkInitialized();
-    if (!sessionThreadRecord) throw new Error("sessionThreadRecord table name not configured.");
+    if (!sessionThreadRecord)
+      throw new Error("sessionThreadRecord table name not configured.");
     const { sessionId, threadId } = payload;
     await db.execute({
       sql: `INSERT INTO ${sessionThreadRecord} (session_id, thread_id) VALUES (?, ?)`,
@@ -172,7 +183,8 @@ export const createLibsqlInfra = (config) => {
 
   const getSessionIdByThread = async (payload) => {
     checkInitialized();
-    if (!sessionThreadRecord) throw new Error("sessionThreadRecord table name not configured.");
+    if (!sessionThreadRecord)
+      throw new Error("sessionThreadRecord table name not configured.");
     const { threadId } = payload;
     const result = await db.execute({
       sql: `SELECT session_id FROM ${sessionThreadRecord} WHERE thread_id = ?`,
@@ -183,7 +195,8 @@ export const createLibsqlInfra = (config) => {
 
   const getThreadIdBySession = async (payload) => {
     checkInitialized();
-    if (!sessionThreadRecord) throw new Error("sessionThreadRecord table name not configured.");
+    if (!sessionThreadRecord)
+      throw new Error("sessionThreadRecord table name not configured.");
     const { sessionId } = payload;
     const result = await db.execute({
       sql: `SELECT thread_id FROM ${sessionThreadRecord} WHERE session_id = ?`,
@@ -194,7 +207,8 @@ export const createLibsqlInfra = (config) => {
 
   const addUserEmailRecord = async (payload) => {
     checkInitialized();
-    if (!userEmailRecord) throw new Error("userEmailRecord table name not configured.");
+    if (!userEmailRecord)
+      throw new Error("userEmailRecord table name not configured.");
     const { userId, name, email } = payload;
     await db.execute({
       sql: `INSERT INTO ${userEmailRecord} (user_id, name, email) VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET name = excluded.name, email = excluded.email`,
@@ -204,27 +218,36 @@ export const createLibsqlInfra = (config) => {
 
   const getUserEmailRecord = async (payload) => {
     checkInitialized();
-    if (!userEmailRecord) throw new Error("userEmailRecord table name not configured.");
+    if (!userEmailRecord)
+      throw new Error("userEmailRecord table name not configured.");
     const { userId } = payload;
     const result = await db.execute({
       sql: `SELECT name, email FROM ${userEmailRecord} WHERE user_id = ?`,
       args: [userId],
     });
-    return result.rows.length > 0 ? { name: result.rows[0].name, email: result.rows[0].email } : null;
+    return result.rows.length > 0
+      ? { name: result.rows[0].name, email: result.rows[0].email }
+      : null;
   };
 
   const listUserEmailRecords = async () => {
     checkInitialized();
-    if (!userEmailRecord) throw new Error("userEmailRecord table name not configured.");
+    if (!userEmailRecord)
+      throw new Error("userEmailRecord table name not configured.");
     const result = await db.execute({
       sql: `SELECT user_id, name, email FROM ${userEmailRecord}`,
     });
-    return result.rows.map(row => ({ userId: row.user_id, name: row.name, email: row.email }));
+    return result.rows.map((row) => ({
+      userId: row.user_id,
+      name: row.name,
+      email: row.email,
+    }));
   };
 
   const addClaudeSessionRecord = async (payload) => {
     checkInitialized();
-    if (!claudeSessionRecord) throw new Error("claudeSessionRecord table name not configured.");
+    if (!claudeSessionRecord)
+      throw new Error("claudeSessionRecord table name not configured.");
     const { sessionId, claudeSessionId } = payload;
     await db.execute({
       sql: `INSERT INTO ${claudeSessionRecord} (session_id, claude_session_id) VALUES (?, ?) ON CONFLICT(session_id) DO UPDATE SET claude_session_id = excluded.claude_session_id`,
@@ -234,7 +257,8 @@ export const createLibsqlInfra = (config) => {
 
   const getClaudeSessionIdBySessionId = async (payload) => {
     checkInitialized();
-    if (!claudeSessionRecord) throw new Error("claudeSessionRecord table name not configured.");
+    if (!claudeSessionRecord)
+      throw new Error("claudeSessionRecord table name not configured.");
     const { sessionId } = payload;
     const result = await db.execute({
       sql: `SELECT claude_session_id FROM ${claudeSessionRecord} WHERE session_id = ?`,

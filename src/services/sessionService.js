@@ -12,7 +12,15 @@ export const createSessionService = (deps) => {
     let viewKey;
 
     const now = Date.now();
-    state = { sessionId: id, messages: [], status: "ready", project: "", createdAt: now, updatedAt: now, promptPreset: null };
+    state = {
+      sessionId: id,
+      messages: [],
+      status: "ready",
+      project: "",
+      createdAt: now,
+      updatedAt: now,
+      promptPreset: null,
+    };
     viewKey = `session:${id}`;
 
     let lastEventId = null;
@@ -29,9 +37,11 @@ export const createSessionService = (deps) => {
           state.updatedAt = event.timestamp;
           break;
         case "session_updated":
-          if (event.data.messages !== undefined) state.messages = event.data.messages;
+          if (event.data.messages !== undefined)
+            state.messages = event.data.messages;
           if (event.data.status !== undefined) state.status = event.data.status;
-          if (event.data.project !== undefined) state.project = event.data.project;
+          if (event.data.project !== undefined)
+            state.project = event.data.project;
           state.updatedAt = event.timestamp;
           break;
         case "session_append_messages":
@@ -49,29 +59,50 @@ export const createSessionService = (deps) => {
 
   const addSession = async (payload) => {
     const { sessionId, sessionData } = payload;
-    const eventData = serialize({ type: "session_created", sessionId, data: sessionData, timestamp: Date.now() });
+    const eventData = serialize({
+      type: "session_created",
+      sessionId,
+      data: sessionData,
+      timestamp: Date.now(),
+    });
     await repository.addEvent({
       type: "treePush",
       partition: sessionId,
-      payload: { target: "events", value: { eventData }, options: { parent: "_root" } },
+      payload: {
+        target: "events",
+        value: { eventData },
+        options: { parent: "_root" },
+      },
     });
     return await _computeAndSaveView(sessionId);
   };
 
   const updateSession = async (payload) => {
     const { sessionId, validUpdates } = payload;
-    const eventData = serialize({ type: "session_updated", sessionId, data: validUpdates, timestamp: Date.now() });
+    const eventData = serialize({
+      type: "session_updated",
+      sessionId,
+      data: validUpdates,
+      timestamp: Date.now(),
+    });
     await repository.addEvent({
       type: "treePush",
       partition: sessionId,
-      payload: { target: "events", value: { eventData }, options: { parent: "_root" } },
+      payload: {
+        target: "events",
+        value: { eventData },
+        options: { parent: "_root" },
+      },
     });
     return await _computeAndSaveView(sessionId);
   };
 
   const appendSessionMessages = async (payload) => {
     const { sessionId, messages } = payload;
-    const messagesWithTimestamps = messages.map((msg) => ({ ...msg, timestamp: msg.timestamp || Date.now() }));
+    const messagesWithTimestamps = messages.map((msg) => ({
+      ...msg,
+      timestamp: msg.timestamp || Date.now(),
+    }));
     const eventData = serialize({
       type: "session_append_messages",
       sessionId,
@@ -81,7 +112,11 @@ export const createSessionService = (deps) => {
     await repository.addEvent({
       type: "treePush",
       partition: sessionId,
-      payload: { target: "events", value: { eventData }, options: { parent: "_root" } },
+      payload: {
+        target: "events",
+        value: { eventData },
+        options: { parent: "_root" },
+      },
     });
     return await _computeAndSaveView(sessionId);
   };
@@ -98,7 +133,9 @@ export const createSessionService = (deps) => {
 
   const getViewsByProjectId = async (payload) => {
     const { projectId, statuses } = payload;
-    const allSessions = await libsqlInfra.findViewsByPrefix(`session:${projectId}-`);
+    const allSessions = await libsqlInfra.findViewsByPrefix(
+      `session:${projectId}-`,
+    );
     if (!statuses || statuses.length === 0) {
       return allSessions;
     }
@@ -107,7 +144,9 @@ export const createSessionService = (deps) => {
 
   const getNextSessionNumber = async (payload) => {
     const { projectId } = payload;
-    const allSessions = await libsqlInfra.findViewsByPrefix(`session:${projectId}-`);
+    const allSessions = await libsqlInfra.findViewsByPrefix(
+      `session:${projectId}-`,
+    );
     if (allSessions.length === 0) {
       return 1;
     }

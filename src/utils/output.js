@@ -13,7 +13,9 @@ export const formatOutput = (data, format, type) => {
         console.log("| Session ID | Project | Status | Created |");
         console.log("|------------|---------|--------|----------|");
         data.forEach((session) => {
-          const created = new Date(session.createdAt).toISOString().split('T')[0];
+          const created = new Date(session.createdAt)
+            .toISOString()
+            .split("T")[0];
           console.log(
             `| ${session.sessionId} | ${session.project} | ${session.status} | ${created} |`,
           );
@@ -36,49 +38,61 @@ export const formatOutput = (data, format, type) => {
         console.log(`**Project:** ${data.project}\n`);
         console.log(`**Status:** ${data.status}\n`);
         console.log(`**Created:** ${new Date(data.createdAt).toISOString()}\n`);
-        console.log(`**Updated:** ${new Date(data.updatedAt).toISOString()}\n\n`);
+        console.log(
+          `**Updated:** ${new Date(data.updatedAt).toISOString()}\n\n`,
+        );
 
         if (data.messages && data.messages.length > 0) {
           console.log(`## Messages\n\n`);
           data.messages.forEach((msg) => {
             if (!msg.role || !msg.content) {
-              console.warn(`Invalid completion API message format: ${JSON.stringify(msg, null, 2)}. Expected format: {role: string, content: string | Array}`);
+              console.warn(
+                `Invalid completion API message format: ${JSON.stringify(msg, null, 2)}. Expected format: {role: string, content: string | Array}`,
+              );
             }
 
-            let role = '🤖 Assistant';
+            let role = "🤖 Assistant";
             let timestamp = new Date(msg.timestamp).toISOString();
-            let content = '';
+            let content = "";
 
             // Only support standard completion API format
-            if (msg.role === 'user') {
-              role = '👤 User';
-              if (typeof msg.content === 'string') {
+            if (msg.role === "user") {
+              role = "👤 User";
+              if (typeof msg.content === "string") {
                 content = msg.content;
               } else {
-                console.warn(`User message content must be a string, got: ${typeof msg.content}`);
+                console.warn(
+                  `User message content must be a string, got: ${typeof msg.content}`,
+                );
               }
-            } else if (msg.role === 'assistant') {
-              role = '🤖 Assistant';
-              if (typeof msg.content === 'string') {
+            } else if (msg.role === "assistant") {
+              role = "🤖 Assistant";
+              if (typeof msg.content === "string") {
                 content = msg.content;
               } else if (Array.isArray(msg.content)) {
                 // Extract text from assistant messages with array content
                 content = msg.content
-                  .filter(c => c.type === 'text')
-                  .map(c => c.text)
-                  .join('\n\n');
+                  .filter((c) => c.type === "text")
+                  .map((c) => c.text)
+                  .join("\n\n");
               } else {
-                console.warn(`Assistant message content must be a string or array, got: ${typeof msg.content}`);
+                console.warn(
+                  `Assistant message content must be a string or array, got: ${typeof msg.content}`,
+                );
               }
-            } else if (msg.role === 'system') {
-              role = '⚙️ System';
-              if (typeof msg.content === 'string') {
+            } else if (msg.role === "system") {
+              role = "⚙️ System";
+              if (typeof msg.content === "string") {
                 content = msg.content;
               } else {
-                console.warn(`System message content must be a string, got: ${typeof msg.content}`);
+                console.warn(
+                  `System message content must be a string, got: ${typeof msg.content}`,
+                );
               }
             } else {
-              console.warn(`Unknown role: ${msg.role}. Valid roles: user, assistant, system`);
+              console.warn(
+                `Unknown role: ${msg.role}. Valid roles: user, assistant, system`,
+              );
             }
 
             console.log(`### ${role} (${timestamp})\n\n`);
@@ -100,44 +114,64 @@ export const formatOutput = (data, format, type) => {
       if (data.length > 0 && data[0].sessionId) {
         // Session list table with required columns
         const extractSentence = (message) => {
-          if (!message) return '';
+          if (!message) return "";
 
-          let textContent = '';
+          let textContent = "";
 
           // Only support standard completion API format
-          if (message.role && typeof message.content === 'string') {
+          if (message.role && typeof message.content === "string") {
             textContent = message.content;
-          } else if (message.role === 'assistant' && Array.isArray(message.content)) {
+          } else if (
+            message.role === "assistant" &&
+            Array.isArray(message.content)
+          ) {
             // Extract text from assistant messages with array content
             textContent = message.content
-              .filter(c => c.type === 'text')
-              .map(c => c.text)
-              .join(' ');
+              .filter((c) => c.type === "text")
+              .map((c) => c.text)
+              .join(" ");
           } else {
-            console.warn(`Invalid completion API message format: ${JSON.stringify(message, null, 2)}. Expected format: {role: string, content: string | Array}`);
+            console.warn(
+              `Invalid completion API message format: ${JSON.stringify(message, null, 2)}. Expected format: {role: string, content: string | Array}`,
+            );
           }
 
-          if (!textContent) return '';
+          if (!textContent) return "";
 
           const firstSentence = textContent.split(/[.!?]/)[0].trim();
-          return firstSentence.length > 40 ? firstSentence.substring(0, 37) + '...' : firstSentence + (textContent.includes('.') ? '.' : '');
+          return firstSentence.length > 40
+            ? firstSentence.substring(0, 37) + "..."
+            : firstSentence + (textContent.includes(".") ? "." : "");
         };
 
         const table = new Table({
-          head: ["Session ID", "Status", "First Message", "Last Message", "Start Date", "Last Update"],
+          head: [
+            "Session ID",
+            "Status",
+            "First Message",
+            "Last Message",
+            "Start Date",
+            "Last Update",
+          ],
           colWidths: [15, 12, 25, 25, 12, 12],
         });
 
         data.forEach((session) => {
-          const startDate = new Date(session.createdAt).toISOString().split('T')[0];
-          const lastUpdate = new Date(session.updatedAt).toISOString().split('T')[0];
+          const startDate = new Date(session.createdAt)
+            .toISOString()
+            .split("T")[0];
+          const lastUpdate = new Date(session.updatedAt)
+            .toISOString()
+            .split("T")[0];
 
-          let firstMessage = '';
-          let lastMessage = '';
+          let firstMessage = "";
+          let lastMessage = "";
 
           if (session.messages && session.messages.length > 0) {
             firstMessage = extractSentence(session.messages[0]);
-            lastMessage = extractSentence(session.messages[session.messages.length - 1]);
+            lastMessage = extractSentence(
+              session.messages[session.messages.length - 1],
+            );
           }
 
           table.push([
@@ -179,7 +213,7 @@ export const formatOutput = (data, format, type) => {
         );
 
         if (data.messages && data.messages.length > 0) {
-          table.push({ "Messages": `${data.messages.length} message(s)` });
+          table.push({ Messages: `${data.messages.length} message(s)` });
         }
       } else {
         // Task table

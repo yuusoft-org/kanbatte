@@ -1,4 +1,8 @@
-import { splitTextForDiscord, classifyEventsBySession, transformSessionMessageAppend } from "../utils";
+import {
+  splitTextForDiscord,
+  classifyEventsBySession,
+  transformSessionMessageAppend,
+} from "../utils";
 
 const handleSessionEvents = async (deps, payload) => {
   const { client, discordService } = deps;
@@ -12,7 +16,9 @@ const handleSessionEvents = async (deps, payload) => {
     }
     const thread = await client.channels.fetch(threadId);
     if (!thread) {
-      console.warn(`⚠️ Unable to fetch thread with ID ${threadId} for session ${sessionId}`);
+      console.warn(
+        `⚠️ Unable to fetch thread with ID ${threadId} for session ${sessionId}`,
+      );
       return;
     }
     const messageQueue = [];
@@ -22,7 +28,7 @@ const handleSessionEvents = async (deps, payload) => {
       const { type, data } = event;
       try {
         switch (type) {
-          case 'session_append_messages':
+          case "session_append_messages":
             for (const msg of data.messages) {
               const formattedMessage = transformSessionMessageAppend(msg);
               if (formattedMessage) {
@@ -30,32 +36,41 @@ const handleSessionEvents = async (deps, payload) => {
               }
             }
             break;
-          case 'session_updated':
-            messageQueue.push(`🔄 Session ${sessionId} status updated to: ${data.status}`)
-            console.log(`Session ${sessionId} status updated to: ${data.status}`)
-            if (data.status === 'done') {
+          case "session_updated":
+            messageQueue.push(
+              `🔄 Session ${sessionId} status updated to: ${data.status}`,
+            );
+            console.log(
+              `Session ${sessionId} status updated to: ${data.status}`,
+            );
+            if (data.status === "done") {
               shouldLockThread = true;
             }
             break;
-          case 'session_created':
+          case "session_created":
             console.log(`Session ${sessionId} created.`);
             break;
           default:
-            console.log(`Unhandled session event type: ${type} for session ${sessionId}:`, event);
+            console.log(
+              `Unhandled session event type: ${type} for session ${sessionId}:`,
+              event,
+            );
             break;
         }
       } catch (error) {
         console.error(`Error handling session ${sessionId} event:`, error);
-        await thread.send(`⚠️ Error handling event of type '${type}': ${error.message}`);
+        await thread.send(
+          `⚠️ Error handling event of type '${type}': ${error.message}`,
+        );
         continue;
       }
     }
 
-    const mergedMessage = messageQueue.join('\n\n');
+    const mergedMessage = messageQueue.join("\n\n");
     const splitMessages = splitTextForDiscord(mergedMessage);
     for (const msg of splitMessages) {
       // Replace sequences of 3 or more consecutive newlines with exactly 2 newlines
-      const normalizedMsg = msg.replace(/\n{3,}/g, '\n\n');
+      const normalizedMsg = msg.replace(/\n{3,}/g, "\n\n");
       if (normalizedMsg && normalizedMsg.trim().length > 0) {
         await thread.send(normalizedMsg);
       }
@@ -76,7 +91,7 @@ export const createStartCommands = (deps) => {
 
   const discordStartLoop = async (currentOffsetId) => {
     const recentEvents = await sessionService.fetchRecentSessionEvents({
-      lastOffsetId: currentOffsetId
+      lastOffsetId: currentOffsetId,
     });
 
     let newOffsetId = currentOffsetId;
@@ -87,7 +102,10 @@ export const createStartCommands = (deps) => {
       const eventsBySession = classifyEventsBySession(recentEvents);
 
       for (const [sessionId, events] of Object.entries(eventsBySession)) {
-        await handleSessionEvents({ discordService, client }, { sessionId, events });
+        await handleSessionEvents(
+          { discordService, client },
+          { sessionId, events },
+        );
       }
 
       const lastEvent = recentEvents[recentEvents.length - 1];

@@ -40,7 +40,10 @@ const ensureRepo = async (gitUrl, repoPath) => {
       await execAsync("git switch main", { cwd: repoPath });
       await execAsync("git pull origin main", { cwd: repoPath });
     } catch (pullError) {
-      console.warn(`Warning: Failed to pull updates for ${repoPath}. Continuing with local version.`, pullError);
+      console.warn(
+        `Warning: Failed to pull updates for ${repoPath}. Continuing with local version.`,
+        pullError,
+      );
     }
   } else {
     console.log(`Cloning ${gitUrl}...`);
@@ -68,12 +71,16 @@ const createWorktree = async (repoPath, worktreePath, taskId) => {
 
   let branchExists = false;
   try {
-    await execAsync(`git show-ref --verify refs/heads/${branch}`, { cwd: repoPath });
+    await execAsync(`git show-ref --verify refs/heads/${branch}`, {
+      cwd: repoPath,
+    });
     branchExists = true;
   } catch {}
 
   if (branchExists) {
-    console.log(`Branch '${branch}' already exists. Creating worktree from it.`);
+    console.log(
+      `Branch '${branch}' already exists. Creating worktree from it.`,
+    );
     await execAsync(`git worktree add ${worktreePath} ${branch}`, {
       cwd: repoPath,
     });

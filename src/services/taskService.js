@@ -184,7 +184,13 @@ export const createTaskService = (deps) => {
     const labelsList = formatLabels(labels);
     const { taskId, folder } = getNextTaskId(projectRoot, type);
     const folderPath = createTaskFolders(projectRoot, type, folder);
-    const content = generateTaskContent(title, description, formattedPriority, assignee, labelsList);
+    const content = generateTaskContent(
+      title,
+      description,
+      formattedPriority,
+      assignee,
+      labelsList,
+    );
     const filePath = join(folderPath, `${taskId}.md`);
     fs.writeFileSync(filePath, content, "utf8");
 

@@ -10,7 +10,9 @@ export const formatPriority = (priority) => {
   const formatted = priority.toLowerCase();
 
   if (!validPriorities.includes(formatted)) {
-    throw new Error(`Invalid priority '${priority}'. Must be one of: ${validPriorities.join(", ")}`);
+    throw new Error(
+      `Invalid priority '${priority}'. Must be one of: ${validPriorities.join(", ")}`,
+    );
   }
 
   return formatted;
@@ -21,13 +23,22 @@ export const formatPriority = (priority) => {
  */
 export const formatLabels = (labelsString) => {
   if (!labelsString) return [];
-  return labelsString.split(",").map((l) => l.trim()).filter(Boolean);
+  return labelsString
+    .split(",")
+    .map((l) => l.trim())
+    .filter(Boolean);
 };
 
 /**
  * Generates markdown content for a task file
  */
-export const generateTaskContent = (title, description, priority, assignee, labelsList) => {
+export const generateTaskContent = (
+  title,
+  description,
+  priority,
+  assignee,
+  labelsList,
+) => {
   const yamlFrontmatter = [
     "---",
     `title: ${title}`,
@@ -100,17 +111,36 @@ export const formatTaskTable = (tasks) => {
   };
 
   // Calculate column widths
-  const maxTaskIdWidth = Math.max("Task ID".length, ...tasks.map((t) => t.taskId.length));
-  const maxStatusWidth = Math.max("Status".length, ...tasks.map((t) => t.status.length));
-  const maxPriorityWidth = Math.max("Priority".length, ...tasks.map((t) => t.priority.length));
-  const maxAssigneeWidth = Math.max("Assignee".length, ...tasks.map((t) => (t.assignee || "").length));
-  const maxLabelsWidth = Math.max("Labels".length, ...tasks.map((t) => formatLabels(t.labels).length));
-  const maxTitleWidth = Math.max("Title".length, ...tasks.map((t) => t.title.length));
+  const maxTaskIdWidth = Math.max(
+    "Task ID".length,
+    ...tasks.map((t) => t.taskId.length),
+  );
+  const maxStatusWidth = Math.max(
+    "Status".length,
+    ...tasks.map((t) => t.status.length),
+  );
+  const maxPriorityWidth = Math.max(
+    "Priority".length,
+    ...tasks.map((t) => t.priority.length),
+  );
+  const maxAssigneeWidth = Math.max(
+    "Assignee".length,
+    ...tasks.map((t) => (t.assignee || "").length),
+  );
+  const maxLabelsWidth = Math.max(
+    "Labels".length,
+    ...tasks.map((t) => formatLabels(t.labels).length),
+  );
+  const maxTitleWidth = Math.max(
+    "Title".length,
+    ...tasks.map((t) => t.title.length),
+  );
 
   // Truncate title if too long (max 50 chars)
   const truncatedTasks = tasks.map((task) => ({
     ...task,
-    title: task.title.length > 50 ? task.title.substring(0, 47) + "..." : task.title,
+    title:
+      task.title.length > 50 ? task.title.substring(0, 47) + "..." : task.title,
   }));
   const actualMaxTitleWidth = Math.min(50, maxTitleWidth);
   const actualMaxLabelsWidth = Math.min(30, maxLabelsWidth);
@@ -153,7 +183,9 @@ export const formatTaskTable = (tasks) => {
 export const parseTaskId = (taskId) => {
   const match = taskId.match(/^([A-Z]+)-(\d+)$/);
   if (!match) {
-    throw new Error(`Invalid task ID format: ${taskId}. Expected format: TYPE-123`);
+    throw new Error(
+      `Invalid task ID format: ${taskId}. Expected format: TYPE-123`,
+    );
   }
 
   return {
@@ -167,7 +199,9 @@ export const parseTaskId = (taskId) => {
  */
 export const calculateFolder = (number) => {
   if (number < 1) {
-    throw new Error(`Invalid task number: ${number}. Task numbers must start from 1`);
+    throw new Error(
+      `Invalid task number: ${number}. Task numbers must start from 1`,
+    );
   }
 
   if (number <= 99) {
