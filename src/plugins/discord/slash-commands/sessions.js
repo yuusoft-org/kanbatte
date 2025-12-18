@@ -158,7 +158,7 @@ const requestPR = {
       });
       return;
     }
-    await interaction.deferReply();
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     const sessionId = await discordService.getSessionIdByThread({
       threadId: interaction.channel.id,
     });
