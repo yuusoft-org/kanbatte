@@ -158,15 +158,14 @@ const requestPR = {
       });
       return;
     }
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    await interaction.deferReply();
     const sessionId = await discordService.getSessionIdByThread({
       threadId: interaction.channel.id,
     });
 
     if (!sessionId) {
-      await interaction.reply({
+      await interaction.editReply({
         content: "No session found for this thread.",
-        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -174,9 +173,8 @@ const requestPR = {
       userId: interaction.user.id,
     });
     if (!authorInfo || !authorInfo.name || !authorInfo.email) {
-      await interaction.reply({
+      await interaction.editReply({
         content: `Could not find your git author info in kanbatte.config.yaml. Please bind your user first.`,
-        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -186,9 +184,8 @@ const requestPR = {
     try {
       const session = await sessionService.getViewBySessionId({ sessionId });
       if (!session) {
-        await interaction.reply({
+        await interaction.editReply({
           content: `Session ${sessionId} could not be found.`,
-          flags: MessageFlags.Ephemeral,
         });
         return;
       }
@@ -244,7 +241,6 @@ const requestPR = {
       console.error(`Failed to create PR for session ${sessionId}:`, error);
       await interaction.editReply({
         content: `❌ PR creation failed for session ${sessionId}. Please check the logs for details.`,
-        flags: MessageFlags.Ephemeral,
       });
     }
   },
