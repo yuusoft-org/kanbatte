@@ -6,14 +6,22 @@ const execAsync = promisify(exec);
 export const createGitService = () => {
   const commit = async (payload) => {
     const { worktreePath, commitMessage, authorName, authorEmail } = payload;
-    await execAsync(`git config user.name "${authorName}"`, {
+
+    await execAsync(`git config user.name "${authorName}"`, { cwd: worktreePath });
+    await execAsync(`git config user.email "${authorEmail}"`, { cwd: worktreePath });
+
+    const { stdout } = await execAsync("git status --porcelain", {
       cwd: worktreePath,
     });
-    await execAsync(`git config user.email "${authorEmail}"`, {
-      cwd: worktreePath,
-    });
+
+    if (!stdout.trim()) {
+      return; // nothing to commit
+    }
+
     await execAsync("git add .", { cwd: worktreePath });
-    await execAsync(`git commit -m "${commitMessage}"`, { cwd: worktreePath });
+    await execAsync(`git commit -m "${commitMessage}"`, {
+      cwd: worktreePath,
+    });
   };
 
   const push = async (payload) => {
