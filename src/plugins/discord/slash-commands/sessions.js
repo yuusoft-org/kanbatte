@@ -140,7 +140,13 @@ const setStatus = {
 const requestPR = {
   data: new SlashCommandBuilder()
     .setName("request-pr")
-    .setDescription("Commit changes and create a pull request for this session."),
+    .setDescription("Commit changes and create a pull request for this session.")
+    .addStringOption((option) =>
+      option
+        .setName("message")
+        .setDescription("Optional commit message and PR title.")
+        .setRequired(false),
+    ),
 
   async execute(interaction, services) {
     const { sessionService, discordService, gitService } = services;
@@ -152,7 +158,7 @@ const requestPR = {
       });
       return;
     }
-
+    await interaction.deferReply();
     const sessionId = await discordService.getSessionIdByThread({
       threadId: interaction.channel.id,
     });
@@ -175,6 +181,8 @@ const requestPR = {
       return;
     }
 
+    const message = interaction.options.getString("message");
+
     try {
       const session = await sessionService.getViewBySessionId({ sessionId });
       if (!session) {
@@ -188,10 +196,12 @@ const requestPR = {
       const worktreePath = getWorktreePath(sessionId);
       const branchName = `task/${sessionId.toLowerCase()}`;
 
-      const firstMessage =
-        session.messages.find((m) => m.role === "user")?.content || sessionId;
-      const commitMessage = firstMessage.substring(0, 72);
-      const prTitle = `${sessionId}: ${firstMessage.substring(0, 100)}`;
+      const prMessage =
+        message ||
+        session.messages.find((m) => m.role === "user")?.content ||
+        sessionId;
+      const commitMessage = prMessage.substring(0, 72);
+      const prTitle = `${sessionId}: ${prMessage.substring(0, 100)}`;
       const prBody = `This PR is automatically generated for session ${sessionId}.`;
 
       // const authorPrompt = `Commit author is: ${authorInfo.name} <${authorInfo.email}>.`;
@@ -221,18 +231,18 @@ const requestPR = {
         body: prBody,
       });
 
-      // Automatically set status to ready after request-pr
+      // Automatically set status to review after request-pr
       await sessionService.updateSessionStatus({
         sessionId,
         status: "review",
       });
 
-      await interaction.reply({
-        content: `✅ Pull Request for session ${sessionId} has been created/updated successfully!`,
+      await interaction.editReply({
+        content: `✅ Pull Request for session ${sessionId} has been created/updated successfully! Status set to review.`,
       });
     } catch (error) {
       console.error(`Failed to create PR for session ${sessionId}:`, error);
-      await interaction.reply({
+      await interaction.editReply({
         content: `❌ PR creation failed for session ${sessionId}. Please check the logs for details.`,
         flags: MessageFlags.Ephemeral,
       });
