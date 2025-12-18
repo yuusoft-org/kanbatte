@@ -31,11 +31,9 @@ export const setupDiscordCli = (deps) => {
     .argument("setup")
     .description("Set up Discord plugin database")
     .action(async () => {
-      console.log("Setting up Discord plugin database...");
       discordLibsqlInfra.init();
       await discordLibsqlInfra.migrateDb();
       await discordInsieme.init();
-      console.log("Discord plugin database setup completed!");
     });
 
   const botCmd = cmd.command("bot").description("Discord bot management");
@@ -56,7 +54,6 @@ export const setupDiscordCli = (deps) => {
       try {
         await deployDiscordCommands();
       } catch (error) {
-        console.error("Failed to deploy Discord commands:", error.message);
         process.exit(1);
       }
     });
