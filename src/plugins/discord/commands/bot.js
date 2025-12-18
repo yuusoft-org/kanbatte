@@ -9,6 +9,7 @@ export const createBotCommands = (deps) => {
       discordService,
       configService,
       discordLibsql: discordLibsqlInfra,
+      gitService,
     });
   };
 

@@ -15,6 +15,7 @@ import { createInsieme } from "./infra/insieme.js";
 import { createSessionService } from "./services/sessionService.js";
 import { formatOutput } from "./utils/output.js";
 import { agent } from "./commands/agent.js";
+import { createGitService } from "./services/gitService.js";
 import {
   removeDirectory,
   copyDirectory,
@@ -66,7 +67,7 @@ const sessionService = createSessionService({
   insieme,
   configService,
 });
-
+const gitService = createGitService();
 const discordMigrationsPath = join(
   __dirname,
   "plugins/discord/db/migrations/*.sql",
@@ -108,6 +109,7 @@ setupDiscordCli({
   discordLibsqlInfra,
   sessionService,
   configService,
+  gitService,
 });
 
 // Task command group
