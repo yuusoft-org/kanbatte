@@ -84,7 +84,7 @@ const queueSession = {
     if (presetName) {
       reply += ` with the '${presetName}' persona.`;
     }
-    console.log(reply);
+    console.log(`✅ ${reply}`);
     await interaction.editReply({ content: reply });
   },
 };

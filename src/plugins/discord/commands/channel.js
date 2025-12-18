@@ -9,7 +9,7 @@ export const createChannelCommands = (deps) => {
       channelData: { channel: channelId },
     });
 
-    console.log(`Channel ${channelId} added for project ${projectId}`);
+    console.log(`✅ Channel ${channelId} added for project ${projectId}`);
   };
 
   const updateChannel = async (payload) => {
@@ -20,7 +20,7 @@ export const createChannelCommands = (deps) => {
       validUpdates: { channel: channelId },
     });
 
-    console.log(`Channel ${channelId} updated for project ${projectId}`);
+    console.log(`✅ Channel ${channelId} updated for project ${projectId}`);
   };
 
   return {

@@ -9,7 +9,7 @@ const token = process.env.DISCORD_BOT_TOKEN;
 export const startDiscordBot = (services) => {
 
   if (!token) {
-    console.error('Error: Missing DISCORD_BOT_TOKEN environment variable');
+    console.error('❌ Error: Missing DISCORD_BOT_TOKEN environment variable');
     process.exit(1);
   }
 
@@ -24,7 +24,7 @@ export const startDiscordBot = (services) => {
   client.services = services;
 
   client.once(Events.ClientReady, async () => {
-    console.log(`Logged in as ${client.user.tag}!`);
+    console.log(`🤖 Logged in as ${client.user.tag}!`);
     const startCommands = createStartCommands({ ...services, client });
 
     let currentOffsetId = await startCommands.initializeOffset();
@@ -41,7 +41,7 @@ export const startDiscordBot = (services) => {
 
   client.commands = new Collection(Object.entries(commands));
 
-  console.log("Commands loaded:", client.commands.map(cmd => cmd.data.name));
+  console.log("📋 Commands loaded:", client.commands.map(cmd => cmd.data.name));
 
   client.on(Events.MessageCreate, async (message) => {
     if (message.author.bot) return;
@@ -79,7 +79,7 @@ export const startDiscordBot = (services) => {
 
         await message.reply(`Your message has been appended to session ${sessionId}.`);
       } catch (error) {
-        console.error('Error:', error);
+        console.error('❌ Error:', error);
         await message.reply("There was an error processing your message. Please try again.");
       }
     }
@@ -92,7 +92,7 @@ export const startDiscordBot = (services) => {
       try {
         await command.autocomplete(interaction, interaction.client.services);
       } catch (error) {
-        console.error('Autocomplete error:', error);
+        console.error('❌ Autocomplete error:', error);
       }
       return;
     }
@@ -100,7 +100,7 @@ export const startDiscordBot = (services) => {
     if (!interaction.isChatInputCommand()) return;
     const command = interaction.client.commands.get(interaction.commandName);
     if (!command) {
-      console.error(`No command matching ${interaction.commandName} was found.`);
+      console.error(`❌ No command matching ${interaction.commandName} was found.`);
       return;
     }
     try {
@@ -114,9 +114,9 @@ export const startDiscordBot = (services) => {
       }
       await command.execute(interaction, interaction.client.services);
     } catch (error) {
-      console.error(error);
+      console.error('❌', error);
       if (error.code === RESTJSONErrorCodes.UnknownInteraction) {
-        console.warn("Interaction has expired, skipping reply.");
+        console.warn("⚠️ Interaction has expired, skipping reply.");
         return;
       }
       if (interaction.replied || interaction.deferred) {

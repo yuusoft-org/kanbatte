@@ -25,14 +25,14 @@ export const deployDiscordCommands = async (options = {}) => {
   const commandsData = Object.values(commands).map(command => command.data.toJSON());
 
   try {
-    console.log(`Started refreshing ${commandsData.length} application (/) commands.`);
+    console.log(`🔄 Started refreshing ${commandsData.length} application (/) commands.`);
     // The put method is used to fully refresh all commands in the guild with the current set
     const data = await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: commandsData });
-    console.log(`Successfully reloaded ${data.length} application (/) commands.`);
+    console.log(`✅ Successfully reloaded ${data.length} application (/) commands.`);
     return data;
   } catch (error) {
     // And of course, make sure you catch and log any errors!
-    console.error("Error deploying Discord commands:", error);
+    console.error("❌ Error deploying Discord commands:", error);
     throw error;
   }
 };

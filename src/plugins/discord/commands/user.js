@@ -9,19 +9,19 @@ export const createUserCommands = (deps) => {
     };
     await discordService.addUserEmailRecord(payload);
     console.log(
-      `Bound Discord user ID ${options.userId} to Git user ${options.name} <${options.email}>`,
+      `✅ Bound Discord user ID ${options.userId} to Git user ${options.name} <${options.email}>`,
     );
   };
 
   const listUsers = async () => {
     const records = await discordService.listUserEmailRecords();
     if (records.length === 0) {
-      console.log("No Discord user bindings found.");
+      console.log("ℹ️ No Discord user bindings found.");
       return;
     }
-    console.log("Discord User ID Bindings:");
+    console.log("👥 Discord User ID Bindings:");
     for (const record of records) {
-      console.log(`- ${record.userId}: ${record.name} <${record.email}>`);
+      console.log(`  • ${record.userId}: ${record.name} <${record.email}>`);
     }
   };
 

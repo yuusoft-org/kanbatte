@@ -94,11 +94,11 @@ dbCmd
   .command("setup")
   .description("Set up database for kanbatte")
   .action(async () => {
-    console.log("Setting up database for kanbatte");
+    console.log("🔧 Setting up database for kanbatte");
     libsqlInfra.init();
     await libsqlInfra.migrateDb();
     await insieme.init();
-    console.log("Database setup completed!");
+    console.log("✅ Database setup completed!");
   });
 
 const discordCmd = program.command("discord");
@@ -187,7 +187,7 @@ taskCmd
     }
 
     removeDirectory(tempDir);
-    console.log("Task site built successfully!");
+    console.log("✅ Task site built successfully!");
   });
 
 // Session command group
@@ -232,7 +232,7 @@ sessionCmd
       await sessionCommands.updateSession({ sessionId, status });
     } else {
       const session = await sessionCommands.getSession({ sessionId });
-      console.log(session.status);
+      console.log(`📊 ${session.status}`);
     }
   });
 

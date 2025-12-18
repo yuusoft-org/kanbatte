@@ -32,20 +32,20 @@ const handleSessionEvents = async (deps, payload) => {
             break;
           case 'session_updated':
             messageQueue.push(`🔄 Session ${sessionId} status updated to: ${data.status}`)
-            console.log(`Session ${sessionId} status updated to: ${data.status}`)
+            console.log(`🔄 Session ${sessionId} status updated to: ${data.status}`)
             if (data.status === 'done') {
               shouldLockThread = true;
             }
             break;
           case 'session_created':
-            console.log(`Session ${sessionId} created.`);
+            console.log(`✨ Session ${sessionId} created.`);
             break;
           default:
-            console.log(`Unhandled session event type: ${type} for session ${sessionId}:`, event);
+            console.log(`❓ Unhandled session event type: ${type} for session ${sessionId}:`, event);
             break;
         }
       } catch (error) {
-        console.error(`Error handling session ${sessionId} event:`, error);
+        console.error(`❌ Error handling session ${sessionId} event:`, error);
         await thread.send(`⚠️ Error handling event of type '${type}': ${error.message}`);
         continue;
       }
@@ -63,10 +63,10 @@ const handleSessionEvents = async (deps, payload) => {
     if (shouldLockThread) {
       await thread.setLocked(true);
       await thread.setArchived(true);
-      console.log(`Thread ${sessionId} locked and archived`);
+      console.log(`🔒 Thread ${sessionId} locked and archived`);
     }
   } catch (error) {
-    console.error(`Error handling session ${sessionId} events:`, error);
+    console.error(`❌ Error handling session ${sessionId} events:`, error);
     return;
   }
 };
