@@ -18,7 +18,7 @@ export const createGitService = () => {
 
   const push = async (payload) => {
     const { worktreePath, branchName } = payload;
-    await execAsync(`git push origin ${branchName} --force`, {
+    await execAsync(`git push origin ${branchName}`, {
       cwd: worktreePath,
     });
   };
