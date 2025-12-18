@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, MessageFlags } from "discord.js";
 import { isThreadChannel } from "../utils";
+import { getWorktreePath } from "../../../utils/git.js";
 
 const queueSession = {
   data: new SlashCommandBuilder()
@@ -139,31 +140,33 @@ const setStatus = {
 const requestPR = {
   data: new SlashCommandBuilder()
     .setName("request-pr")
-    .setDescription("Append request message to commit changes and create a new pull request"),
+    .setDescription("Commit changes and create a pull request for this session."),
 
   async execute(interaction, services) {
-    const { sessionService, discordService } = services;
+    const { sessionService, discordService, gitService } = services;
 
     if (!isThreadChannel(interaction.channel)) {
       await interaction.reply({
-        content: 'This command can only be used in a thread channel.',
+        content: "This command can only be used in a thread channel.",
         flags: MessageFlags.Ephemeral,
       });
       return;
     }
 
     const sessionId = await discordService.getSessionIdByThread({
-      threadId: interaction.channel.id
+      threadId: interaction.channel.id,
     });
 
     if (!sessionId) {
       await interaction.reply({
-        content: 'No session found for this thread.',
+        content: "No session found for this thread.",
         flags: MessageFlags.Ephemeral,
       });
       return;
     }
-    const authorInfo = discordService.getDiscordUserByUserId({ userId: interaction.user.id });
+    const authorInfo = discordService.getDiscordUserByUserId({
+      userId: interaction.user.id,
+    });
     if (!authorInfo || !authorInfo.name || !authorInfo.email) {
       await interaction.reply({
         content: `Could not find your git author info in kanbatte.config.yaml. Please bind your user first.`,
@@ -172,21 +175,69 @@ const requestPR = {
       return;
     }
 
-    const authorPrompt = `Commit author is: ${authorInfo.name} <${authorInfo.email}>.`;
-    const prompt = `Save all changes, submit a commit. ${authorPrompt} Do not change git config. Don't add any coauthors and dont mention claude or any AI. Check this branch already exists related Pull Request, if not create a new pr, or just update it. Keep commit message and PR content minimal and simple.`;
+    try {
+      const session = await sessionService.getViewBySessionId({ sessionId });
+      if (!session) {
+        await interaction.reply({
+          content: `Session ${sessionId} could not be found.`,
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
 
-    await sessionService.appendSessionMessages({
-      sessionId,
-      messages: [{ role: "user", content: prompt, timestamp: Date.now() }]
-    });
+      const worktreePath = getWorktreePath(sessionId);
+      const branchName = `task/${sessionId.toLowerCase()}`;
 
-    // Automatically set status to ready after request-pr
-    await sessionService.updateSessionStatus({ sessionId, status: "ready" });
+      const firstMessage =
+        session.messages.find((m) => m.role === "user")?.content || sessionId;
+      const commitMessage = firstMessage.substring(0, 72);
+      const prTitle = `${sessionId}: ${firstMessage.substring(0, 100)}`;
+      const prBody = `This PR is automatically generated for session ${sessionId}.`;
 
-    await interaction.reply({
-      content: `Your commit and PR request has been added to session ${sessionId}. Status set to ready.`,
-    });
-  }
+      // const authorPrompt = `Commit author is: ${authorInfo.name} <${authorInfo.email}>.`;
+      // const prompt = `Save all changes, submit a commit. ${authorPrompt} Do not change git config. Don't add any coauthors and dont mention claude or any AI. Check this branch already exists related Pull Request, if not create a new pr, or just update it. Keep commit message and PR content minimal and simple.`;
+
+      // await sessionService.appendSessionMessages({
+      //   sessionId,
+      //   messages: [{ role: "user", content: prompt, timestamp: Date.now() }]
+      // });
+
+      await gitService.commit({
+        worktreePath,
+        commitMessage,
+        authorName: authorInfo.name,
+        authorEmail: authorInfo.email,
+      });
+
+      await gitService.push({
+        worktreePath,
+        branchName,
+      });
+
+      await gitService.createPR({
+        worktreePath,
+        branchName,
+        title: prTitle,
+        body: prBody,
+      });
+
+      // Automatically set status to ready after request-pr
+      await sessionService.updateSessionStatus({
+        sessionId,
+        status: "review",
+      });
+
+      await interaction.reply({
+        content: `✅ Pull Request for session ${sessionId} has been created/updated successfully!`,
+      });
+    } catch (error) {
+      console.error(`Failed to create PR for session ${sessionId}:`, error);
+      await interaction.reply({
+        content: `❌ PR creation failed for session ${sessionId}. Please check the logs for details.`,
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+  },
 };
 
 
