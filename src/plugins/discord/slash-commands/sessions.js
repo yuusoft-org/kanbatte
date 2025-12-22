@@ -78,7 +78,7 @@ const queueSession = {
 
     await thread.members.add(interaction.user.id);
     await thread.send(`🗨️ User: ${message}`);
-    await discordService.addSessionThreadRecord({ sessionId, threadId: thread.id });
+    await discordService.addSessionThreadRecord({ sessionId, threadId: thread.id, userId: interaction.user.id });
 
     let reply = `Session ${sessionId} created: <#${thread.id}>`;
     if (presetName) {

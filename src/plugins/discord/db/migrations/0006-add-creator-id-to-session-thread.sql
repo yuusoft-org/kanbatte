@@ -1,0 +1,1 @@
+ALTER TABLE discord_session_thread_record ADD COLUMN user_id TEXT;

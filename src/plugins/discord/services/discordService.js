@@ -27,6 +27,9 @@ export const createDiscordService = (deps) => {
     const { userId } = payload;
     return configService.getDiscordUserByUserId(userId);
   };
+  const getCreatorIdBySessionId = async (payload) => {
+    return await discordLibsql.getCreatorIdBySessionId(payload);
+  };
 
   return {
     getProjectConfigByChannelId,
@@ -35,5 +38,6 @@ export const createDiscordService = (deps) => {
     getThreadIdBySession,
     getAllowedRolesByGuildId,
     getDiscordUserByUserId,
+    getCreatorIdBySessionId,
   };
 };

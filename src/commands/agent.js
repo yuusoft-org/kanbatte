@@ -2,7 +2,7 @@ import { query } from "@anthropic-ai/claude-agent-sdk";
 import { setupWorktree } from "../utils/git.js";
 
 export const agent = async (deps) => {
-  const { sessionService, configService } = deps;
+  const { sessionService, configService, discordService } = deps;
   const readySessions = await sessionService.getSessionsByStatus({ status: "ready" });
 
   if (readySessions.length === 0) {
@@ -53,8 +53,28 @@ export const agent = async (deps) => {
       };
 
       if (session.promptPreset) {
-        const systemPrompt = configService.getPrompt(session.promptPreset);
+        let systemPrompt = configService.getPrompt(session.promptPreset);
         if (systemPrompt) {
+          if (systemPrompt.includes("${gitAuthor}")) {
+            const discordUserId = await discordService.getCreatorIdBySessionId({
+              sessionId: session.sessionId
+            });
+
+            if (!discordUserId) {
+              throw new Error(`Discord user ID not found for session ${session.sessionId}. Cannot replace \${gitAuthor}.`);
+            }
+
+            const creatorInfo = configService.getDiscordUserByUserId(discordUserId);
+
+            if (!creatorInfo || !creatorInfo.gitAuthor) {
+              throw new Error(`Git author info not found for user ${discordUserId}. Cannot replace \${gitAuthor}.`);
+            }
+
+            systemPrompt = systemPrompt.replace(
+              /\$\{gitAuthor\}/g,
+              creatorInfo.gitAuthor,
+            );
+          }
           queryOptions.systemPrompt = systemPrompt;
           console.log(`Using system prompt preset: ${session.promptPreset}`);
         } else {
