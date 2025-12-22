@@ -66,6 +66,7 @@ const queueSession = {
       createdAt: now,
       updatedAt: now,
       promptPreset: presetName || null,
+      creatorId: interaction.user.id,
     };
 
     await sessionService.addSession({ sessionId, sessionData });

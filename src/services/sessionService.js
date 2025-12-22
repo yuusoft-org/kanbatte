@@ -12,7 +12,7 @@ export const createSessionService = (deps) => {
     let viewKey;
 
     const now = Date.now();
-    state = { sessionId: id, messages: [], status: "ready", project: "", createdAt: now, updatedAt: now, promptPreset: null };
+    state = { sessionId: id, messages: [], status: "ready", project: "", createdAt: now, updatedAt: now, promptPreset: null, creatorId: null };
     viewKey = `session:${id}`;
 
     let lastEventId = null;
@@ -26,6 +26,7 @@ export const createSessionService = (deps) => {
           state.project = event.data.project || state.project;
           state.createdAt = event.data.createdAt || state.createdAt;
           state.promptPreset = event.data.promptPreset || state.promptPreset;
+          state.creatorId = event.data.creatorId || state.creatorId;
           state.updatedAt = event.timestamp;
           break;
         case "session_updated":

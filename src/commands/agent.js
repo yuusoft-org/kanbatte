@@ -53,8 +53,19 @@ export const agent = async (deps) => {
       };
 
       if (session.promptPreset) {
-        const systemPrompt = configService.getPrompt(session.promptPreset);
+        let systemPrompt = configService.getPrompt(session.promptPreset);
         if (systemPrompt) {
+          if (session.creatorId) {
+            const creatorInfo = configService.getDiscordUserByUserId(session.creatorId);
+            if (creatorInfo && creatorInfo.gitAuthor) {
+              systemPrompt = systemPrompt.replace(
+                /\$\{gitAuthor\}/g,
+                creatorInfo.gitAuthor,
+              );
+
+              //console.log(`Replaced gitAuthor with: ${creatorInfo.gitAuthor}`);
+            }
+          }
           queryOptions.systemPrompt = systemPrompt;
           console.log(`Using system prompt preset: ${session.promptPreset}`);
         } else {
