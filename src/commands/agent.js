@@ -52,7 +52,7 @@ export const agent = async (deps) => {
         cwd: worktreePath,
       };
 
-      const promptPresetName = session.promptPreset || "default";
+      const promptPresetName = session.promptPreset ?? "default";
       let systemPrompt = configService.getPrompt(promptPresetName);
 
       if (systemPrompt) {
