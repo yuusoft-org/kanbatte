@@ -12,7 +12,7 @@ export const createSessionService = (deps) => {
     let viewKey;
 
     const now = Date.now();
-    state = { sessionId: id, messages: [], status: "ready", project: "", createdAt: now, updatedAt: now, promptPreset: null, creatorId: null };
+    state = { sessionId: id, messages: [], status: "ready", project: "", createdAt: now, updatedAt: now, promptPreset: null };
     viewKey = `session:${id}`;
 
     let lastEventId = null;

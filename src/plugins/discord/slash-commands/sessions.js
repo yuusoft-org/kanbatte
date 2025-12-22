@@ -66,7 +66,6 @@ const queueSession = {
       createdAt: now,
       updatedAt: now,
       promptPreset: presetName || null,
-      creatorId: interaction.user.id,
     };
 
     await sessionService.addSession({ sessionId, sessionData });
@@ -79,7 +78,7 @@ const queueSession = {
 
     await thread.members.add(interaction.user.id);
     await thread.send(`🗨️ User: ${message}`);
-    await discordService.addSessionThreadRecord({ sessionId, threadId: thread.id });
+    await discordService.addSessionThreadRecord({ sessionId, threadId: thread.id, creatorId: interaction.user.id });
 
     let reply = `Session ${sessionId} created: <#${thread.id}>`;
     if (presetName) {

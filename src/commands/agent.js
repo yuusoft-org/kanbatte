@@ -2,7 +2,7 @@ import { query } from "@anthropic-ai/claude-agent-sdk";
 import { setupWorktree } from "../utils/git.js";
 
 export const agent = async (deps) => {
-  const { sessionService, configService } = deps;
+  const { sessionService, configService, discordService } = deps;
   const readySessions = await sessionService.getSessionsByStatus({ status: "ready" });
 
   if (readySessions.length === 0) {
@@ -55,16 +55,25 @@ export const agent = async (deps) => {
       if (session.promptPreset) {
         let systemPrompt = configService.getPrompt(session.promptPreset);
         if (systemPrompt) {
-          if (session.creatorId) {
-            const creatorInfo = configService.getDiscordUserByUserId(session.creatorId);
-            if (creatorInfo && creatorInfo.gitAuthor) {
-              systemPrompt = systemPrompt.replace(
-                /\$\{gitAuthor\}/g,
-                creatorInfo.gitAuthor,
-              );
+          if (systemPrompt.includes("${gitAuthor}")) {
+            const creatorId = await discordService.getCreatorIdBySessionId({
+              sessionId: session.sessionId
+            });
 
-              //console.log(`Replaced gitAuthor with: ${creatorInfo.gitAuthor}`);
+            if (!creatorId) {
+              throw new Error(`Creator ID not found for session ${session.sessionId}. Cannot replace \${gitAuthor}.`);
             }
+
+            const creatorInfo = configService.getDiscordUserByUserId(creatorId);
+
+            if (!creatorInfo || !creatorInfo.gitAuthor) {
+              throw new Error(`Git author info not found for user ${creatorId}. Cannot replace \${gitAuthor}.`);
+            }
+
+            systemPrompt = systemPrompt.replace(
+              /\$\{gitAuthor\}/g,
+              creatorInfo.gitAuthor,
+            );
           }
           queryOptions.systemPrompt = systemPrompt;
           console.log(`Using system prompt preset: ${session.promptPreset}`);
