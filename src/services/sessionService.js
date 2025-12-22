@@ -26,7 +26,6 @@ export const createSessionService = (deps) => {
           state.project = event.data.project || state.project;
           state.createdAt = event.data.createdAt || state.createdAt;
           state.promptPreset = event.data.promptPreset || state.promptPreset;
-          state.creatorId = event.data.creatorId || state.creatorId;
           state.updatedAt = event.timestamp;
           break;
         case "session_updated":

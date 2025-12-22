@@ -163,10 +163,10 @@ export const createLibsqlInfra = (config) => {
   const addSessionThreadRecord = async (payload) => {
     checkInitialized();
     if (!sessionThreadRecord) throw new Error("sessionThreadRecord table name not configured.");
-    const { sessionId, threadId, creatorId } = payload;
+    const { sessionId, threadId, userId } = payload;
     await db.execute({
-      sql: `INSERT INTO ${sessionThreadRecord} (session_id, thread_id, creator_id) VALUES (?, ?, ?)`,
-      args: [sessionId, threadId, creatorId],
+      sql: `INSERT INTO ${sessionThreadRecord} (session_id, thread_id, user_id) VALUES (?, ?, ?)`,
+      args: [sessionId, threadId, userId],
     });
   };
 
@@ -198,10 +198,10 @@ export const createLibsqlInfra = (config) => {
       throw new Error("sessionThreadRecord table name not configured.");
     const { sessionId } = payload;
     const result = await db.execute({
-      sql: `SELECT creator_id FROM ${sessionThreadRecord} WHERE session_id = ?`,
+      sql: `SELECT user_id FROM ${sessionThreadRecord} WHERE session_id = ?`,
       args: [sessionId],
     });
-    return result.rows.length > 0 ? result.rows[0].creator_id : null;
+    return result.rows.length > 0 ? result.rows[0].user_id : null;
   };
 
   const addUserEmailRecord = async (payload) => {
@@ -275,6 +275,6 @@ export const createLibsqlInfra = (config) => {
     listUserEmailRecords,
     addClaudeSessionRecord,
     getClaudeSessionIdBySessionId,
-     getCreatorIdBySessionId,
+    getCreatorIdBySessionId,
   };
 };

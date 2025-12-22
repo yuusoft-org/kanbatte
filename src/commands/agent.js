@@ -56,18 +56,18 @@ export const agent = async (deps) => {
         let systemPrompt = configService.getPrompt(session.promptPreset);
         if (systemPrompt) {
           if (systemPrompt.includes("${gitAuthor}")) {
-            const creatorId = await discordService.getCreatorIdBySessionId({
+            const discordUserId = await discordService.getCreatorIdBySessionId({
               sessionId: session.sessionId
             });
 
-            if (!creatorId) {
-              throw new Error(`Creator ID not found for session ${session.sessionId}. Cannot replace \${gitAuthor}.`);
+            if (!discordUserId) {
+              throw new Error(`Discord user ID not found for session ${session.sessionId}. Cannot replace \${gitAuthor}.`);
             }
 
-            const creatorInfo = configService.getDiscordUserByUserId(creatorId);
+            const creatorInfo = configService.getDiscordUserByUserId(discordUserId);
 
             if (!creatorInfo || !creatorInfo.gitAuthor) {
-              throw new Error(`Git author info not found for user ${creatorId}. Cannot replace \${gitAuthor}.`);
+              throw new Error(`Git author info not found for user ${discordUserId}. Cannot replace \${gitAuthor}.`);
             }
 
             systemPrompt = systemPrompt.replace(

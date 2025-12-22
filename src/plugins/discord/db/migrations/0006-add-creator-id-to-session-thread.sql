@@ -1,1 +1,1 @@
-ALTER TABLE discord_session_thread_record ADD COLUMN creator_id TEXT;
+ALTER TABLE discord_session_thread_record ADD COLUMN user_id TEXT;
