@@ -5,6 +5,11 @@ import { join, dirname, basename } from "path";
 
 const execAsync = promisify(exec);
 
+export const getWorktreePath = (worktreeId) => {
+  const cwd = process.cwd();
+  return join(cwd, "worktrees", worktreeId);
+};
+
 export const setupWorktree = async (worktreeId, repository) => {
   if (!repository) throw new Error(`Repository URL is required`);
 

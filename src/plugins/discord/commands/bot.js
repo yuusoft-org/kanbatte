@@ -1,7 +1,7 @@
 import { startDiscordBot } from "../bot.js";
 
 export const createBotCommands = (deps) => {
-  const { discordService, sessionService, discordLibsqlInfra, configService } = deps;
+  const { discordService, sessionService, discordLibsqlInfra, configService,gitService } = deps;
 
   const startBot = () => {
     startDiscordBot({
@@ -9,6 +9,7 @@ export const createBotCommands = (deps) => {
       discordService,
       configService,
       discordLibsql: discordLibsqlInfra,
+      gitService,
     });
   };
 
